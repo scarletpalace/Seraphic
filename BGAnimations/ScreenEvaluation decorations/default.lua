@@ -113,6 +113,23 @@ t[#t+1] = Def.ActorFrame {
 			self:settext(GAMESTATE:GetCurrentSong():GetDisplayArtist())
 		end,
 	},
+	-- Seraphic: pack the song comes from, in the pack-name font, under the artist
+	LoadFont("Seraphic Title") .. {
+		Name = "SongPack",
+		InitCommand = function(self)
+			self:xy(SCREEN_CENTER_X, 419)
+			self:zoom(0.36)
+			self:maxwidth(228 / 0.36)
+			self:diffuse(color("#bdb3b6"))
+		end,
+		BeginCommand = function(self)
+			self:queuecommand("Set")
+		end,
+		SetCommand = function(self)
+			local song = GAMESTATE:GetCurrentSong()
+			self:settext(song and song:GetGroupName() or "")
+		end,
+	},
 	LoadFont("Seraphic Artist") .. {
 		Name = "RateString",
 		InitCommand = function(self)
