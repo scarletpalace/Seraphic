@@ -200,190 +200,140 @@ local t = Def.ActorFrame {
 	TabChangedMessageCommand = function(self)
 		self:queuecommand("Set")
 	end,
+	-- Seraphic: LR2 window: dark glass body, header band with "::ROOM SEARCH", text fields and toggle rows
 	Def.Quad {
-		SetCommand = function(self)
-			self:xy(frameX, 45):zoomto(frameWidth, frameHeight):halign(0):valign(0):diffuse(getMainColor("tabs")):diffusetopedge(panelTopColor())
+		InitCommand = function(self)
+			self:xy(frameX, 45):zoomto(frameWidth, frameHeight):halign(0):valign(0)
+			self:diffuseupperleft(color("#262626")):diffuseupperright(color("#1a1a1a"))
+			self:diffuselowerleft(color("#0a0a0a")):diffuselowerright(color("#060606"))
+			self:diffusealpha(0.8)
 		end
 	},
 	seraphicPanel(frameX, 45, frameWidth, frameHeight, true),
-	Def.Quad {
-		SetCommand = function(self)
-			self:xy(frameX, 45):zoomto(frameWidth, offsetY):halign(0):valign(0):diffuse(getMainColor("frames")):diffusealpha(0.5)
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY - 200):zoom(0.4):halign(0)
-			self:settextf("%s: ", translated_info["Title"])
-		end
-	},
-	UIElements.QuadButton(1, 1) .. {
-		InitCommand = function(self)
-			self:xy(frameX + 225, frameY - 200):zoomto(300, 25):diffuse(getMainColor("frames")):diffusealpha(0.55)
-		end,
-		SetCommand = function(self)
-			if 1 == inputting then
-				self:diffuse(color("#FFFFFF66"))
-			else
-				self:diffuse(getMainColor("frames")):diffusealpha(0.55)
-			end
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and active then
-				inputting = 1
-				MESSAGEMAN:Broadcast("UpdateString")
-			end
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY - 150):zoom(0.4):halign(0)
-			self:settextf("%s: ", translated_info["Subtitle"])
-		end
-	},
-	UIElements.QuadButton(1, 1) .. {
-		InitCommand = function(self)
-			self:xy(frameX + 225, frameY - 150):zoomto(300, 25):diffuse(getMainColor("frames")):diffusealpha(0.55)
-		end,
-		SetCommand = function(self)
-			if 2 == inputting then
-				self:diffuse(color("#FFFFFF66"))
-			else
-				self:diffuse(getMainColor("frames")):diffusealpha(0.55)
-			end
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and active then
-				inputting = 2
-				MESSAGEMAN:Broadcast("UpdateString")
-			end
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 225, frameY - 202):zoom(0.4):maxwidth(700)
-		end,
-		SetCommand = function(self)
-			self:settext(searchtitle)
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 225, frameY - 152):zoom(0.4):maxwidth(700)
-		end,
-		SetCommand = function(self)
-			self:settext(searchdesc)
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY - 50):zoom(0.4):halign(0)
-			self:settext(translated_info["Opened"])
-		end
-	},
-	UIElements.QuadButton(1, 1) .. {
-		InitCommand = function(self)
-			self:xy(frameX + 50, frameY):zoomto(25, 25):diffuse(getMainColor("positive")):diffusealpha(0.35)
-		end,
-		SetCommand = function(self)
-			if searchingame then
-				self:diffuse(getMainColor("positive"))
-			else
-				self:diffuse(getMainColor("negative"))
-			end
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and active then
-				searchingame = not searchingame
-				MESSAGEMAN:Broadcast("UpdateString")
-				whee:Search(searchtitle, searchdesc, searchingame, searchpassword, searchopen)
-			end
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + frameWidth / 2 - 50, frameY - 50):zoom(0.4):halign(0)
-			self:settext(translated_info["Passworded"])
-		end
-	},
-	UIElements.QuadButton(1, 1) .. {
-		InitCommand = function(self)
-			self:xy(frameX + frameWidth / 2 - 12, frameY):zoomto(25, 25):diffuse(getMainColor("positive")):diffusealpha(0.35)
-		end,
-		SetCommand = function(self)
-			if searchpassword then
-				self:diffuse(getMainColor("positive"))
-			else
-				self:diffuse(getMainColor("negative"))
-			end
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and active then
-				searchpassword = not searchpassword
-				MESSAGEMAN:Broadcast("UpdateString")
-				whee:Search(searchtitle, searchdesc, searchingame, searchpassword, searchopen)
-			end
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + frameWidth - 100, frameY - 50):zoom(0.4):halign(0)
-			self:settext(translated_info["InGameplay"])
-		end
-	},
-	UIElements.QuadButton(1, 1) .. {
-		InitCommand = function(self)
-			self:xy(frameX + frameWidth - 80, frameY):zoomto(25, 25):diffuse(getMainColor("positive")):diffusealpha(0.35)
-		end,
-		SetCommand = function(self)
-			if searchopen then
-				self:diffuse(getMainColor("positive"))
-			else
-				self:diffuse(getMainColor("negative"))
-			end
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and active then
-				searchopen = not searchopen
-				MESSAGEMAN:Broadcast("UpdateString")
-				whee:Search(searchtitle, searchdesc, searchingame, searchpassword, searchopen)
-			end
-		end
-	},
+	seraphicHeaderBand(frameX, 45, frameWidth, offsetY),
 	LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 20, frameY + 70):zoom(0.5):halign(0)
-			self:settext(translated_info["Explanation"])
-		end,
+			self:xy(frameX + 10, 45 + offsetY / 2):zoom(0.5):halign(0)
+			self:settext(seraphicHeading(translated_info["TabTitle"])):diffuse(color(seraphicLabelColor))
+		end
 	},
-	LoadFont("Common Normal") .. {
+}
+
+-- text field: label on the left, dark input box on the right (crimson tint while typing in it)
+local function field(index, label, y, getText)
+	local fx, fw, fh = frameX + 110, frameWidth - 130, 24
+	t[#t + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 5, offsetY + 34):zoom(0.65):halign(0)
-			self:settext(translated_info["TabTitle"])
-			self:diffuse(Saturation(getMainColor("positive"), 0.1))
+			self:xy(frameX + 22, y):zoom(0.55):halign(0):diffuse(color(seraphicLabelColor))
+			self:settext(tostring(label):upper())
 		end
 	}
+	t[#t + 1] = UIElements.QuadButton(1, 1) .. {
+		InitCommand = function(self)
+			self:xy(fx, y):halign(0):zoomto(fw, fh)
+		end,
+		SetCommand = function(self)
+			if inputting == index then
+				self:diffuse(color("#9c1428")):diffusealpha(0.4)
+			else
+				self:diffuse(color("#000000")):diffusealpha(0.5)
+			end
+		end,
+		UpdateStringMessageCommand = function(self)
+			self:queuecommand("Set")
+		end,
+		MouseDownCommand = function(self, params)
+			if params.event == "DeviceButton_left mouse button" and active then
+				inputting = index
+				MESSAGEMAN:Broadcast("UpdateString")
+			end
+		end
+	}
+	t[#t + 1] = seraphicSoftEdge(fx, y - fh / 2, fw, fh, 0.16)
+	t[#t + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(fx + 8, y):zoom(0.55):halign(0):maxwidth((fw - 16) / 0.55):diffuse(color(seraphicValueColor))
+		end,
+		SetCommand = function(self)
+			self:settext(getText())
+		end,
+		UpdateStringMessageCommand = function(self)
+			self:queuecommand("Set")
+		end
+	}
+end
+field(1, translated_info["Title"], 100, function() return searchtitle end)
+field(2, translated_info["Subtitle"], 138, function() return searchdesc end)
+
+-- filter rows: banded row, label on the left, a diamond that is crimson when the filter is on
+t[#t + 1] = seraphicHeaderBand(frameX + 12, 172, frameWidth - 24, 16)
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + 20, 180):zoom(0.42):halign(0):diffuse(color(seraphicLabelColor)):settext(seraphicHeading("Show rooms"))
+	end
+}
+local function toggleRow(i, label, get, flip)
+	local y = 196 + (i - 1) * 30
+	local rx, rw, rh = frameX + 12, frameWidth - 24, 26
+	t[#t + 1] = seraphicRowBand(rx, y, rw, rh, i)
+	t[#t + 1] = UIElements.QuadButton(1, 1) .. {
+		InitCommand = function(self)
+			self:xy(rx, y):halign(0):valign(0):zoomto(rw, rh):diffusealpha(0)
+		end,
+		MouseDownCommand = function(self, params)
+			if params.event == "DeviceButton_left mouse button" and active then
+				flip()
+				MESSAGEMAN:Broadcast("UpdateString")
+				whee:Search(searchtitle, searchdesc, searchingame, searchpassword, searchopen)
+			end
+		end
+	}
+	t[#t + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(rx + 12, y + rh / 2):zoom(0.55):halign(0):diffuse(color(seraphicValueColor)):settext(tostring(label):upper())
+		end
+	}
+	t[#t + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(rx + rw - 30, y + rh / 2):zoom(0.45):halign(1)
+		end,
+		SetCommand = function(self)
+			self:settext(get() and "SHOWN" or "HIDDEN"):diffuse(color(get() and seraphicValueColor or "#7a7275"))
+		end,
+		UpdateStringMessageCommand = function(self)
+			self:queuecommand("Set")
+		end
+	}
+	t[#t + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:xy(rx + rw - 16, y + rh / 2):rotationz(45):zoomto(8, 8)
+		end,
+		SetCommand = function(self)
+			if get() then
+				self:diffuse(color("#9c1428")):diffusealpha(1)
+			else
+				self:diffuse(color("#000000")):diffusealpha(0.6)
+			end
+		end,
+		UpdateStringMessageCommand = function(self)
+			self:queuecommand("Set")
+		end
+	}
+	t[#t + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:xy(rx + rw - 16, y + rh / 2):rotationz(45):zoomto(10, 10):diffuse(color("#e8b8c2")):diffusealpha(0.35)
+		end
+	}
+end
+toggleRow(1, translated_info["Opened"], function() return searchopen end, function() searchopen = not searchopen end)
+toggleRow(2, translated_info["Passworded"], function() return searchpassword end, function() searchpassword = not searchpassword end)
+toggleRow(3, translated_info["InGameplay"], function() return searchingame end, function() searchingame = not searchingame end)
+
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + 22, 45 + frameHeight - 24):zoom(0.42):halign(0):maxwidth((frameWidth - 44) / 0.42)
+		self:diffuse(color(seraphicLabelColor)):settext(translated_info["Explanation"])
+	end,
 }
 
 return t

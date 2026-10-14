@@ -19,10 +19,11 @@ t[#t + 1] = LoadActor("../_frame")
 t[#t + 1] = LoadActor("../_PlayerInfo")
 t[#t + 1] = LoadActor("currentsort")
 t[#t + 1] =
-	LoadFont("Common Large") ..
+	LoadFont("Seraphic Title") ..
 	{
 		InitCommand = function(self)
-			self:xy(5, 32):halign(0):valign(1):zoom(0.55):diffuse(getMainColor("positive"))
+			-- Seraphic: screen title in the gothic title font, silver
+			self:xy(14, 34):halign(0):valign(1):zoom(0.62):diffuse(color(seraphicValueColor))
 			self:settext(THEME:GetString("ScreenNetRoom", "Title"))
 		end
 	}
