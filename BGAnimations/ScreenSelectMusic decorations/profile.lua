@@ -72,10 +72,10 @@ local t = Def.ActorFrame {
 local frameX = 10
 local frameY = 45
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 350
-local fontScale = 0.25
+local frameHeight = 341 -- ends at the bottom bar (y 386)
+local fontScale = 0.24
 local scoresperpage = 20
-local scoreYspacing = 12.5
+local scoreYspacing = 13.5 -- score list row pitch
 local distY = 15
 local offsetX = -10
 local offsetY = 20
@@ -87,6 +87,27 @@ local rankingWidth = frameWidth - capWideScale(10, 25)
 local rankingX = capWideScale(25, 35)
 local rankingY = capWideScale(40, 40)
 local rankingTitleSpacing = (rankingWidth / (#ms.SkillSets))
+-- LR2-style layout (panel-local coords)
+local tabW = (frameWidth - 24) / #ms.SkillSets -- skillset selector tabs
+local tabY = offsetY + 11 -- centre of the skillset tab row, under the header band
+local listY = offsetY + 30 -- top of the first score row
+local bandX = 6 -- score/rating row bands
+local bandW = frameWidth - 12
+local toggleW = 52 -- header toggles (Percent/Recent, Local/Online)
+local labelZoom = 0.42 -- Common Normal, uppercase silver labels
+local tabZoom = 0.36 -- Common Normal, skillset tabs
+local crimson = "#9c1428"
+-- header toggle / tab look: selected = crimson tint + light text, otherwise faint dark + silver text
+local function styleToggleQuad(self, selected)
+	if selected then
+		self:diffuse(color(crimson)):diffusealpha(0.4)
+	else
+		self:diffuse(color("#000000")):diffusealpha(0.25)
+	end
+end
+local function styleToggleText(self, selected)
+	self:diffuse(color(selected and seraphicValueColor or seraphicLabelColor))
+end
 local buttondiffuse = 0
 local whee
 local profile
@@ -101,6 +122,14 @@ t[#t + 1] = Def.Quad {
 	end
 }
 t[#t + 1] = seraphicPanel(frameX, frameY, frameWidth, frameHeight, true)
+-- header band holding the Percent/Recent and Local/Online toggles
+t[#t + 1] = seraphicHeaderBand(frameX, frameY, frameWidth, offsetY)
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + 10, frameY + offsetY / 2):zoom(0.45):halign(0):maxwidth((frameWidth - 260) / 0.45)
+		self:settext(seraphicHeading("Profile")):diffuse(color(seraphicLabelColor))
+	end
+}
 
 
 local hoverAlpha = 0.6
@@ -136,7 +165,7 @@ local function rankingLabel(i)
 
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + offsetX + 7, rankingY + offsetY + 10 + (i - 1) * scoreYspacing)
+			self:xy(rankingX + offsetX + 7, listY + (i - 0.5) * scoreYspacing)
 			-- self:RunCommandsOnChildren(cmd(halign,0;zoom,fontScale))
 			self:visible(false)
 		end,
@@ -167,6 +196,7 @@ local function rankingLabel(i)
 				self:visible(false)
 			end
 		end,
+		seraphicRowBand(bandX - (rankingX + offsetX + 7), -scoreYspacing / 2, bandW, scoreYspacing - 1, i),
 		LoadFont("Common Large") .. {
 			Name = "text1",
 			InitCommand = function(self)
@@ -329,7 +359,7 @@ local function rankingLabel(i)
 			end,
 			DisplayProfileRankingLabelsMessageCommand = function(self) -- hacky
 				self:visible(true)
-				self:zoomto(frameWidth - capWideScale(38,78), scoreYspacing * .995)
+				self:zoomto(frameWidth - capWideScale(38,78), scoreYspacing - 1)
 			end,
 			MouseDownCommand = function(self, params)
 				if rankingSkillset > 1 and params.event == "DeviceButton_left mouse button" and update then
@@ -373,18 +403,15 @@ end
 local function rankingButton(i)
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + (i - 1) * rankingTitleSpacing, rankingY * 1.15)
+			self:xy(12 + (i - 0.5) * tabW, tabY)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffuse(getMainColor("frames")):diffusealpha(0.2)
+				self:zoomto(tabW - 2, 16)
+				styleToggleQuad(self, i == rankingSkillset and not recentactive)
 			end,
 			SetCommand = function(self)
-				if i == rankingSkillset and not recentactive then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, i == rankingSkillset and not recentactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
@@ -414,10 +441,14 @@ local function rankingButton(i)
 		LoadFont("Common Large") .. {
 			Name = "RankButtonTxt",
 			InitCommand = function(self)
-				self:addy(-1):diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing / 0.40 - 10):zoom(0.40)
+				self:zoom(tabZoom):maxwidth((tabW - 5) / tabZoom)
+				styleToggleText(self, i == rankingSkillset and not recentactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(ms.SkillSetsTranslated[i])
+				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, i == rankingSkillset and not recentactive)
 			end
 		}
 	}
@@ -435,7 +466,7 @@ local function recentLabel(i)
 
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX - 22 , rankingY + offsetY + 10 + (i - 1) * scoreYspacing)
+			self:xy(rankingX - 22 , listY + (i - 0.5) * scoreYspacing)
 			self:visible(false)
 		end,
 		UpdateRankingMessageCommand = function(self)
@@ -455,6 +486,7 @@ local function recentLabel(i)
 				self:visible(false)
 			end
 		end,
+		seraphicRowBand(bandX - (rankingX - 22), -scoreYspacing / 2, bandW, scoreYspacing - 1, i),
 		LoadFont("Common Large") .. {
 			Name = "rectext1",
 			InitCommand = function(self)
@@ -568,7 +600,7 @@ local function recentLabel(i)
 					if not IsUsingWideScreen() then
 						self:settext(getScoreDate(ths):sub(1,10)):x(318)
 					else
-						self:settext(getScoreDate(ths))
+						self:settext(getScoreDate(ths)):maxwidth((frameWidth - 8 - (rankingX - 22) - 312) / (fontScale + 0.05))
 					end
 				else
 					self:settext("")
@@ -581,7 +613,7 @@ local function recentLabel(i)
 			end,
 			DisplayProfileRankingLabelsMessageCommand = function(self) -- hacky
 				self:visible(true)
-				self:zoomto(frameWidth - capWideScale(14,10), scoreYspacing * .995)
+				self:zoomto(frameWidth - capWideScale(14,10), scoreYspacing - 1)
 			end,
 			MouseDownCommand = function(self, params)
 				if recentactive and params.event == "DeviceButton_left mouse button" and update then
@@ -620,18 +652,15 @@ end
 local function recentButton()
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + (3.5) * rankingTitleSpacing, 24 * 0.75):valign(1)
+			self:xy(frameWidth - 154, offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffuse(getMainColor("frames")):diffusealpha(0.2)
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, recentactive)
 			end,
 			SetCommand = function(self)
-				if recentactive then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, recentactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
@@ -657,10 +686,14 @@ local function recentButton()
 		LoadFont("Common Large") .. {
 			Name = "RecentButtonTxt",
 			InitCommand = function(self)
-				self:addy(-1):diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing * 2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, recentactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Recent"])
+				self:settext(tostring(translated_info["Recent"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, recentactive)
 			end
 		}
 	}
@@ -670,18 +703,15 @@ end
 local function percentButton()
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + (2.5) * rankingTitleSpacing, 24 * 0.75):valign(1)
+			self:xy(frameWidth - 208, offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffuse(getMainColor("frames")):diffusealpha(0.2)
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, percentactive)
 			end,
 			SetCommand = function(self)
-				if percentactive then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, percentactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
@@ -716,10 +746,14 @@ local function percentButton()
 		LoadFont("Common Large") .. {
 			Name = "PercentButtonTxt",
 			InitCommand = function(self)
-				self:addy(-1):diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing * 2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, percentactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Percent"])
+				self:settext(tostring(translated_info["Percent"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, percentactive)
 			end
 		}
 	}
@@ -729,7 +763,6 @@ end
 -- Online and Local buttons
 t[#t + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:x(8)
 		if DLMAN:IsLoggedIn() then
 			self:visible(true)
 		else
@@ -748,18 +781,15 @@ t[#t + 1] = Def.ActorFrame {
 	end,
 	Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + frameWidth * 6 / 8 - rankingTitleSpacing, rankingY + offsetY + 2)
+			self:xy(frameX + frameWidth - 92, frameY + offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffusealpha(0.2):diffuse(getMainColor("frames"))
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, not showOnline)
 			end,
 			SetCommand = function(self)
-				if not showOnline then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, not showOnline)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
@@ -782,39 +812,33 @@ t[#t + 1] = Def.ActorFrame {
 		LoadFont("Common Large") ..{
 			Name = "LocalTxt",
 			InitCommand = function(self)
-				self:diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing*2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, not showOnline)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Local"])
+				self:settext(tostring(translated_info["Local"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, not showOnline)
 			end
 		}
 	},
 	Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + frameWidth * 7 / 8 - rankingTitleSpacing, rankingY + offsetY + 2)
+			self:xy(frameX + frameWidth - 38, frameY + offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffusealpha(0.2)
+				self:zoomto(toggleW - 2, 15)
 				if DLMAN:IsLoggedIn() then
-					self:diffuse(getMainColor("frames"))
-					if showOnline then
-						self:diffusealpha(1)
-					else
-						self:diffusealpha(0.2)
-					end
+					styleToggleQuad(self, showOnline)
 				else
 					self:diffuse(getMainColor("disabled")):diffusealpha(0.1)
 				end
 			end,
 			SetCommand = function(self)
 				if DLMAN:IsLoggedIn() then
-					self:diffuse(getMainColor("frames"))
-					if showOnline then
-						self:diffusealpha(1)
-					else
-						self:diffusealpha(0.2)
-					end
+					styleToggleQuad(self, showOnline)
 				else
 					self:diffuse(getMainColor("disabled")):diffusealpha(0.1)
 				end
@@ -840,10 +864,14 @@ t[#t + 1] = Def.ActorFrame {
 		LoadFont("Common Large") .. {
 			Name = "OnlineTxt",
 			InitCommand = function(self)
-				self:diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing*2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, showOnline)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Online"])
+				self:settext(tostring(translated_info["Online"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, showOnline)
 			end
 		}
 	},
@@ -852,7 +880,7 @@ t[#t + 1] = Def.ActorFrame {
 -- prev/next page
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(10, frameHeight - offsetY):visible(false)
+		self:xy(10, frameHeight - 12):visible(false)
 	end,
 	UpdateRankingMessageCommand = function(self)
 		if (rankingSkillset > 1 or recentactive ) and not showOnline then
@@ -868,7 +896,7 @@ r[#r + 1] = Def.ActorFrame {
 	end,
 	UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
-			self:xy(capWideScale(300,336.25), -8.5):zoomto(40, 20):halign(0):valign(0):diffuse(getMainColor("frames")):diffusealpha(0.2)
+			self:xy(frameWidth - 20, 0):zoomto(56, 15):halign(1):diffuse(color("#000000")):diffusealpha(0.5)
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
@@ -893,12 +921,14 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "NextP",
 		InitCommand = function(self)
-			self:x(capWideScale(304.25,340)):halign(0):zoom(0.3):diffuse(getMainColor("positive")):settext(translated_info["NextPage"])
+			self:x(frameWidth - 48):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:settext(tostring(translated_info["NextPage"]):upper())
 		end,
 	},
+	seraphicSoftEdge(frameWidth - 76, -7.5, 56, 15, 0.14),
 	UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
-			self:xy(-2,-8.5):zoomto(65, 20):halign(0):valign(0):diffuse(getMainColor("frames")):diffusealpha(0.2)
+			self:xy(-2, 0):zoomto(56, 15):halign(0):diffuse(color("#000000")):diffusealpha(0.5)
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
@@ -922,9 +952,11 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "PrevP",
 		InitCommand = function(self)
-			self:halign(0):zoom(0.3):diffuse(getMainColor("positive")):settext(translated_info["PrevPage"])
+			self:x(26):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:settext(tostring(translated_info["PrevPage"]):upper())
 		end,
 	},
+	seraphicSoftEdge(-2, -7.5, 56, 15, 0.14),
 }
 
 for i = 1, scoresperpage do
@@ -944,10 +976,15 @@ end
 r[#r + 1] = recentButton()
 r[#r + 1] = percentButton()
 
+-- skillset ratings: banded "LABEL ..... value" rows
+local ratingPitch = 26
+local ratingH = 24
+local ratingY = listY + 2 -- top of the first rating row
 local function littlebits(i)
+	local rowY = ratingY + (i - 2) * ratingPitch + ratingH / 2
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(frameX + capWideScale(28,45), frameY - 30)
+			self:xy(0, rowY)
 		end,
 		UpdateRankingMessageCommand = function(self)
 			if rankingSkillset == 1 and update and not recentactive then
@@ -956,31 +993,28 @@ local function littlebits(i)
 				self:visible(false)
 			end
 		end,
-		LoadFont("Common Large") .. {
+		seraphicRowBand(12, -ratingH / 2, frameWidth - 24, ratingH, i - 1),
+		seraphicBullet(22, 0),
+		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:y(txtDist * i):maxwidth(170 * 2):halign(0):zoom(0.575)
+				self:x(32):maxwidth((frameWidth / 2 - 40) / 0.5):halign(0):zoom(0.5):diffuse(color(seraphicLabelColor))
 			end,
 			SetCommand = function(self)
-				self:settext(ms.SkillSetsTranslated[i] .. ":")
+				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
 			end,
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(210, txtDist * i):halign(0):zoom(0.575)
+				self:x(frameWidth - 22):halign(1):zoom(0.34):maxwidth((frameWidth / 2 - 30) / 0.34)
 			end,
 			SetCommand = function(self)
 				local rating = 0
 				if not showOnline then
 					rating = profile:GetPlayerSkillsetRating(ms.SkillSets[i])
 					self:settextf("%05.2f", rating)
-					self:GetParent():x(frameX + capWideScale(28,45))
-					self:x(210)
 				else
 					rating = DLMAN:GetSkillsetRating(ms.SkillSets[i])
 					self:settextf("%05.2f (#%i)", rating, DLMAN:GetSkillsetRank(ms.SkillSets[i]))
-					self:GetParent():x(frameX)
-					self:x(capWideScale(184,198)):maxwidth(9999)
-					if not IsUsingWideScreen() then self:maxwidth(270) end
 				end
 				self:diffuse(byMSD(rating))
 			end,
@@ -1001,6 +1035,25 @@ end
 
 local user
 local pass
+-- bottom button grid: 3 columns, 2 rows, ending just above the panel's bottom edge
+local pbW = (frameWidth - 24 - 16) / 3
+local pbH = 16
+local function pbX(col) return frameX + 12 + pbW / 2 + (col - 1) * (pbW + 8) end
+local function pbY(row) return frameY + frameHeight - 44 + (row - 1) * (pbH + 6) end
+local function pbFrame(col, row)
+	return Def.ActorFrame {
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(pbX(col), pbY(row)):zoomto(pbW, pbH):diffuse(color("#000000")):diffusealpha(0.5)
+			end
+		},
+		seraphicSoftEdge(pbX(col) - pbW / 2, pbY(row) - pbH / 2, pbW, pbH, 0.14)
+	}
+end
+local function pbText(self, col, row, text)
+	self:xy(pbX(col), pbY(row)):halign(0.5):diffuse(color(seraphicValueColor)):zoom(0.21):maxwidth((pbW - 8) / 0.21)
+	self:settext(tostring(text):upper())
+end
 local profilebuttons = Def.ActorFrame {
 	InitCommand = function(self)
 	end,
@@ -1023,10 +1076,10 @@ local profilebuttons = Def.ActorFrame {
 			self:visible(false)
 		end
 	end,
+	pbFrame(1, 1), pbFrame(2, 1), pbFrame(1, 2), pbFrame(2, 2), pbFrame(3, 2),
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 1/7, frameHeight + 04):halign(0.5):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["Save"])
+			pbText(self, 1, 1, translated_info["Save"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1047,8 +1100,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 3/7, frameHeight + 04):halign(0.5):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["AssetSettings"])
+			pbText(self, 2, 1, translated_info["AssetSettings"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1064,8 +1116,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 1/7, frameHeight + 26):halign(0.5):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["ValidateAll"])
+			pbText(self, 1, 2, translated_info["ValidateAll"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1082,8 +1133,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 3/7, frameHeight + 26):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["ForceRecalc"])
+			pbText(self, 2, 2, translated_info["ForceRecalc"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1101,8 +1151,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 5.3/7, frameHeight + 26):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["UploadAllScore"])
+			pbText(self, 3, 2, translated_info["UploadAllScore"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
