@@ -2,13 +2,17 @@
 -- sanctuary in an LR2 window: dark glass, header band with the screen's name, banded rows and a
 -- separate strip for the explanation line. The window is fitted to the screen's own row layout
 -- (read from its metrics), so a two-row screen gets a small window and a long list a tall one.
+-- Optional argument {x = left edge, w = width} places the window elsewhere (player options keep a sidebar on the left).
+local args = ...
+if type(args) ~= "table" then args = {} end
 local t = Def.ActorFrame {}
 
 t[#t + 1] = LoadActor("_sanctuary", SCREEN_CENTER_Y)
 
-local winW = 620
-local winX = SCREEN_CENTER_X - winW / 2
-local headH = 18
+local winW = args.w or 620
+local winX = args.x or (SCREEN_CENTER_X - winW / 2)
+local winCX = winX + winW / 2
+local headH = args.noHeader and 0 or 18
 
 local function metric(name, key)
 	local ok, v = pcall(function() return THEME:GetMetric(name, key) end)
@@ -46,14 +50,14 @@ local function layout()
 	local step = (y1 and shown > 1) and (y1 - y0) or 32
 	local L = {first = y0, step = step, shown = shown, exitY = exitY}
 	if metric(name, "ShowExplanations") then
-		L.explY = tonumber(metric(name, "ExplanationTogetherY"))
+		L.explY = tonumber(metric(name, args.explMetric or "ExplanationTogetherY"))
 	end
 	local ok, header = pcall(function() return THEME:GetString(name, "HeaderText") end)
 	if not ok or not header or header == "" then
 		header = name:gsub("^Screen", ""):gsub("(%l)(%u)", "%1 %2")
 	end
 	L.header = header
-	L.top = y0 - step / 2 - headH - 6
+	L.top = y0 - step / 2 - (args.noHeader and 2 or headH + 6)
 	L.bottom = (exitY or (y0 + step * (shown - 1))) + step / 2 + 8
 	return L
 end
@@ -98,10 +102,11 @@ local win = Def.ActorFrame {
 	-- header band, crimson rule, heading
 	quad(function(self) self:x(winX):halign(0):valign(0):diffuse(color("#000000")):diffusealpha(0.45) end,
 		function(self, L) self:y(L.top):zoomto(winW, headH) end),
-	quad(function(self) self:x(winX):halign(0):valign(0):diffuse(color("#9c1428")):diffusealpha(0.9):faderight(0.3) end,
+	quad(function(self) self:x(winX):halign(0):valign(0):diffuse(color("#9c1428")):diffusealpha(args.noHeader and 0 or 0.9):faderight(0.3) end,
 		function(self, L) self:y(L.top + headH):zoomto(winW, 1) end),
 	LoadFont("Common Normal") .. {
 		InitCommand = function(self)
+			self:visible(not args.noHeader)
 			self:x(winX + 8):halign(0):zoom(0.42):diffuse(color(seraphicLabelColor))
 		end,
 		FitCommand = function(self, L)
@@ -111,7 +116,7 @@ local win = Def.ActorFrame {
 	Def.Sprite {
 		Texture = THEME:GetPathG("", "seraphic_filigree"),
 		InitCommand = function(self)
-			self:x(SCREEN_CENTER_X):valign(1):zoomto(winW - 8, 24):diffusealpha(0.12)
+			self:x(winCX):valign(1):zoomto(winW - 8, 24):diffusealpha(0.12)
 		end,
 		FitCommand = function(self, L) self:y(L.bottom - 3) end
 	},
@@ -153,7 +158,7 @@ end, function(self, L)
 end)
 -- a thin rule between the rows and a separate exit row
 win[#win + 1] = quad(function(self)
-	self:x(SCREEN_CENTER_X):diffuse(color("#ffffff")):diffusealpha(0.18):fadeleft(0.3):faderight(0.3):visible(false)
+	self:x(winCX):diffuse(color("#ffffff")):diffusealpha(0.18):fadeleft(0.3):faderight(0.3):visible(false)
 end, function(self, L)
 	self:visible(L.exitY ~= nil)
 	if L.exitY then self:y(L.exitY - L.step / 2 - 2):zoomto(winW * 0.7, 1) end
@@ -164,21 +169,21 @@ win[#win + 1] = Def.ActorFrame {
 	InitCommand = function(self) self:visible(false) end,
 	FitCommand = function(self, L)
 		self:visible(L.explY ~= nil and L.explY > L.bottom + 10)
-		if L.explY then self:y(L.explY) end
+		if L.explY then self:y(L.explY + (args.explOffset or 0)) end
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			self:x(SCREEN_CENTER_X):zoomto(winW, 30):diffuse(color("#000000")):diffusealpha(0.7)
+			self:x(winCX):zoomto(winW, 30):diffuse(color("#000000")):diffusealpha(0.7)
 		end
 	},
 	Def.Quad {
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, -15):zoomto(winW, 1):diffuse(color("#9c1428")):diffusealpha(0.8):fadeleft(0.3):faderight(0.3)
+			self:xy(winCX, -15):zoomto(winW, 1):diffuse(color("#9c1428")):diffusealpha(0.8):fadeleft(0.3):faderight(0.3)
 		end
 	},
 	Def.Quad {
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 15):zoomto(winW, 1):diffuse(color("#ffffff")):diffusealpha(0.15):fadeleft(0.3):faderight(0.3)
+			self:xy(winCX, 15):zoomto(winW, 1):diffuse(color("#ffffff")):diffusealpha(0.15):fadeleft(0.3):faderight(0.3)
 		end
 	}
 }
