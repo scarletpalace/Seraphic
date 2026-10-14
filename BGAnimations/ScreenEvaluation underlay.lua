@@ -37,7 +37,7 @@ t[#t + 1] = vig(0, 0, true)
 t[#t + 1] = vig(SCREEN_WIDTH, 1, false)
 
 -- Seraphic: tall framed stage image in the centre (LR2 / beatoraja result style)
-local cx, cy, cw, ch = SCREEN_CENTER_X, 46, 230, 318
+local cx, cy, cw, ch = SCREEN_CENTER_X, 46, 200, 200
 t[#t + 1] = Def.Sprite {
 	Name = "StageImage",
 	OnCommand = function(self)
