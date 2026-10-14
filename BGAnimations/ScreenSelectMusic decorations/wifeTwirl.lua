@@ -72,8 +72,8 @@ local function infoWindowDecor()
 		infoQuad(frameX + 4, infoTop + 18, frameWidth - 4, 1, function(s)
 			s:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142820"))
 		end),
-		infoHeader(colA + 10, infoTop + 11, "::RATING"),
-		infoHeader(colC + 6, infoTop + 11, "::SONG"),
+		infoHeader(colA + 10, infoTop + 11, seraphicHeading("RATING")),
+		infoHeader(colC + 6, infoTop + 11, seraphicHeading("SONG")),
 		-- column dividers
 		infoQuad(colB, infoTop + 22, 1, 136, function(s)
 			s:diffuse(color("#ffffff")):diffusetopedge(color("#ffffff50")):diffusebottomedge(color("#ffffff06"))
@@ -102,8 +102,8 @@ local function infoWindowDecor()
 	local b = Def.ActorFrame {
 		ChartPreviewOnMessageCommand = function(self) self:visible(false) end,
 		ChartPreviewOffMessageCommand = function(self) self:visible(true) end,
-		infoHeader(colB + 8, infoTop + 11, "::SKILLSETS"),
-		infoHeader(tagsBeside and tagX - 2 or tagX, tagsBeside and infoTop + 11 or tagY - 2, "::TAGS"),
+		infoHeader(colB + 8, infoTop + 11, seraphicHeading("SKILLSETS")),
+		infoHeader(tagsBeside and tagX - 2 or tagX, tagsBeside and infoTop + 11 or tagY - 2, seraphicHeading("TAGS")),
 		infoQuad(colB + 6, goalY - 8, ssRowW, 1, function(s)
 			s:diffuse(color("#ffffff")):diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff04"))
 		end),

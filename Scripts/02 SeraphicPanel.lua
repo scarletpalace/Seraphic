@@ -53,9 +53,11 @@ function seraphicBullet(x, y)
 	}
 end
 
--- "::SECTION" style header text
+-- "::SECTION" style header text. A literal "::" is turned into a line break by the engine's text
+-- handling, so the two colons are split by a soft hyphen (U+00AD, a blank 1px glyph in the serif font).
+seraphicColons = ":\194\173:"
 function seraphicHeading(text)
-	return "::" .. tostring(text):upper()
+	return seraphicColons .. tostring(text):upper()
 end
 
 -- colors for LR2-style labels and values
