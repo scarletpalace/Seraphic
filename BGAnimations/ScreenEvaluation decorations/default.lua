@@ -66,17 +66,17 @@ local judges = {
 -- Seraphic: soft dark strip so the song text stays readable over busy backgrounds
 t[#t + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(SCREEN_CENTER_X, 347)
+		self:xy(SCREEN_CENTER_X, 388)
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(1):valign(0):zoomto(200, 50):diffuse(color("#000000"))
+			self:halign(1):valign(0):zoomto(200, 40):diffuse(color("#000000"))
 			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000A0"))
 		end
 	},
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(0):valign(0):zoomto(200, 50):diffuse(color("#000000"))
+			self:halign(0):valign(0):zoomto(200, 40):diffuse(color("#000000"))
 			self:diffuseleftedge(color("#000000A0")):diffuserightedge(color("#00000000"))
 		end
 	}
@@ -88,7 +88,7 @@ t[#t+1] = Def.ActorFrame {
 	LoadFont("Seraphic Artist") .. {
 		Name = "SongTitle",
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 357)
+			self:xy(SCREEN_CENTER_X, 388)
 			self:zoom(0.64)
 			self:maxwidth(228 / 0.64)
 		end,
@@ -102,7 +102,7 @@ t[#t+1] = Def.ActorFrame {
 	LoadFont("Seraphic Artist") .. {
 		Name = "SongArtist",
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 372)
+			self:xy(SCREEN_CENTER_X, 402)
 			self:zoom(0.5)
 			self:maxwidth(228 / 0.5)
 		end,
@@ -117,7 +117,7 @@ t[#t+1] = Def.ActorFrame {
 	LoadFont("Seraphic Title") .. {
 		Name = "SongPack",
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 389)
+			self:xy(SCREEN_CENTER_X, 419)
 			self:zoom(0.36)
 			self:maxwidth(228 / 0.36)
 			self:diffuse(color("#bdb3b6"))
@@ -133,7 +133,7 @@ t[#t+1] = Def.ActorFrame {
 	LoadFont("Seraphic Artist") .. {
 		Name = "RateString",
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 338)
+			self:xy(SCREEN_CENTER_X, 374)
 			self:zoom(0.5)
 			self:halign(0.5)
 			self:queuecommand("Set")
@@ -1563,83 +1563,10 @@ t[#t + 1] = Def.Quad {
 	end
 }
 
--- Seraphic: grade in the centre under the stage image (LR2 style): big grade, rescored percent, clear type
-do
-	local function centrePct(j)
-		local pct = 0
-		pcall(function()
-			pct = notShit.floor(getRescoredWife3Judge(3, j or judge, getRescoreElements(score)), 2)
-		end)
-		return pct
-	end
-	t[#t + 1] = Def.ActorFrame {
-		Name = "CentreGrade",
-		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 0)
-		end,
-		OnCommand = function(self)
-			self:diffusealpha(0):sleep(0.4):smooth(0.5):diffusealpha(1)
-		end,
-		-- thin rule fading out to both sides
-		Def.Quad {
-			InitCommand = function(self)
-				self:y(254):halign(1):zoomto(80, 1)
-				self:diffuseleftedge(color("#ffffff00")):diffuserightedge(color("#ffffff60"))
-			end
-		},
-		Def.Quad {
-			InitCommand = function(self)
-				self:y(254):halign(0):zoomto(80, 1)
-				self:diffuseleftedge(color("#ffffff60")):diffuserightedge(color("#ffffff00"))
-			end
-		},
-		LoadFont("Common Large") .. {
-			Name = "Grade",
-			InitCommand = function(self)
-				self:y(277):zoom(1.25):maxwidth(200 / 1.25)
-			end,
-			BeginCommand = function(self) self:queuecommand("Set") end,
-			ScoreChangedMessageCommand = function(self) self:queuecommand("Set") end,
-			RecalculateGraphsMessageCommand = function(self, params) self:playcommand("Set", params) end,
-			SetCommand = function(self, params)
-				local g = GetGradeFromPercent(centrePct(params and params.judge) / 100)
-				self:settext(getGradeStrings(g)):diffuse(getGradeColor(g))
-			end
-		},
-		LoadFont("Common Normal") .. {
-			Name = "Percent",
-			InitCommand = function(self)
-				self:y(305):zoom(0.55):diffuse(color(seraphicValueColor))
-			end,
-			BeginCommand = function(self) self:queuecommand("Set") end,
-			ScoreChangedMessageCommand = function(self) self:queuecommand("Set") end,
-			RecalculateGraphsMessageCommand = function(self, params) self:playcommand("Set", params) end,
-			SetCommand = function(self, params)
-				self:settextf("%05.2f%%", centrePct(params and params.judge))
-			end
-		},
-		LoadFont("Common Normal") .. {
-			Name = "ClearType",
-			InitCommand = function(self)
-				self:y(321):zoom(0.45)
-			end,
-			BeginCommand = function(self) self:queuecommand("Set") end,
-			ScoreChangedMessageCommand = function(self) self:queuecommand("Set") end,
-			SetCommand = function(self)
-				local ok = pcall(function()
-					self:settext(getClearTypeFromScore(PLAYER_1, score, 0))
-					self:diffuse(getClearTypeFromScore(PLAYER_1, score, 2))
-				end)
-				if not ok then self:settext("") end
-			end
-		}
-	}
-end
-
 -- right column headers + panel behind the offset plot
 t[#t + 1] = seraHeader(590, 46, 246, "SONG DATA")
-t[#t + 1] = seraHeader(590, 152, 246, "JUDGE DETAILS")
-t[#t + 1] = seraHeader(590, 291, 246, "SCORE HISTORY")
+t[#t + 1] = seraHeader(590, 198, 246, "JUDGE DETAILS")
+t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
 
 do
 	local rows = {"MUSIC TITLE", "ARTIST", "BPM", "DURATION", "NOTES"}
@@ -1664,14 +1591,26 @@ do
 		end)
 		return out
 	end
-	-- Seraphic: BPM / DURATION / NOTES under the banner (title, artist and pack sit in the centre)
+	-- Seraphic: info block under the full-width banner: title, artist, then BPM / DURATION / NOTES
+	t[#t + 1] = LoadFont("Seraphic Artist") .. {
+		InitCommand = function(self)
+			self:xy(590, 141):halign(0):valign(0.5):zoom(0.55):maxwidth(246 / 0.55):settext("")
+		end,
+		OnCommand = function(self) self:settext(getVals()[1]) end
+	}
+	t[#t + 1] = LoadFont("Seraphic Artist") .. {
+		InitCommand = function(self)
+			self:xy(590, 156):halign(0):valign(0.5):zoom(0.44):maxwidth(246 / 0.44):diffuse(color("#bdbdbd")):settext("")
+		end,
+		OnCommand = function(self) self:settext(getVals()[2]) end
+	}
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
 	for i, st in ipairs(stats) do
 		local x0 = 590 + (i - 1) * 82
 		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 141):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 172):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
 		}
@@ -1679,7 +1618,7 @@ do
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 141):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
+				self:xy(x0 + labelW + gap, 172):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}
