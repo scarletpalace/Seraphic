@@ -79,6 +79,7 @@ function SeraphicSessionRecordScore(hs)
 		SeraphicSession.keys[key] = true
 	end
 	table.insert(SeraphicSession.scores, 1, snap)
+	if SeraphicPackProgressReset then SeraphicPackProgressReset() end
 	SeraphicSessionRecordPlay(snap:GetWifeScore(), snap:GetSkillsetSSR("Overall"))
 end
 

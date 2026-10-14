@@ -32,6 +32,45 @@ function seraphicBar(name, texH, alpha, vis)
 	}
 end
 
+local progX, progY, progW, progH = 18, 13, barW - 40, 3
+function seraphicPackProgressBar()
+	local f = Def.ActorFrame {
+		InitCommand = function(self) self:visible(false) end,
+		SetCommand = function(self, params)
+			local isPack = params and params.Song == nil and type(params.Text) == "string" and params.Text ~= ""
+				and (params.Type == nil or tostring(params.Type):find("Section") ~= nil)
+			local prog = isPack and SeraphicPackProgress and SeraphicPackProgress(params.Text)
+			if not prog then
+				self:visible(false)
+				return
+			end
+			self:visible(true)
+			local x = progX
+			for i = 1, #SeraphicPackProgressFamilies do
+				local w = progW * prog.counts[i] / prog.total
+				self:GetChild("Seg" .. i):x(x):zoomto(w, progH):visible(w > 0)
+				x = x + w
+			end
+		end,
+		-- track (unplayed songs)
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(progX, progY):halign(0):zoomto(progW, progH):diffuse(color("#000000")):diffusealpha(0.55)
+			end
+		},
+		seraphicSoftEdge(progX - 1, progY - progH / 2 - 1, progW + 2, progH + 2, 0.18)
+	}
+	for i, fam in ipairs(SeraphicPackProgressFamilies or {}) do
+		f[#f + 1] = Def.Quad {
+			Name = "Seg" .. i,
+			InitCommand = function(self)
+				self:xy(progX, progY):halign(0):zoomto(0, progH):diffuse(getGradeColor(fam.grade))
+			end
+		}
+	end
+	return f
+end
+
 return Def.ActorFrame {
 	seraphicBar("bar", 31, 1, 0.78),
 	-- silver sheen along the top, like the lit edge on the LR2 bars
@@ -41,6 +80,9 @@ return Def.ActorFrame {
 			self:diffuseleftedge(color("#ffffff66")):diffuserightedge(color("#ffffff00"))
 		end
 	},
+	-- pack progress: one thin bar under the pack name, split by grade family (best first), dark for the rest
+	-- (Scripts/06 SeraphicPackProgress.lua); only shown on pack rows
+	seraphicPackProgressBar(),
     UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
 			self:halign(0)
