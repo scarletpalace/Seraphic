@@ -39,8 +39,7 @@ end
 t[#t + 1] = Def.Quad {
 	InitCommand = function(self)
 		self:xy(0, SCREEN_HEIGHT):halign(0):valign(1):zoomto(SCREEN_WIDTH, SCREEN_HEIGHT * 0.55)
-		self:diffuse(color("#5a0a14")):diffusetopedge(color("#5a0a1400")):diffusealpha(0.65)
-		self:diffuseshift():effectcolor1(color("1,1,1,0.75")):effectcolor2(color("1,1,1,1")):effectperiod(5)
+		self:diffuse(color("#5a0a14A6")):diffusetopedge(color("#5a0a1400"))
 	end
 }
 
@@ -82,30 +81,41 @@ t[#t + 1] = Def.Sprite {
 	end
 }
 
--- embers drifting up through the window
+-- embers drifting up through the window. Driven by an update function rather than tweens:
+-- the menu locks input until every tween on the screen has finished, so looping tweens here
+-- would keep the menu frozen.
 do
 	local embers = {
 		{-300, 11, 0.0, 0.35}, {-210, 14, 3.1, 0.25}, {-130, 9, 5.5, 0.3}, {-60, 13, 1.7, 0.22},
 		{40, 10, 4.2, 0.3}, {120, 12, 0.8, 0.25}, {205, 15, 6.3, 0.32}, {290, 10, 2.5, 0.28},
 		{-250, 16, 7.4, 0.2}, {250, 13, 8.8, 0.22}
 	}
-	for _, e in ipairs(embers) do
-		t[#t + 1] = Def.Sprite {
+	local f = Def.ActorFrame {
+		InitCommand = function(self)
+			local clock = 0
+			self:SetUpdateFunction(function(frame, dt)
+				clock = clock + dt
+				for i, e in ipairs(embers) do
+					local s = frame:GetChild("Ember" .. i)
+					-- progress through one rise, 0..1, offset per ember
+					local p = ((clock + e[3]) % e[2]) / e[2]
+					local a = math.min(p / 0.2, (1 - p) / 0.3, 1) * 0.9
+					s:xy(cx + e[1] + math.sin(p * 6.28 + i) * 8, SCREEN_HEIGHT + 10 - p * SCREEN_HEIGHT * 0.8)
+					s:rotationz(p * 140):diffusealpha(math.max(a, 0))
+				end
+			end)
+		end
+	}
+	for i, e in ipairs(embers) do
+		f[#f + 1] = Def.Sprite {
+			Name = "Ember" .. i,
 			Texture = THEME:GetPathG("", "seraphic_sparkle"),
 			InitCommand = function(self)
 				self:blend("BlendMode_Add"):zoom(e[4]):diffuse(color("#ff9a7a")):diffusealpha(0)
-				self:sleep(e[3]):queuecommand("Rise")
-			end,
-			RiseCommand = function(self)
-				local d = e[2]
-				self:xy(cx + e[1], SCREEN_HEIGHT + 10):diffusealpha(0):rotationz(0)
-				self:linear(d * 0.2):addy(-SCREEN_HEIGHT * 0.15):addx(6):diffusealpha(0.9)
-				self:linear(d * 0.5):addy(-SCREEN_HEIGHT * 0.4):addx(-10):rotationz(90)
-				self:linear(d * 0.3):addy(-SCREEN_HEIGHT * 0.25):addx(5):diffusealpha(0):rotationz(140)
-				self:queuecommand("Rise")
 			end
 		}
 	end
+	t[#t + 1] = f
 end
 
 -- a few still stars caught in the window's glass
