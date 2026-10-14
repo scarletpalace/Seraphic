@@ -484,7 +484,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(onSelect and 160 or centerBlockX, onSelect and 78 or (AvatarY + 30)):halign(onSelect and 0 or 0.5):zoom(onSelect and 0.34 or 0.38):diffuse(ButtonColor)
+			self:xy(onSelect and 160 or centerBlockX, onSelect and 78 or (AvatarY + 31)):halign(onSelect and 0 or 0.5):zoom(onSelect and 0.34 or 0.38):diffuse(ButtonColor)
 		end,
 		BeginCommand = function(self)
 			self:queuecommand("Set")
@@ -499,7 +499,7 @@ t[#t + 1] = Def.ActorFrame {
 		ChartPreviewOffMessageCommand = function(self) if onSelect then self:visible(getTabIndex() == 0) end end,
 		SetCommand = function(self)
 			local online = IsNetSMOnline() and IsSMOnlineLoggedIn() and NSMAN:IsETTP()
-			self:y(onSelect and 78 or (AvatarY + 21))
+			self:y(onSelect and 78 or (AvatarY + 31)) -- below "Logged in as" (AvatarY + 19), not on top of it
 			self:settextf("%s: %s", translated_info["Judge"], GetTimingDifficulty())
 		end,
 		MouseOverCommand = function(self)

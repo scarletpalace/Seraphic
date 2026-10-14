@@ -23,7 +23,7 @@ t[#t + 1] =
 	{
 		InitCommand = function(self)
 			-- Seraphic: screen title in the gothic title font, silver
-			self:xy(14, 34):halign(0):valign(1):zoom(0.62):diffuse(color(seraphicValueColor))
+			self:xy(46, 34):halign(0):valign(1):zoom(0.62):diffuse(color(seraphicValueColor))
 			self:settext(THEME:GetString("ScreenNetRoom", "Title"))
 		end
 	}

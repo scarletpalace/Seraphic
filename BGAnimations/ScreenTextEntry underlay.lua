@@ -17,41 +17,82 @@ t[#t + 1] = LoadActor(THEME:GetPathG("", "_OptionsScreen")) .. {
 	end
 }
 
--- Seraphic: the question sits in an LR2 window (dark glass, soft edge, header band with a crimson rule, filigree)
-local winW, winH = SCREEN_WIDTH - 250, 104
-t[#t+1] = Def.Quad {
-	Name = "BG",
-	InitCommand = function(self)
-		self:zoomto(winW, winH):Center():addy(-6)
-		self:diffuseupperleft(color("#262626")):diffuseupperright(color("#1a1a1a"))
-		self:diffuselowerleft(color("#0a0a0a")):diffuselowerright(color("#060606"))
-		self:diffusealpha(0)
-	end,
-	OnCommand = function(self)
-		self:decelerate(0.1):diffusealpha(0.85)
-	end,
-	OffCommand = function(self)
-		self:decelerate(0.1):diffusealpha(0)
-	end
-}
+-- Seraphic: the question sits in an LR2 window (dark glass, soft edge, header band with a crimson rule, filigree).
+-- The window grows upward to fit the question (it can be one line or several), ending below the answer.
+local winW = SCREEN_WIDTH - 250
+local winX = SCREEN_CENTER_X - winW / 2
+local winBottom = SCREEN_CENTER_Y + 50
+local function questionHeight()
+	local h = 46
+	pcall(function()
+		local q = SCREENMAN:GetTopScreen():GetChild("Question")
+		if q and q:GetHeight() > 0 then h = q:GetHeight() * q:GetZoomY() end
+	end)
+	return h
+end
+local function edgeQuad(fit)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:halign(0):valign(0):diffuse(color("#ffffff")):diffusealpha(0.18)
+		end,
+		FitCommand = fit
+	}
+end
 t[#t+1] = Def.ActorFrame {
+	Name = "Window",
 	InitCommand = function(self)
 		self:diffusealpha(0)
 	end,
 	OnCommand = function(self)
+		-- question text is set by the screen; measure it on the next frame
+		self:queuecommand("Measure")
 		self:decelerate(0.1):diffusealpha(1)
 	end,
+	MeasureCommand = function(self)
+		local top = math.max(20, (SCREEN_CENTER_Y - 20) - questionHeight() - 24)
+		-- hidden input (passwords) shows the Unhide button under the answer, so the window reaches below it
+		local bottom = winBottom
+		pcall(function() if SCREENMAN:GetTopScreen():IsInputHidden() then bottom = SCREEN_CENTER_Y + 92 end end)
+		self:playcommand("Fit", {top = top, h = bottom - top, bottom = bottom})
+	end,
 	OffCommand = function(self)
 		self:decelerate(0.1):diffusealpha(0)
 	end,
-	seraphicHeaderBand(SCREEN_CENTER_X - winW / 2, SCREEN_CENTER_Y - 6 - winH / 2, winW, 14),
+	Def.Quad {
+		Name = "BG",
+		InitCommand = function(self)
+			self:xy(winX, SCREEN_CENTER_Y - 60):halign(0):valign(0):zoomto(winW, 110)
+			self:diffuseupperleft(color("#262626")):diffuseupperright(color("#1a1a1a"))
+			self:diffuselowerleft(color("#0a0a0a")):diffuselowerright(color("#060606"))
+			self:diffusealpha(0.85)
+		end,
+		FitCommand = function(self, p) self:y(p.top):zoomto(winW, p.h) end
+	},
+	-- header band with its crimson rule
+	Def.Quad {
+		InitCommand = function(self)
+			self:x(winX):halign(0):valign(0):zoomto(winW, 14):diffuse(color("#000000")):diffusealpha(0.45)
+		end,
+		FitCommand = function(self, p) self:y(p.top) end
+	},
+	Def.Quad {
+		InitCommand = function(self)
+			self:x(winX):halign(0):valign(0):zoomto(winW, 1):diffuse(color("#9c1428")):diffusealpha(0.9)
+			self:faderight(0.3)
+		end,
+		FitCommand = function(self, p) self:y(p.top + 14) end
+	},
 	Def.Sprite {
 		Texture = THEME:GetPathG("", "seraphic_filigree"),
 		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 6 + winH / 2 - 3):valign(1):zoomto(winW - 8, 24):diffusealpha(0.14)
-		end
+			self:xy(SCREEN_CENTER_X, winBottom - 3):valign(1):zoomto(winW - 8, 24):diffusealpha(0.14)
+		end,
+		FitCommand = function(self, p) self:y(p.bottom - 3) end
 	},
-	seraphicSoftEdge(SCREEN_CENTER_X - winW / 2, SCREEN_CENTER_Y - 6 - winH / 2, winW, winH, 0.18),
+	edgeQuad(function(self, p) self:xy(winX, p.top):zoomto(winW, 1) end),
+	edgeQuad(function(self, p) self:xy(winX, p.bottom - 1):zoomto(winW, 1) end),
+	edgeQuad(function(self, p) self:xy(winX, p.top):zoomto(1, p.h) end),
+	edgeQuad(function(self, p) self:xy(winX + winW - 1, p.top):zoomto(1, p.h) end),
 	-- underline the answer sits on
 	Def.Quad {
 		InitCommand = function(self)
@@ -109,11 +150,7 @@ t[#t+1] = Def.ActorFrame {
 		end,
 		OnCommand = function(self)
 			self:visible(SCREENMAN:GetTopScreen():IsInputHidden())
-			if SCREENMAN:GetTopScreen():IsInputHidden() then
-				local cc = self:GetParent():GetParent():GetChild("BG")
-				cc:finishtweening()
-				cc:zoomy(cc:GetZoomY() + 100)
-			end
+			-- (the window makes room for this button itself, see Window's MeasureCommand)
 		end,
 		PressyMyMouseButtonCommand = function(self)
 			if isOver(self) then
