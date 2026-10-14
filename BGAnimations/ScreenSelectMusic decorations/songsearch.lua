@@ -1,8 +1,8 @@
 local searchstring = ""
 local frameX = 10
-local frameY = 40
+local frameY = 96
 local frameWidth = SCREEN_WIDTH * 0.56
-local frameHeight = 346 -- ends at the bottom bar
+local frameHeight = 288 -- y 96..384, under the top bar
 local offsetX = 10
 local offsetY = 20 -- header band height
 local innerWidth = frameWidth - offsetX * 2

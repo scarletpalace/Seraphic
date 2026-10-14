@@ -70,11 +70,11 @@ local t = Def.ActorFrame {
 }
 
 local frameX = 10
-local frameY = 45
+local frameY = 96 -- window spans y 96..384, under the top bar
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 341 -- ends at the bottom bar (y 386)
+local frameHeight = 288
 local fontScale = 0.24
-local scoresperpage = 20
+local scoresperpage = 16 -- rows per page that fit inside the window
 local scoreYspacing = 13.5 -- score list row pitch
 local distY = 15
 local offsetX = -10
@@ -82,7 +82,7 @@ local offsetY = 20
 local txtDist = 33
 local rankingSkillset = 1
 local rankingPage = 1
-local numrankingpages = 10
+local numrankingpages = math.ceil(200 / scoresperpage) -- ~200 scores, as with 20 x 10
 local rankingWidth = frameWidth - capWideScale(10, 25)
 local rankingX = capWideScale(25, 35)
 local rankingY = capWideScale(40, 40)
@@ -90,7 +90,7 @@ local rankingTitleSpacing = (rankingWidth / (#ms.SkillSets))
 -- LR2-style layout (panel-local coords)
 local tabW = (frameWidth - 24) / #ms.SkillSets -- skillset selector tabs
 local tabY = offsetY + 11 -- centre of the skillset tab row, under the header band
-local listY = offsetY + 30 -- top of the first score row
+local listY = offsetY + 22 -- top of the first score row
 local bandX = 6 -- score/rating row bands
 local bandW = frameWidth - 12
 local toggleW = 52 -- header toggles (Percent/Recent, Local/Online)
