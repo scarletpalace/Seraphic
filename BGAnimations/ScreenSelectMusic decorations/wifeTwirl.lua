@@ -42,6 +42,28 @@ local function infoBullet(x, y)
 	}
 end
 
+-- LR2-style window: translucent dark body, faint edge, no silver frame
+local function infoWindowBody()
+	local w, h = frameWidth + 4, 164
+	local function edge(x, y, ew, eh)
+		return infoQuad(frameX + x, infoTop + y, ew, eh, function(s) s:diffuse(color("#ffffff")):diffusealpha(0.1) end)
+	end
+	return Def.ActorFrame {
+		infoQuad(frameX, infoTop, w, h, function(s)
+			s:diffuseupperleft(color("#262626E6")):diffuseupperright(color("#1a1a1aE6"))
+			s:diffuselowerleft(color("#0a0a0aF0")):diffuselowerright(color("#060606F0"))
+			s:diffusealpha(0.62)
+		end),
+		Def.Sprite {
+			Texture = THEME:GetPathG("", "seraphic_filigree"),
+			InitCommand = function(self)
+				self:xy(frameX + 4, infoTop + h - 3):halign(0):valign(1):zoomto(w - 8, 30):diffusealpha(0.22)
+			end
+		},
+		edge(0, 0, w, 1), edge(0, h - 1, w, 1), edge(0, 1, 1, h - 2), edge(w - 1, 1, 1, h - 2),
+	}
+end
+
 -- bands, headers and dividers drawn under the info texts
 local function infoWindowDecor()
 	local d = Def.ActorFrame {
@@ -459,7 +481,7 @@ local t = Def.ActorFrame {
 		0.05)
 	end,
 	-- Seraphic: one window for the whole left info area, split by thin lines instead of three separate frames
-	seraphicPanel(frameX, infoTop, frameWidth + 4, 164, false, 0.62),
+	infoWindowBody(),
 	infoWindowDecor(),
 }
 
