@@ -1634,14 +1634,11 @@ t[#t + 1] = LoadActor("../offsetplot")
 -- session chronicle: record this play once per results screen (Scripts/05 SeraphicSession.lua)
 t[#t + 1] = Def.Actor {
 	OnCommand = function(self)
-		if self.recorded or not SeraphicSessionRecordPlay then return end
+		if self.recorded or not SeraphicSessionRecordScore then return end
 		self.recorded = true
 		pcall(function()
 			local pss = STATSMAN:GetCurStageStats():GetPlayerStageStats()
-			local hs = pss and pss:GetHighScore()
-			if hs then
-				SeraphicSessionRecordPlay(hs:GetWifeScore(), hs:GetSkillsetSSR("Overall"))
-			end
+			SeraphicSessionRecordScore(pss and pss:GetHighScore())
 		end)
 	end
 }
