@@ -375,14 +375,6 @@ local t = Def.ActorFrame {
 			self:diffusetopedge(color("#ffffff55")):diffusebottomedge(color("#ffffff08"))
 		end
 	},
-	-- faint magic circle turning behind the skillsets, so the right half of the panel isn't bare
-	Def.Sprite {
-		Texture = THEME:GetPathG("", "seraphic_circle"),
-		InitCommand = function(self)
-			self:xy(frameX + 112 + (frameWidth - 112) / 2, frameY0 - 64):zoom(0.36):diffusealpha(0.13):blend("BlendMode_Add")
-			self:spin():effectmagnitude(0, 0, 4)
-		end
-	},
 }
 
 -- Music Rate Display
