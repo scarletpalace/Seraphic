@@ -1,7 +1,7 @@
-local lines = 4 -- number of scores to display (4 fit now that song data is shorter)
+local lines = 3 -- number of scores to display (3 fit under the full-width banner)
 local S = 1.1667 -- the right column was enlarged by this factor
 local framex = 600
-local framey = 303
+local framey = 349
 local frameWidth = 236
 local spacing = 30 * S
 
