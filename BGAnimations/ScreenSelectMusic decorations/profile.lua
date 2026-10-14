@@ -2,6 +2,7 @@ local update = false
 local showOnline = false
 local recentactive = false
 local percentactive = false
+local sessionactive = false -- ::SESSION list: scores set since the game started
 local function BroadcastIfActive(msg)
 	if update then
 		MESSAGEMAN:Broadcast(msg)
@@ -126,7 +127,7 @@ t[#t + 1] = seraphicPanel(frameX, frameY, frameWidth, frameHeight, true)
 t[#t + 1] = seraphicHeaderBand(frameX, frameY, frameWidth, offsetY)
 t[#t + 1] = LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(frameX + 10, frameY + offsetY / 2):zoom(0.45):halign(0):maxwidth((frameWidth - 260) / 0.45)
+		self:xy(frameX + 10, frameY + offsetY / 2):zoom(0.45):halign(0):maxwidth((frameWidth - 300) / 0.45)
 		self:settext(seraphicHeading("Profile")):diffuse(color(seraphicLabelColor))
 	end
 }
@@ -170,7 +171,7 @@ local function rankingLabel(i)
 			self:visible(false)
 		end,
 		UpdateRankingMessageCommand = function(self)
-			if rankingSkillset > 1 and update and not recentactive then
+			if rankingSkillset > 1 and update and not recentactive and not sessionactive then
 				if not showOnline then
 					ths = SCOREMAN:GetTopSSRHighScoreForGame(i + (scoresperpage * (rankingPage - 1)), ms.SkillSets[rankingSkillset])
 					if ths then
@@ -408,14 +409,15 @@ local function rankingButton(i)
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
 				self:zoomto(tabW - 2, 16)
-				styleToggleQuad(self, i == rankingSkillset and not recentactive)
+				styleToggleQuad(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			SetCommand = function(self)
-				styleToggleQuad(self, i == rankingSkillset and not recentactive)
+				styleToggleQuad(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
 					recentactive = false
+					sessionactive = false
 					rankingSkillset = i
 					rankingPage = 1
 					if not percentactive then
@@ -442,13 +444,13 @@ local function rankingButton(i)
 			Name = "RankButtonTxt",
 			InitCommand = function(self)
 				self:zoom(tabZoom):maxwidth((tabW - 5) / tabZoom)
-				styleToggleText(self, i == rankingSkillset and not recentactive)
+				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			BeginCommand = function(self)
 				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
 			end,
 			UpdateRankingMessageCommand = function(self)
-				styleToggleText(self, i == rankingSkillset and not recentactive)
+				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end
 		}
 	}
@@ -470,8 +472,13 @@ local function recentLabel(i)
 			self:visible(false)
 		end,
 		UpdateRankingMessageCommand = function(self)
-			if recentactive and update then
-					ths = SCOREMAN:GetRecentScoreForGame(i + (scoresperpage * (rankingPage - 1)))
+			if (recentactive or sessionactive) and update then
+					local idx = i + (scoresperpage * (rankingPage - 1))
+					if sessionactive then
+						ths = SeraphicSessionScore and SeraphicSessionScore(idx)
+					else
+						ths = SCOREMAN:GetRecentScoreForGame(idx)
+					end
 					if ths then
 						self:visible(true)
 						ck = ths:GetChartKey()
@@ -616,7 +623,7 @@ local function recentLabel(i)
 				self:zoomto(frameWidth - capWideScale(14,10), scoreYspacing - 1)
 			end,
 			MouseDownCommand = function(self, params)
-				if recentactive and params.event == "DeviceButton_left mouse button" and update then
+				if (recentactive or sessionactive) and params.event == "DeviceButton_left mouse button" and update then
 					if ths then
 						whee:SelectSong(thssong)
 					end
@@ -665,6 +672,7 @@ local function recentButton()
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
 					recentactive = true
+					sessionactive = false
 					percentactive = false
 					rankingPage = 1
 					SCOREMAN:SortRecentScoresForGame()
@@ -718,6 +726,7 @@ local function percentButton()
 					percentactive = not percentactive
 					showOnline = false
 					recentactive = false
+					sessionactive = false
 					rankingPage = 1
 					if rankingSkillset == 1 then
 						rankingSkillset = 2
@@ -877,13 +886,21 @@ t[#t + 1] = Def.ActorFrame {
 	},
 
 }
+-- pages in the current list (the session list only has as many pages as it needs)
+local function pageCount()
+	if sessionactive then
+		local n = (SeraphicSession and SeraphicSession.scores) and #SeraphicSession.scores or 0
+		return math.max(1, math.ceil(n / scoresperpage))
+	end
+	return numrankingpages
+end
 -- prev/next page
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
 		self:xy(10, frameHeight - 12):visible(false)
 	end,
 	UpdateRankingMessageCommand = function(self)
-		if (rankingSkillset > 1 or recentactive ) and not showOnline then
+		if (rankingSkillset > 1 or recentactive or sessionactive) and not showOnline then
 			self:visible(true)
 			if not self and self.GetChildren then
 				for child in self:GetChildren() do
@@ -900,7 +917,7 @@ r[#r + 1] = Def.ActorFrame {
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
-				if rankingPage < numrankingpages then
+				if rankingPage < pageCount() then
 					rankingPage = rankingPage + 1
 				else
 					rankingPage = 1
@@ -935,7 +952,7 @@ r[#r + 1] = Def.ActorFrame {
 				if rankingPage > 1 then
 					rankingPage = rankingPage - 1
 				else
-					rankingPage = numrankingpages
+					rankingPage = pageCount()
 				end
 				BroadcastIfActive("UpdateRanking")
 			end
@@ -973,6 +990,64 @@ for i = 1, #ms.SkillSets do
 	r[#r + 1] = rankingButton(i)
 end
 
+local function sessionButton()
+	return Def.ActorFrame {
+		InitCommand = function(self)
+			self:xy(frameWidth - 262, offsetY / 2)
+		end,
+		UIElements.QuadButton(1, 1) .. {
+			InitCommand = function(self)
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, sessionactive)
+			end,
+			SetCommand = function(self)
+				styleToggleQuad(self, sessionactive)
+			end,
+			MouseDownCommand = function(self, params)
+				if params.event == "DeviceButton_left mouse button" and update then
+					sessionactive = true
+					recentactive = false
+					percentactive = false
+					rankingPage = 1
+					BroadcastIfActive("UpdateRanking")
+				end
+			end,
+			UpdateRankingMessageCommand = function(self)
+				self:queuecommand("Set")
+			end,
+			MouseOverCommand = function(self)
+				self:GetParent():GetChild("SessionButtonTxt"):diffusealpha(0.7)
+			end,
+			MouseOutCommand = function(self)
+				self:GetParent():GetChild("SessionButtonTxt"):diffusealpha(1)
+			end,
+		},
+		LoadFont("Common Large") .. {
+			Name = "SessionButtonTxt",
+			InitCommand = function(self)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, sessionactive)
+				self:settext("SESSION")
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, sessionactive)
+			end
+		}
+	}
+end
+
+r[#r + 1] = sessionButton()
+-- shown in place of the list while no score has been set this session
+r[#r + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameWidth / 2, listY + 40):zoom(0.45):diffuse(color(seraphicLabelColor)):visible(false)
+		self:settext("No scores set this session yet")
+	end,
+	UpdateRankingMessageCommand = function(self)
+		local n = (SeraphicSession and SeraphicSession.scores) and #SeraphicSession.scores or 0
+		self:visible(sessionactive and update and n == 0)
+	end
+}
 r[#r + 1] = recentButton()
 r[#r + 1] = percentButton()
 
@@ -988,7 +1063,7 @@ local todayH = 72
 local ovBottom = todayY + todayH -- bottom of the overview content (buttons go under it)
 
 local function overviewVisible(self)
-	self:visible(rankingSkillset == 1 and update and not recentactive)
+	self:visible(rankingSkillset == 1 and update and not recentactive and not sessionactive)
 end
 
 -- the rating a skillset row / sigil vertex shows (local or online)
@@ -1192,7 +1267,7 @@ for k = 1, sigilN do
 end
 r[#r + 1] = sigil
 
--- ::TODAY session chronicle (data from Scripts/05 SeraphicSession.lua)
+-- ::SESSION chronicle (data from Scripts/05 SeraphicSession.lua)
 local todayRows = {"Plays", "Avg Wife", "Best MSD", "Rating"}
 local function todayValue(n)
 	local s = SeraphicSession or {}
@@ -1227,7 +1302,7 @@ local today = Def.ActorFrame {
 	LoadFont("Common Normal") .. {
 		InitCommand = function(self)
 			self:xy(ovLeftX + 6, todayY + 7):halign(0):zoom(0.38):diffuse(color(seraphicLabelColor))
-			self:settext(seraphicHeading("Today"))
+			self:settext(seraphicHeading("Session"))
 		end
 	}
 }
@@ -1296,7 +1371,7 @@ local profilebuttons = Def.ActorFrame {
 		end
 	end,
 	UpdateRankingMessageCommand = function(self)
-		if rankingSkillset == 1 and update and not recentactive then
+		if rankingSkillset == 1 and update and not recentactive and not sessionactive then
 			self:visible(true)
 		else
 			self:visible(false)
@@ -1314,7 +1389,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive then
 				if PROFILEMAN:SaveProfile(PLAYER_1) then
 					ms.ok(translated_info["Success"])
 					STATSMAN:UpdatePlayerRating()
@@ -1335,7 +1410,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive then
 				SCREENMAN:SetNewScreen("ScreenAssetSettings")
 			end
 		end,
@@ -1351,7 +1426,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive then
 				profile:UnInvalidateAllScores()
 				STATSMAN:UpdatePlayerRating()
 			end
@@ -1368,7 +1443,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive  then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive  then
 				ms.ok("Recalculating Scores... this might be slow and may or may not crash")
 				profile:ForceRecalcScores()
 				STATSMAN:UpdatePlayerRating()
@@ -1386,7 +1461,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive  then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive  then
 				if DLMAN:IsLoggedIn() then
 					DLMAN:UploadAllScores()
 				else
