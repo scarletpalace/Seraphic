@@ -375,6 +375,14 @@ local t = Def.ActorFrame {
 			self:diffusetopedge(color("#ffffff55")):diffusebottomedge(color("#ffffff08"))
 		end
 	},
+	-- faint magic circle turning behind the skillsets, so the right half of the panel isn't bare
+	Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_circle"),
+		InitCommand = function(self)
+			self:xy(frameX + 112 + (frameWidth - 112) / 2, frameY0 - 64):zoom(0.36):diffusealpha(0.13):blend("BlendMode_Add")
+			self:spin():effectmagnitude(0, 0, 4)
+		end
+	},
 }
 
 -- Music Rate Display
@@ -825,7 +833,7 @@ local function radarPairs(i)
 		Name = "radarpair_"..i,
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(frameX + 13, frameY - 53 + 11.5 * i):zoom(0.5):halign(0):maxwidth(120):diffuse(color("#a8a8a8"))
+				self:xy(frameX + 13, frameY - 48 + 13.5 * i):zoom(0.46):halign(0):maxwidth(120):diffuse(color("#a8a8a8"))
 			end,
 			MintyFreshCommand = function(self)
 				if song then
@@ -837,7 +845,7 @@ local function radarPairs(i)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(frameX + 105, frameY - 53 + 11.5 * i):zoom(0.5):halign(1):maxwidth(60):diffuse(color("#a8a8a8"))
+				self:xy(frameX + 105, frameY - 48 + 13.5 * i):zoom(0.46):halign(1):maxwidth(60):diffuse(color("#a8a8a8"))
 			end,
 			CurrentStepsChangedMessageCommand = function(self, steps)
 				if steps.ptr then
