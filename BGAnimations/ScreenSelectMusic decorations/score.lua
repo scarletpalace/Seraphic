@@ -16,7 +16,7 @@ local hasReplayData
 local frameX = 10
 local frameY = 40
 local frameWidth = SCREEN_WIDTH * 0.56
-local frameHeight = 368
+local frameHeight = 346 -- ends above the bottom bar
 local fontScale = 0.4
 local offsetX = 10
 local offsetY = 20
@@ -633,7 +633,7 @@ end
 local function makeJudge(index, judge)
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:y(129 + ((index - 1) * 18))
+			self:y(129 + ((index - 1) * 15))
 		end
 	}
 
