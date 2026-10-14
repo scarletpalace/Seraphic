@@ -976,10 +976,31 @@ end
 r[#r + 1] = recentButton()
 r[#r + 1] = percentButton()
 
--- skillset ratings: banded "LABEL ..... value" rows
-local ratingPitch = 26
-local ratingH = 24
+-- overview layout: compact skillset rows + ::TODAY chronicle on the left, skill sigil on the right,
+-- one row of buttons along the bottom (all panel-local; the window is 288 tall)
+local ovLeftX = 8
+local ovLeftW = math.floor(frameWidth * 0.44)
+local ratingPitch = 19
+local ratingH = 17
 local ratingY = listY + 2 -- top of the first rating row
+local todayY = ratingY + 7 * ratingPitch + 5 -- top of the ::TODAY panel
+local todayH = 72
+local ovBottom = todayY + todayH -- bottom of the overview content (buttons go under it)
+
+local function overviewVisible(self)
+	self:visible(rankingSkillset == 1 and update and not recentactive)
+end
+
+-- the rating a skillset row / sigil vertex shows (local or online)
+local function skillsetRating(i)
+	if showOnline then
+		return DLMAN:GetSkillsetRating(ms.SkillSets[i]) or 0
+	end
+	if not profile then return 0 end
+	return profile:GetPlayerSkillsetRating(ms.SkillSets[i]) or 0
+end
+
+-- skillset ratings: compact banded "LABEL ..... value" rows
 local function littlebits(i)
 	local rowY = ratingY + (i - 2) * ratingPitch + ratingH / 2
 	local t = Def.ActorFrame {
@@ -987,17 +1008,13 @@ local function littlebits(i)
 			self:xy(0, rowY)
 		end,
 		UpdateRankingMessageCommand = function(self)
-			if rankingSkillset == 1 and update and not recentactive then
-				self:visible(true)
-			else
-				self:visible(false)
-			end
+			overviewVisible(self)
 		end,
-		seraphicRowBand(12, -ratingH / 2, frameWidth - 24, ratingH, i - 1),
-		seraphicBullet(22, 0),
+		seraphicRowBand(ovLeftX, -ratingH / 2, ovLeftW, ratingH, i - 1),
+		seraphicBullet(ovLeftX + 7, 0),
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:x(32):maxwidth((frameWidth / 2 - 40) / 0.5):halign(0):zoom(0.5):diffuse(color(seraphicLabelColor))
+				self:x(ovLeftX + 15):maxwidth((ovLeftW * 0.5 - 15) / 0.4):halign(0):zoom(0.4):diffuse(color(seraphicLabelColor))
 			end,
 			SetCommand = function(self)
 				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
@@ -1005,15 +1022,13 @@ local function littlebits(i)
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:x(frameWidth - 22):halign(1):zoom(0.34):maxwidth((frameWidth / 2 - 30) / 0.34)
+				self:x(ovLeftX + ovLeftW - 6):halign(1):zoom(0.26):maxwidth((ovLeftW * 0.5 - 8) / 0.26)
 			end,
 			SetCommand = function(self)
-				local rating = 0
+				local rating = skillsetRating(i)
 				if not showOnline then
-					rating = profile:GetPlayerSkillsetRating(ms.SkillSets[i])
 					self:settextf("%05.2f", rating)
 				else
-					rating = DLMAN:GetSkillsetRating(ms.SkillSets[i])
 					self:settextf("%05.2f (#%i)", rating, DLMAN:GetSkillsetRank(ms.SkillSets[i]))
 				end
 				self:diffuse(byMSD(rating))
@@ -1033,13 +1048,224 @@ for i = 2, #ms.SkillSets do
 	r[#r + 1] = littlebits(i)
 end
 
+-- SKILL SIGIL: the 7 skillset ratings as a heptagram/radar inside a turning magic circle
+local sigilAbbr = {"STR", "JMP", "HND", "STA", "JCK", "CHJ", "TEC"} -- Stream .. Technical
+local sigilLeft = ovLeftX + ovLeftW + 8
+local sigilW = frameWidth - 8 - sigilLeft
+local sigilCX = sigilLeft + sigilW / 2
+local sigilCY = (listY + ovBottom) / 2
+local sigilR = math.min(sigilW / 2 - 20, (ovBottom - listY) / 2 - 14)
+local sigilN = #ms.SkillSets - 1
+local fillCol = color("#9c142866")
+local fillCenterCol = color("#9c142833")
+local lineCol = color("#e8b8c2E6")
+local faintCol = color("#bdb3b630")
+
+local function sigilAngle(k) -- k = 1..7, first vertex straight up
+	return -math.pi / 2 + (k - 1) * 2 * math.pi / sigilN
+end
+local function sigilPoint(k, rad)
+	local a = sigilAngle(k)
+	return math.cos(a) * rad, math.sin(a) * rad
+end
+-- vertex radii for the current ratings; cap = highest skillset * 1.1 (at least 10)
+local function sigilRadii()
+	local vals, hi = {}, 0
+	for k = 1, sigilN do
+		vals[k] = skillsetRating(k + 1)
+		if vals[k] > hi then hi = vals[k] end
+	end
+	local cap = math.max(hi * 1.1, 10)
+	local radii = {}
+	for k = 1, sigilN do
+		radii[k] = sigilR * math.max(0, math.min(vals[k] / cap, 1))
+	end
+	return radii
+end
+-- heptagon outline at a fixed radius (guide rings)
+local function ringVerts(rad)
+	local v = {}
+	for k = 1, sigilN + 1 do
+		local x, y = sigilPoint((k - 1) % sigilN + 1, rad)
+		v[#v + 1] = {{x, y, 0}, faintCol}
+	end
+	return v
+end
+
+local sigil = Def.ActorFrame {
+	InitCommand = function(self)
+		self:xy(sigilCX, sigilCY)
+	end,
+	UpdateRankingMessageCommand = function(self)
+		overviewVisible(self)
+		self:queuecommand("SigilSet")
+	end,
+	PlayerRatingUpdatedMessageCommand = function(self)
+		self:queuecommand("SigilSet")
+	end,
+	SetCommand = function(self)
+		self:queuecommand("SigilSet")
+	end,
+	-- faint, slowly turning magic circle
+	Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_circle"),
+		InitCommand = function(self)
+			self:zoomto(sigilR * 2.5, sigilR * 2.5):blend("BlendMode_Add"):diffusealpha(0.22)
+			self:spin():effectmagnitude(0, 0, 8)
+		end
+	},
+	-- guide rings at 50% / 100% and faint spokes
+	Def.ActorMultiVertex {
+		InitCommand = function(self)
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1)
+			self:SetVertices(ringVerts(sigilR))
+		end
+	},
+	Def.ActorMultiVertex {
+		InitCommand = function(self)
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1)
+			self:SetVertices(ringVerts(sigilR * 0.5))
+		end
+	},
+	Def.ActorMultiVertex {
+		InitCommand = function(self)
+			local v = {}
+			for k = 1, sigilN do
+				local x, y = sigilPoint(k, sigilR)
+				v[#v + 1] = {{0, 0, 0}, faintCol}
+				v[#v + 1] = {{x, y, 0}, faintCol}
+			end
+			self:SetDrawState({Mode = "DrawMode_Lines"})
+			self:SetLineWidth(1)
+			self:SetVertices(v)
+		end
+	},
+	-- translucent crimson fill
+	Def.ActorMultiVertex {
+		SigilSetCommand = function(self)
+			local radii = sigilRadii()
+			local v = {{{0, 0, 0}, fillCenterCol}}
+			for k = 1, sigilN + 1 do
+				local kk = (k - 1) % sigilN + 1
+				local x, y = sigilPoint(kk, radii[kk])
+				v[#v + 1] = {{x, y, 0}, fillCol}
+			end
+			self:SetDrawState({Mode = "DrawMode_Fan"})
+			self:SetVertices(v)
+		end
+	},
+	-- brighter outline
+	Def.ActorMultiVertex {
+		SigilSetCommand = function(self)
+			local radii = sigilRadii()
+			local v = {}
+			for k = 1, sigilN + 1 do
+				local kk = (k - 1) % sigilN + 1
+				local x, y = sigilPoint(kk, radii[kk])
+				v[#v + 1] = {{x, y, 0}, lineCol}
+			end
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1.5)
+			self:SetVertices(v)
+		end
+	}
+}
+-- vertex diamonds and tip labels
+for k = 1, sigilN do
+	sigil[#sigil + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:rotationz(45):zoomto(4, 4):diffuse(color("#f4ecee"))
+		end,
+		SigilSetCommand = function(self)
+			local x, y = sigilPoint(k, sigilRadii()[k])
+			self:xy(x, y)
+		end
+	}
+	sigil[#sigil + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			local x, y = sigilPoint(k, sigilR + 10)
+			self:xy(x, y):zoom(0.3):diffuse(color(seraphicLabelColor)):settext(sigilAbbr[k] or "")
+		end
+	}
+end
+r[#r + 1] = sigil
+
+-- ::TODAY session chronicle (data from Scripts/05 SeraphicSession.lua)
+local todayRows = {"Plays", "Avg Wife", "Best MSD", "Rating"}
+local function todayValue(n)
+	local s = SeraphicSession or {}
+	local plays = s.plays or 0
+	if n == 1 then
+		return tostring(plays)
+	elseif n == 2 then
+		if plays > 0 then return string.format("%.2f%%", (s.wifeSum or 0) / plays * 100) end
+		return "--"
+	elseif n == 3 then
+		if (s.bestSSR or 0) > 0 then return string.format("%.2f", s.bestSSR) end
+		return "--"
+	else
+		local start = SeraphicSessionStartRating and SeraphicSessionStartRating()
+		local now = SeraphicSessionCurrentRating and SeraphicSessionCurrentRating()
+		if not now then return "--" end
+		if not start then return string.format("%.2f", now) end
+		return string.format("%.2f (%+.2f)", now, now - start)
+	end
+end
+local today = Def.ActorFrame {
+	UpdateRankingMessageCommand = function(self)
+		overviewVisible(self)
+	end,
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(ovLeftX, todayY):halign(0):valign(0):zoomto(ovLeftW, todayH):diffuse(color("#000000")):diffusealpha(0.3)
+		end
+	},
+	seraphicSoftEdge(ovLeftX, todayY, ovLeftW, todayH, 0.12),
+	seraphicHeaderBand(ovLeftX, todayY, ovLeftW, 14),
+	LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(ovLeftX + 6, todayY + 7):halign(0):zoom(0.38):diffuse(color(seraphicLabelColor))
+			self:settext(seraphicHeading("Today"))
+		end
+	}
+}
+for n = 1, #todayRows do
+	local y = todayY + 16 + (n - 1) * 14
+	today[#today + 1] = seraphicRowBand(ovLeftX + 2, y, ovLeftW - 4, 13, n)
+	today[#today + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(ovLeftX + 8, y + 6.5):halign(0):zoom(0.36):maxwidth((ovLeftW * 0.45) / 0.36)
+			self:diffuse(color(seraphicLabelColor)):settext(todayRows[n]:upper())
+		end
+	}
+	today[#today + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(ovLeftX + ovLeftW - 6, y + 6.5):halign(1):zoom(0.38):maxwidth((ovLeftW * 0.5) / 0.38)
+			self:diffuse(color(seraphicValueColor))
+		end,
+		SetCommand = function(self)
+			self:settext(todayValue(n))
+		end,
+		UpdateRankingMessageCommand = function(self)
+			self:queuecommand("Set")
+		end,
+		PlayerRatingUpdatedMessageCommand = function(self)
+			self:queuecommand("Set")
+		end
+	}
+end
+r[#r + 1] = today
+
 local user
 local pass
--- bottom button grid: 3 columns, 2 rows, ending just above the panel's bottom edge
-local pbW = (frameWidth - 24 - 16) / 3
-local pbH = 16
-local function pbX(col) return frameX + 12 + pbW / 2 + (col - 1) * (pbW + 8) end
-local function pbY(row) return frameY + frameHeight - 44 + (row - 1) * (pbH + 6) end
+-- bottom buttons: one compact row along the bottom of the window
+local pbCount = 5
+local pbW = (frameWidth - 16 - (pbCount - 1) * 5) / pbCount
+local pbH = 15
+local function pbX(col) return frameX + 8 + pbW / 2 + (col - 1) * (pbW + 5) end
+local function pbY(row) return frameY + frameHeight - 14 end
 local function pbFrame(col, row)
 	return Def.ActorFrame {
 		Def.Quad {
@@ -1051,7 +1277,7 @@ local function pbFrame(col, row)
 	}
 end
 local function pbText(self, col, row, text)
-	self:xy(pbX(col), pbY(row)):halign(0.5):diffuse(color(seraphicValueColor)):zoom(0.21):maxwidth((pbW - 8) / 0.21)
+	self:xy(pbX(col), pbY(row)):halign(0.5):diffuse(color(seraphicValueColor)):zoom(0.19):maxwidth((pbW - 6) / 0.19)
 	self:settext(tostring(text):upper())
 end
 local profilebuttons = Def.ActorFrame {
@@ -1076,7 +1302,7 @@ local profilebuttons = Def.ActorFrame {
 			self:visible(false)
 		end
 	end,
-	pbFrame(1, 1), pbFrame(2, 1), pbFrame(1, 2), pbFrame(2, 2), pbFrame(3, 2),
+	pbFrame(1, 1), pbFrame(2, 1), pbFrame(3, 1), pbFrame(4, 1), pbFrame(5, 1),
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
 			pbText(self, 1, 1, translated_info["Save"])
@@ -1116,7 +1342,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			pbText(self, 1, 2, translated_info["ValidateAll"])
+			pbText(self, 3, 1, translated_info["ValidateAll"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1133,7 +1359,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			pbText(self, 2, 2, translated_info["ForceRecalc"])
+			pbText(self, 4, 1, translated_info["ForceRecalc"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1151,7 +1377,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			pbText(self, 3, 2, translated_info["UploadAllScore"])
+			pbText(self, 5, 1, translated_info["UploadAllScore"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
