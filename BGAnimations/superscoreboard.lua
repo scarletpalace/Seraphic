@@ -1,11 +1,12 @@
 local tzoom = 0.5
-local pdh = 48 * tzoom
+local pdh = 46 * tzoom -- Seraphic: 23px rows so 11 fit in the 288px window
 local ygap = 0 -- Seraphic: contiguous LR2-style row bands
 local packspaceY = pdh + ygap
-local expandedFrameH = 346 -- ends above the bottom bar (y 386)
+local expandedFrameH = 288 -- window spans y 96..384 (between the top and bottom bars)
+local hdrH = 20 -- header band height (expanded)
 local currentCountry = "Global"
 
-local numscores = 13
+local numscores = 11 -- rows per page (was 13; must fit y 116..380)
 local ind = 0
 local offx = 5
 local width = SCREEN_WIDTH * 0.56
@@ -118,6 +119,7 @@ local o = Def.ActorFrame {
 		pdh = 38 * tzoom
 		ygap = 2
 		packspaceY = pdh + ygap
+		hdrH = pdh - 8 * tzoom
 
 		numscores = 10
 		ind = 0
@@ -154,11 +156,12 @@ local o = Def.ActorFrame {
 	end,
 	ExpandCommand = function(self)
 		tzoom = 0.5
-		pdh = 48 * tzoom
+		pdh = 46 * tzoom
 		ygap = 0
 		packspaceY = pdh + ygap
+		hdrH = 20
 
-		numscores = 13
+		numscores = 11
 		ind = 0
 		offx = 5
 		width = SCREEN_WIDTH * 0.56
@@ -198,13 +201,13 @@ local o = Def.ActorFrame {
 	Def.Quad {
 		Name = "HeaderBar",
 		InitCommand = function(self)
-			self:zoomto(width, pdh - 8 * tzoom):halign(0):valign(0):diffuse(color("#000000")):diffusealpha(0.55)
+			self:zoomto(width, hdrH):halign(0):valign(0):diffuse(color("#000000")):diffusealpha(0.55)
 		end
 	},
 	Def.Quad {
 		Name = "HeaderRule",
 		InitCommand = function(self)
-			self:xy(0, pdh - 8 * tzoom):zoomto(width, 1):halign(0):valign(0)
+			self:xy(0, hdrH):zoomto(width, 1):halign(0):valign(0)
 			self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142820"))
 		end
 	},
@@ -305,7 +308,7 @@ local o = Def.ActorFrame {
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		--current rate toggle
 		InitCommand = function(self)
-			self:xy(c5x, (pdh - 8 * tzoom) / 2):zoom(collapsed and tzoom or 0.42):halign(1):valign(0.5)
+			self:xy(c5x, hdrH / 2):zoom(collapsed and tzoom or 0.42):halign(1):valign(0.5)
 			self:diffuse(color(seraphicLabelColor))
 		end,
 		MouseOverCommand = function(self)
@@ -334,9 +337,9 @@ local o = Def.ActorFrame {
 		InitCommand = function(self)
 			self:diffuse(color(seraphicLabelColor))
 			if collapsed then
-				self:xy(c5x - 175, (pdh - 8 * tzoom) / 2):zoom(tzoom):halign(1):valign(0.5)
+				self:xy(c5x - 175, hdrH / 2):zoom(tzoom):halign(1):valign(0.5)
 			else
-				self:xy(c5x - capWideScale(160,190), (pdh - 8 * tzoom) / 2):zoom(0.42):halign(1):valign(0.5)
+				self:xy(c5x - capWideScale(160,190), hdrH / 2):zoom(0.42):halign(1):valign(0.5)
 			end
 		end,
 		MouseOverCommand = function(self)
@@ -369,7 +372,7 @@ local o = Def.ActorFrame {
 				--self:xy(c5x - 110, headeroff):zoom(tzoom):halign(1):valign(1)
 			else
 				self:visible(true)
-				self:xy(c5x - capWideScale(80,96), (pdh - 8 * tzoom) / 2):zoom(0.42):halign(1):valign(0.5)
+				self:xy(c5x - capWideScale(80,96), hdrH / 2):zoom(0.42):halign(1):valign(0.5)
 			end
 		end,
 		MouseOverCommand = function(self)
@@ -448,7 +451,7 @@ local function makeScoreDisplay(i)
 		LoadFont("Common normal") .. {
 			--ssr
 			InitCommand = function(self)
-				self:x(c2x - c1x + offx):zoom(tzoom):halign(0.5):valign(1)
+				self:x(c2x - c1x + offx):zoom(tzoom - 0.04):halign(0.5):valign(1)
 				if collapsed then
 					self:x(46):zoom(tzoom + 0.15):halign(0.5):valign(0.5):maxwidth(20 / tzoom)
 				end
@@ -461,7 +464,7 @@ local function makeScoreDisplay(i)
 		LoadFont("Common normal") .. {
 			--rate
 			InitCommand = function(self)
-				self:x(c2x - c1x + offx):zoom(tzoom - 0.08):halign(0.5):valign(0):addy(row2yoff):diffuse(color(seraphicLabelColor))
+				self:x(c2x - c1x + offx):zoom(tzoom - 0.1):halign(0.5):valign(0):addy(row2yoff):diffuse(color(seraphicLabelColor))
 				if collapsed then
 					self:x(c4x - 14):zoom(tzoom):halign(1):valign(0.5):addy(-row2yoff):maxwidth(30 / tzoom)
 				end
@@ -477,7 +480,7 @@ local function makeScoreDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common Normal") .. {
 			Name = "Burt" .. i,
 			InitCommand = function(self)
-				self:x(c2x):zoom(tzoom):maxwidth((c3x - c2x - capWideScale(10, 40)) / tzoom):halign(0):valign(1)
+				self:x(c2x):zoom(tzoom - 0.04):maxwidth((c3x - c2x - capWideScale(10, 40)) / tzoom):halign(0):valign(1)
 				if collapsed then
 					self:x(c2x + 10):maxwidth(60 / tzoom):zoom(tzoom + 0.2):valign(0.5)
 				end
@@ -506,7 +509,7 @@ local function makeScoreDisplay(i)
 			Name = "Ernie" .. i,
 			InitCommand = function(self)
 				if not collapsed then
-					self:x(c2x):zoom(tzoom - 0.08):halign(0):valign(0):maxwidth(width / 2 / tzoom):addy(row2yoff)
+					self:x(c2x):zoom(tzoom - 0.1):halign(0):valign(0):maxwidth(width / 2 / tzoom):addy(row2yoff)
 				end
 			end,
 			DisplayCommand = function(self)
@@ -563,7 +566,7 @@ local function makeScoreDisplay(i)
 			Name = "Replay" .. i,
 			InitCommand = function(self)
 				if not collapsed then
-					self:x(capWideScale(c3x + 52, c3x)):zoom(tzoom - 0.1):halign(1):valign(0):maxwidth(width / 2 / tzoom):addy(
+					self:x(capWideScale(c3x + 52, c3x)):zoom(tzoom - 0.12):halign(1):valign(0):maxwidth(width / 2 / tzoom):addy(
 						row2yoff
 					):diffuse(color(seraphicValueColor))
 				end
@@ -648,7 +651,7 @@ local function makeScoreDisplay(i)
 			--percent
 			Name="NormalText",
 			InitCommand = function(self)
-				self:x(c5x):zoom(tzoom + 0.05):halign(1):valign(1)
+				self:x(c5x):zoom(tzoom - 0.02):halign(1):valign(1)
 				if collapsed then
 					self:x(c5x):zoom(tzoom + 0.15):halign(1):valign(0.5):maxwidth(30 / tzoom)
 				end
@@ -661,7 +664,7 @@ local function makeScoreDisplay(i)
 			--percent
 			Name="LongerText",
 			InitCommand = function(self)
-				self:x(c5x):zoom(tzoom + 0.05):halign(1):valign(1)
+				self:x(c5x):zoom(tzoom - 0.02):halign(1):valign(1)
 				if collapsed then
 					self:x(c5x):zoom(tzoom + 0.15):halign(1):valign(0.5):maxwidth(30 / tzoom)
 				end
@@ -677,7 +680,7 @@ local function makeScoreDisplay(i)
 			--date
 			InitCommand = function(self)
 				if not collapsed then
-					self:x(c5x):zoom(tzoom - 0.08):halign(1):valign(0):maxwidth(width / 4 / tzoom):addy(row2yoff):diffuse(color(seraphicLabelColor))
+					self:x(c5x):zoom(tzoom - 0.1):halign(1):valign(0):maxwidth(width / 4 / tzoom):addy(row2yoff):diffuse(color(seraphicLabelColor))
 				end
 			end,
 			DisplayCommand = function(self)

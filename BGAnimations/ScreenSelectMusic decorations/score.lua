@@ -14,9 +14,9 @@ local nestedTabs = {
 local hasReplayData
 
 local frameX = 10
-local frameY = 40
+local frameY = 96 -- Seraphic: window spans y 96..384, under the top bar
 local frameWidth = SCREEN_WIDTH * 0.56
-local frameHeight = 346 -- ends above the bottom bar
+local frameHeight = 288 -- ends at y 384, above the bottom bar
 local fontScale = 0.4
 local offsetX = 10
 local offsetY = 20
@@ -26,7 +26,7 @@ local nestedTabButtonWidth = 153
 local nestedTabButtonHeight = 20
 local netPageButtonWidth = 50
 local netPageButtonHeight = 50
-local headeroffY = 10
+local headeroffY = 2
 
 local selectedrateonly
 
@@ -393,12 +393,14 @@ t[#t + 1] = seraphicHeaderBand(0, 0, frameWidth, offsetY)
 
 -- Seraphic layout (frame coordinates; the "l" frame below sits at offsetX, offsetY + headeroffY)
 local lX, lY = offsetX, offsetY + headeroffY
-local infoTop = 84 -- mods / date / combo rows
-local infoPitch = 15
+local infoTop = 76 -- mods / date / combo rows
+local infoPitch = 13
 local infoW = frameWidth - capWideScale(66, 76) -- leaves the rate list column free
 local infoValX = 104
-local judgeTop = 154 -- judgment rows
-local judgePitch = 14
+local judgeTop = 132 -- judgment rows
+local judgePitch = 13
+local bottomY = 274 -- offset plot / replay / eval / rate line
+local uploadTop = 184 -- validate + upload buttons, 12px apart
 local judgeW = 212
 local judgeCountX = 162
 
@@ -416,8 +418,8 @@ t[#t + 1] = bands
 local function infoLabel(k, text)
 	return LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(14 - lX, infoTop + (k - 1) * infoPitch + (infoPitch - 1) / 2 - lY):zoom(0.38):halign(0)
-			self:maxwidth((infoValX - 20) / 0.38):diffuse(color(seraphicLabelColor)):settext(tostring(text):upper())
+			self:xy(14 - lX, infoTop + (k - 1) * infoPitch + (infoPitch - 1) / 2 - lY):zoom(0.36):halign(0)
+			self:maxwidth((infoValX - 20) / 0.36):diffuse(color(seraphicLabelColor)):settext(tostring(text):upper())
 		end
 	}
 end
@@ -521,7 +523,7 @@ local l = Def.ActorFrame {
 	LoadFont("Common Normal") .. {
 		Name = "Mods",
 		InitCommand = function(self)
-			self:xy(infoValX - lX, infoValueY(1)):zoom(0.38):halign(0):maxwidth((infoW - infoValX) / 0.38)
+			self:xy(infoValX - lX, infoValueY(1)):zoom(0.36):halign(0):maxwidth((infoW - infoValX) / 0.36)
 			self:diffuse(color(seraphicValueColor)):settext("")
 		end,
 		DisplayCommand = function(self)
@@ -532,7 +534,7 @@ local l = Def.ActorFrame {
 	LoadFont("Common Normal") .. {
 		Name = "Date",
 		InitCommand = function(self)
-			self:xy(infoValX - lX, infoValueY(2)):zoom(0.38):halign(0):diffuse(color(seraphicValueColor)):settext("")
+			self:xy(infoValX - lX, infoValueY(2)):zoom(0.36):halign(0):diffuse(color(seraphicValueColor)):settext("")
 		end,
 		DisplayCommand = function(self)
 			self:settext(getScoreDate(score))
@@ -542,7 +544,7 @@ local l = Def.ActorFrame {
 	LoadFont("Common Normal") .. {
 		Name = "Combo",
 		InitCommand = function(self)
-			self:xy(infoValX - lX, infoValueY(3)):zoom(0.38):halign(0):diffuse(color(seraphicValueColor)):settext("")
+			self:xy(infoValX - lX, infoValueY(3)):zoom(0.36):halign(0):diffuse(color(seraphicValueColor)):settext("")
 		end,
 		DisplayCommand = function(self)
 			self:settextf("%d", score:GetMaxCombo())
@@ -552,7 +554,7 @@ local l = Def.ActorFrame {
 	LoadFont("Common Normal") .. {
 		Name = "ComboBreaks",
 		InitCommand = function(self)
-			self:xy(infoValX - lX, infoValueY(4)):zoom(0.38):halign(0):diffuse(color(seraphicValueColor)):settext("")
+			self:xy(infoValX - lX, infoValueY(4)):zoom(0.36):halign(0):diffuse(color(seraphicValueColor)):settext("")
 		end,
 		DisplayCommand = function(self)
 			local comboBreaks = getScoreComboBreaks(score)
@@ -565,7 +567,7 @@ local l = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(frameWidth - offsetX - frameX, frameHeight - headeroffY - 15 - offsetY):zoom(0.4):halign(1)
+			self:xy(frameWidth - offsetX - frameX, bottomY - lY):zoom(0.38):halign(1)
 			self:diffuse(color(seraphicLabelColor))
 			if GAMESTATE:GetCurrentSteps() == nil then
 				self:settext(translated_info["NoChart"])
@@ -575,7 +577,7 @@ local l = Def.ActorFrame {
 		end,
 		DisplayCommand = function(self)
 			self:settextf("%s %s - %s %d/%d", translated_info["Rate"], rates[rateIndex], translated_info["Showing"], scoreIndex, #rtTable[rates[rateIndex]])
-			self:zoom(0.4)
+			self:zoom(0.38)
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -624,7 +626,7 @@ local l = Def.ActorFrame {
 local function makeText(index)
 	return UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(frameWidth - frameX, infoTop + (infoPitch - 1) / 2 + (index - 1) * 13):zoom(fontScale):halign(1):settext("")
+			self:xy(frameWidth - frameX, infoTop + (infoPitch - 1) / 2 + (index - 1) * 11):zoom(0.38):halign(1):settext("")
 		end,
 		DisplayCommand = function(self)
 			local count = 0
@@ -676,7 +678,7 @@ local function makeJudge(index, judge)
 	--labels
 	t[#t + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:x(14 - lX):zoom(0.4):halign(0):maxwidth((judgeCountX - 60) / 0.4)
+			self:x(14 - lX):zoom(0.38):halign(0):maxwidth((judgeCountX - 60) / 0.38)
 		end,
 		BeginCommand = function(self)
 			self:settext(tostring(getJudgeStrings(judge)):upper())
@@ -686,7 +688,7 @@ local function makeJudge(index, judge)
 
 	t[#t + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:x(judgeCountX - lX):zoom(0.42):halign(1):settext("0"):diffuse(color(seraphicValueColor))
+			self:x(judgeCountX - lX):zoom(0.4):halign(1):settext("0"):diffuse(color(seraphicValueColor))
 		end,
 		DisplayCommand = function(self)
 			if judge ~= "HoldNoteScore_Held" and judge ~= "HoldNoteScore_LetGo" then
@@ -724,7 +726,7 @@ end
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "Score",
 	InitCommand = function(self)
-		self:y(frameHeight - headeroffY - 31 - offsetY):zoom(0.45):halign(0):settext("")
+		self:y(bottomY - lY):zoom(0.4):halign(0):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	DisplayCommand = function(self)
@@ -755,7 +757,7 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "ReplayViewer",
 	InitCommand = function(self)
-		self:y(frameHeight - headeroffY - 15 - offsetY):zoom(0.45):halign(0):settext("")
+		self:xy(95, bottomY - lY):zoom(0.4):halign(0):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	BeginCommand = function(self)
@@ -766,7 +768,7 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	DisplayCommand = function(self)
 		if hasReplayData then
 			self:settext(translated_info["ShowReplay"])
-			self:diffuse(getMainColor("positive")):zoom(0.45)
+			self:diffuse(getMainColor("positive")):zoom(0.4)
 		else
 			self:settext(translated_info["NoReplayData"])
 			self:diffuse(color(seraphicLabelColor)):zoom(0.38)
@@ -793,14 +795,14 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 l[#l + 1] = Def.ActorFrame {
 	InitCommand = function(self)
 		if not IsUsingWideScreen() then --offset it a bit if not using widescreen
-			self:x(6):y(37):zoom(0.9)
+			self:x(6):zoom(0.9)
 		end
 	end,
 	UIElements.QuadButton(1, 1) .. {
 		Name = "EvalViewQuad",
 		InitCommand = function(self)
-			self:xy((frameWidth - offsetX - frameX) / 2.1, frameHeight - headeroffY - 17 - offsetY):diffuse(0,0,0,0)
-			self:zoomtowidth(145):zoomtoheight(21)
+			self:xy((frameWidth - offsetX - frameX) / 2.1, bottomY - lY):diffuse(0,0,0,0)
+			self:zoomtowidth(110):zoomtoheight(15)
 		end,
 		BeginCommand = function(self)
 			if SCREENMAN:GetTopScreen():GetName() == "ScreenNetSelectMusic" then
@@ -831,7 +833,7 @@ l[#l + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "EvalViewer",
 		InitCommand = function(self)
-			self:xy((frameWidth - offsetX - frameX) / 2.1, frameHeight - headeroffY - 18 - offsetY):zoom(0.3):settext("")
+			self:xy((frameWidth - offsetX - frameX) / 2.1, bottomY - lY):zoom(0.27):settext("")
 			self:diffuse(getMainColor("positive"))
 		end,
 		BeginCommand = function(self)
@@ -852,7 +854,7 @@ l[#l + 1] = Def.ActorFrame {
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "TheDootButton",
 	InitCommand = function(self)
-		self:xy(frameWidth - offsetX - frameX, frameHeight - headeroffY - 35 - offsetY):zoom(0.42):halign(1):settext("")
+		self:xy(frameWidth - offsetX - frameX, uploadTop + 49 - lY):zoom(0.4):halign(1):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	DisplayCommand = function(self)
@@ -878,7 +880,7 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "TheDootButtonTWO",
 	InitCommand = function(self)
-		self:xy(frameWidth - offsetX - frameX, frameHeight - headeroffY - 49 - offsetY):zoom(0.38):halign(1):maxwidth(capWideScale(150, 200) / 0.38):settext("")
+		self:xy(frameWidth - offsetX - frameX, uploadTop + 36 - lY):zoom(0.36):halign(1):maxwidth(capWideScale(150, 200) / 0.36):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	DisplayCommand = function(self)
@@ -903,7 +905,7 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "TheDootButtonTHREEEEEEEE",
 	InitCommand = function(self)
-		self:xy(frameWidth - offsetX - frameX, frameHeight - headeroffY - 63 - offsetY):zoom(0.38):halign(1):maxwidth(capWideScale(150, 200) / 0.38):settext("")
+		self:xy(frameWidth - offsetX - frameX, uploadTop + 24 - lY):zoom(0.36):halign(1):maxwidth(capWideScale(150, 200) / 0.36):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	DisplayCommand = function(self)
@@ -928,7 +930,7 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "TheDootButtonFOUR",
 	InitCommand = function(self)
-		self:xy(frameWidth - offsetX - frameX, frameHeight - headeroffY - 77 - offsetY):zoom(0.38):halign(1):maxwidth(capWideScale(150, 200) / 0.38):settext("")
+		self:xy(frameWidth - offsetX - frameX, uploadTop + 12 - lY):zoom(0.36):halign(1):maxwidth(capWideScale(150, 200) / 0.36):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	DisplayCommand = function(self)
@@ -953,7 +955,7 @@ l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 l[#l + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 	Name = "ValidateInvalidateScoreButton",
 	InitCommand = function(self)
-		self:xy(frameWidth - offsetX - frameX, frameHeight - headeroffY - 91 - offsetY):zoom(0.38):halign(1):maxwidth(capWideScale(150, 200) / 0.38):settext("")
+		self:xy(frameWidth - offsetX - frameX, uploadTop - lY):zoom(0.36):halign(1):maxwidth(capWideScale(150, 200) / 0.36):settext("")
 		self:diffuse(getMainColor("positive"))
 	end,
 	DisplayCommand = function(self)
