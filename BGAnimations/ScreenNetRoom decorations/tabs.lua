@@ -75,9 +75,10 @@ else
 	tabNames = {"Chatbox", "Search", "Profile"}
 end
 
-local frameWidth = (SCREEN_WIDTH * (7 / 24)) / (#tabNames - 1)
-local frameX = frameWidth / 2
-local frameY = SCREEN_HEIGHT - 70
+-- Seraphic: LR2 toggles (dark glass, soft edge, crimson when selected) along the top of the bottom bar
+local frameWidth = 104
+local frameX = 20 + frameWidth / 2
+local frameY = SCREEN_HEIGHT - 66
 
 local function tabs(index)
 	local t = Def.ActorFrame {
@@ -90,14 +91,13 @@ local function tabs(index)
 		end,
 		SetCommand = function(self)
 			self:finishtweening()
-			self:smooth(0.1)
-			--show tab if it's the currently selected one
+			local bg = self:GetChild("TabBG")
 			if getTabIndex() == index - 1 then
-				self:diffusealpha(1):y(frameY - 1)
-				self:GetChild("TabBG"):diffusecolor(Brightness(getMainColor("positive"),0.3)):diffusealpha(0.5)
-			else -- otherwise "Hide" them
-				self:diffusealpha(0.7):y(frameY)
-				self:GetChild("TabBG"):diffusecolor(getMainColor("frames")):diffusealpha(0.7)
+				bg:diffuse(color("#9c1428")):diffusealpha(0.45)
+				self:GetChild("TabText"):diffuse(color(seraphicValueColor))
+			else
+				bg:diffuse(color("#000000")):diffusealpha(0.5)
+				self:GetChild("TabText"):diffuse(color(isTabEnabled(index) and seraphicLabelColor or "#666666"))
 			end
 		end,
 		TabChangedMessageCommand = function(self)
@@ -111,7 +111,7 @@ local function tabs(index)
 	t[#t + 1] = UIElements.QuadButton(1, 1) .. {
 		Name = "TabBG",
 		InitCommand = function(self)
-			self:y(2):valign(0):zoomto(frameWidth, 20):diffusecolor(getMainColor("frames")):diffusealpha(0.7)
+			self:zoomto(frameWidth - 6, 18):diffuse(color("#000000")):diffusealpha(0.5)
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
@@ -122,20 +122,14 @@ local function tabs(index)
 		end
 	}
 
+	t[#t + 1] = seraphicSoftEdge(-(frameWidth - 6) / 2, -9, frameWidth - 6, 18, 0.2)
 	t[#t + 1] = LoadFont("Common Normal") .. {
+		Name = "TabText",
 		InitCommand = function(self)
-			self:y(4):valign(0):zoom(0.45):diffuse(getMainColor("positive"))
+			self:zoom(0.48):maxwidth((frameWidth - 14) / 0.48):diffuse(color(seraphicLabelColor))
 		end,
 		BeginCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		SetCommand = function(self)
-			self:settext(THEME:GetString("TabNames", tabNames[index]))
-			if isTabEnabled(index) then
-				self:diffuse(getMainColor("positive"))
-			else
-				self:diffuse(color("#666666"))
-			end
+			self:settext(THEME:GetString("TabNames", tabNames[index]):upper())
 		end,
 		PlayerJoinedMessageCommand = function(self)
 			self:queuecommand("Set")

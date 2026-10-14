@@ -18,14 +18,14 @@ local loadingScreen = Var("LoadingScreen") or ""
 local onResults = loadingScreen:find("Evaluation") ~= nil
 -- Seraphic (select screen): nick + judge move to the top-left, clock to the top-right, the rest of the old
 -- bottom-right profile block is moved off screen (the bottom-right now holds the score panel, _scorepanel.lua)
-local onSelect = loadingScreen == "ScreenSelectMusic"
+local onSelect = loadingScreen == "ScreenSelectMusic" or loadingScreen == "ScreenNetSelectMusic"
+local AvatarY = SCREEN_HEIGHT - 62 -- must be set before uploadY below (it was nil there off the select screen, which broke every overlay loading this file)
 local AvatarX = onResults and 62 or 424
 local centerBlockX = onResults and 470 or 668 -- login / judge column, sits between the profile and the right column
 local uploadX = onSelect and 250 or (centerBlockX - 50)
 local uploadY = onSelect and 72 or (AvatarY + 41)
 local uploadTextY = onSelect and 58 or (AvatarY + 27)
 local nameMaxWidth = onResults and 240 or 122 -- keeps the profile name clear of the login column
-local AvatarY = SCREEN_HEIGHT - 62
 local playerRating = 0
 local uploadbarwidth = 100
 local uploadbarheight = 10
@@ -339,7 +339,7 @@ t[#t + 1] = Def.ActorFrame {
 				playerConfig:save(pn_to_profile_slot(PLAYER_1))
 				DLMAN:Logout()
 			end
-			if top == "ScreenSelectMusic" or top == "ScreenTextEntry" then
+			if top == "ScreenSelectMusic" or top == "ScreenNetSelectMusic" or top == "ScreenTextEntry" then
 				self:settext(translated_info["ClickLogin"])
 			else
 				self:settext(translated_info["NotLoggedIn"])
@@ -353,7 +353,7 @@ t[#t + 1] = Def.ActorFrame {
 			playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).PasswordToken = DLMAN:GetToken()
 			playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
 			playerConfig:save(pn_to_profile_slot(PLAYER_1))
-			if top == "ScreenSelectMusic" or top == "ScreenTextEntry" then
+			if top == "ScreenSelectMusic" or top == "ScreenNetSelectMusic" or top == "ScreenTextEntry" then
 				self:settext(translated_info["ClickLogout"])
 			else
 				self:settext("")

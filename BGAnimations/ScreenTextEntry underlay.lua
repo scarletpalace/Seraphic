@@ -17,25 +17,48 @@ t[#t + 1] = LoadActor(THEME:GetPathG("", "_OptionsScreen")) .. {
 	end
 }
 
+-- Seraphic: the question sits in an LR2 window (dark glass, soft edge, header band with a crimson rule, filigree)
+local winW, winH = SCREEN_WIDTH - 250, 104
 t[#t+1] = Def.Quad {
 	Name = "BG",
 	InitCommand = function(self)
-		local profileName = GetPlayerOrMachineProfile(PLAYER_1):GetDisplayName()
-		if profileName == "Default Profile" or profileName == "" then
-			self:zoomto(SCREEN_WIDTH-250,110):Center():addy(-18)
-		else
-			self:zoomto(SCREEN_WIDTH-250,90):Center():addy(-8)
-		end
-		self:diffuse(0,0,0,0)
+		self:zoomto(winW, winH):Center():addy(-6)
+		self:diffuseupperleft(color("#262626")):diffuseupperright(color("#1a1a1a"))
+		self:diffuselowerleft(color("#0a0a0a")):diffuselowerright(color("#060606"))
+		self:diffusealpha(0)
 	end,
 	OnCommand = function(self)
-		if inScreenSelectMusic then
-			self:decelerate(0.1):diffusealpha(0.8)
-		end
+		self:decelerate(0.1):diffusealpha(0.85)
 	end,
 	OffCommand = function(self)
 		self:decelerate(0.1):diffusealpha(0)
 	end
+}
+t[#t+1] = Def.ActorFrame {
+	InitCommand = function(self)
+		self:diffusealpha(0)
+	end,
+	OnCommand = function(self)
+		self:decelerate(0.1):diffusealpha(1)
+	end,
+	OffCommand = function(self)
+		self:decelerate(0.1):diffusealpha(0)
+	end,
+	seraphicHeaderBand(SCREEN_CENTER_X - winW / 2, SCREEN_CENTER_Y - 6 - winH / 2, winW, 14),
+	Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_filigree"),
+		InitCommand = function(self)
+			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 6 + winH / 2 - 3):valign(1):zoomto(winW - 8, 24):diffusealpha(0.14)
+		end
+	},
+	seraphicSoftEdge(SCREEN_CENTER_X - winW / 2, SCREEN_CENTER_Y - 6 - winH / 2, winW, winH, 0.18),
+	-- underline the answer sits on
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y + 24):zoomto(winW * 0.5, 1):diffuse(color("#ffffff"))
+			self:diffusealpha(0.35):fadeleft(0.3):faderight(0.3)
+		end
+	}
 }
 
 

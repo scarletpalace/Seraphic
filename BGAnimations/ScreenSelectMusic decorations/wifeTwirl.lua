@@ -1196,40 +1196,49 @@ local enabledC = "#099948"
 local disabledC = "#ff6666"
 local force = false
 local ready = false
+-- Seraphic: Ready / Force Start as LR2 toggles stacked right of the banner (they used to sit on top of it):
+-- dark glass with a soft edge, crimson when on, lighter on hover
 local function toggleButton(textEnabled, textDisabled, msg, x, extrawidth, y, enabledF)
 	local ison = false
+	local bw, bh = 84, 18
+	local bx = capWideScale(get43size(438), 438)
+	local by = (msg == "/force") and 188 or 166
+	local function paint(self, over)
+		local q = self:GetChild("Top")
+		local glow = self:GetChild("Glow")
+		if ison then
+			q:diffuse(color("#9c1428")):diffusealpha(over and 0.75 or 0.55)
+			glow:diffusealpha(0.35)
+		else
+			q:diffuse(color("#000000")):diffusealpha(over and 0.3 or 0.5)
+			glow:diffusealpha(over and 0.2 or 0)
+		end
+		self:GetChild("Words"):settext((ison and textEnabled or textDisabled):upper())
+		self:GetChild("Words"):diffuse(color(ison and seraphicValueColor or seraphicLabelColor))
+	end
 	return Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(10 - 115 + capWideScale(get43size(384), 384) + x, 66 + capWideScale(get43size(120), 120) + y)
+			self:xy(bx, by)
 			self.updatebutton = function()
 				if self.ison ~= nil then
 					ison = self.ison
 				end
-
-				-- wtf
-				self:GetChild("Top"):diffuse((ison and color(enabledC) or (isOver(self:GetChild("Top")) and getMainColor("highlight") or color(disabledC))))
-				self:GetChild("Words"):settext(ison and textEnabled or textDisabled)
+				paint(self, isOver(self:GetChild("Top")))
 			end
 		end,
-
-		Def.Quad {
-			Name = "BG",
-			InitCommand = function(self)
-				self:zoomto(50 + extrawidth + 1.5, 24 + 1.5)
-				self:diffuse(color("#333333"))
-			end,
-		},
+		BeginCommand = function(self)
+			paint(self, false)
+		end,
 		UIElements.QuadButton(1, 1) .. {
 			Name = "Top",
 			InitCommand = function(self)
-				self:zoomto(50 + extrawidth, 24)
-				self:diffuse(color(disabledC))
+				self:zoomto(bw, bh):diffuse(color("#000000")):diffusealpha(0.5)
 			end,
 			MouseOverCommand = function(self)
-				self:diffuse(ison and color(enabledC) or getMainColor("highlight"))
+				paint(self:GetParent(), true)
 			end,
 			MouseOutCommand = function(self)
-				self:diffuse(color(ison and enabledC or disabledC))
+				paint(self:GetParent(), false)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" then
@@ -1238,20 +1247,25 @@ local function toggleButton(textEnabled, textDisabled, msg, x, extrawidth, y, en
 					else
 						ison = (not ison)
 					end
-
-					-- wtf 2
-					self:diffuse(ison and color(enabledC) or getMainColor("highlight"))
+					paint(self:GetParent(), true)
 					NSMAN:SendChatMsg(msg, 1, NSMAN:GetCurrentRoomName())
 				end
 			end,
 		},
-		LoadFont("Common Large") .. {
+		-- crimson rule along the bottom, brighter while the toggle is on
+		Def.Quad {
+			Name = "Glow",
+			InitCommand = function(self)
+				self:y(bh / 2 - 1):zoomto(bw - 4, 1):diffuse(color("#e8b8c2")):diffusealpha(0)
+			end
+		},
+		seraphicSoftEdge(-bw / 2, -bh / 2, bw, bh, 0.25),
+		LoadFont("Common Normal") .. {
 			Name = "Words",
 			InitCommand = function(self)
-				self:zoom(0.3)
-				self:diffuse(color("#FFFFFF"))
-				self:maxwidth((50 + extrawidth) / 0.3)
-				self:settext(textDisabled)
+				self:zoom(0.42):maxwidth((bw - 8) / 0.42)
+				self:diffuse(color(seraphicLabelColor))
+				self:settext(textDisabled:upper())
 			end,
 		},
 	}
