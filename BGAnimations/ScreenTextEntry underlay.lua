@@ -8,13 +8,18 @@ local t = Def.ActorFrame {
 	end,
 }
 
-t[#t + 1] = LoadActor(THEME:GetPathG("", "_OptionsScreen")) .. {
+-- Seraphic: the title screen's sanctuary backdrop (rose window, chains, embers) behind login and other prompts;
+-- inside Music Select the prompt stays over the select screen instead
+t[#t + 1] = Def.ActorFrame {
+	InitCommand = function(self)
+		self:visible(false):diffusealpha(0)
+	end,
 	OnCommand = function(self)
-		self:FullScreen():zoom(1):visible(0):diffusealpha(0)
 		if not inScreenSelectMusic then
-			self:visible(1):decelerate(0.1):diffusealpha(1)
+			self:visible(true):decelerate(0.1):diffusealpha(1)
 		end
-	end
+	end,
+	LoadActor("_sanctuary", SCREEN_CENTER_Y)
 }
 
 -- Seraphic: the question sits in an LR2 window (dark glass, soft edge, header band with a crimson rule, filigree).
