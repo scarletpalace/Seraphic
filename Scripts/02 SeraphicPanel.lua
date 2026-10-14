@@ -1,5 +1,67 @@
 -- Seraphic panel: dark gradient body, silver beveled double border, corner diamonds, filigree footer.
 -- Returns an ActorFrame positioned with its top-left at (x, y).
+-- LR2-style window pieces, shared by the music select tabs and the info panel ---------------------------
+
+-- faint 1px outline around a window
+function seraphicSoftEdge(x, y, w, h, alpha)
+	local a = alpha or 0.1
+	local function edge(ex, ey, ew, eh)
+		return Def.Quad {
+			InitCommand = function(self)
+				self:xy(x + ex, y + ey):halign(0):valign(0):zoomto(ew, eh):diffuse(color("#ffffff")):diffusealpha(a)
+			end
+		}
+	end
+	return Def.ActorFrame {
+		edge(0, 0, w, 1), edge(0, h - 1, w, 1), edge(0, 1, 1, h - 2), edge(w - 1, 1, 1, h - 2)
+	}
+end
+
+-- dark header band with a crimson rule along its bottom edge
+function seraphicHeaderBand(x, y, w, h)
+	return Def.ActorFrame {
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(x, y):halign(0):valign(0):zoomto(w, h):diffuse(color("#000000")):diffusealpha(0.55)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(x, y + h):halign(0):valign(0):zoomto(w, 1)
+				self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142820"))
+			end
+		}
+	}
+end
+
+-- alternating row band (odd rows darker); i is the 1-based row number
+function seraphicRowBand(x, y, w, h, i)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):halign(0):valign(0):zoomto(w, h):diffuse(color("#000000"))
+			self:diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+		end
+	}
+end
+
+-- small crimson diamond used as a row bullet
+function seraphicBullet(x, y)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):rotationz(45):zoomto(3.5, 3.5):diffuse(color("#9c1428"))
+		end
+	}
+end
+
+-- "::SECTION" style header text
+function seraphicHeading(text)
+	return "::" .. tostring(text):upper()
+end
+
+-- colors for LR2-style labels and values
+seraphicLabelColor = "#bdb3b6"
+seraphicValueColor = "#f4ecee"
+
 function seraphicPanel(x, y, w, h, borderOnly, bodyAlpha)
 	local function edge(ex, ey, ew, eh, setup)
 		return Def.Quad {
@@ -17,6 +79,19 @@ function seraphicPanel(x, y, w, h, borderOnly, bodyAlpha)
 		}
 	end
 	local fh = math.min(h * 0.35, 30)
+	-- tab windows (border only): LR2-style soft edge instead of the silver frame
+	if borderOnly == true then
+		return Def.ActorFrame {
+			InitCommand = function(self) self:xy(x, y) end,
+			Def.Sprite {
+				Texture = THEME:GetPathG("", "seraphic_filigree"),
+				InitCommand = function(self)
+					self:xy(4, h - 3):halign(0):valign(1):zoomto(w - 8, fh):diffusealpha(0.16)
+				end
+			},
+			seraphicSoftEdge(0, 0, w, h)
+		}
+	end
 	return Def.ActorFrame {
 		InitCommand = function(self) self:xy(x, y) end,
 		-- body (skipped when the panel already has its own background)

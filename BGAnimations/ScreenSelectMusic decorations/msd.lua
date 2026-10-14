@@ -5,14 +5,16 @@ local song
 local frameX = 10
 local frameY = 40
 local frameWidth = SCREEN_WIDTH * 0.56
-local frameHeight = 368
+local frameHeight = 346 -- ends at the bottom bar
 local fontScale = 0.4
 local distY = 15
 local offsetX = 10
 local offsetY = 20
 local pn = GAMESTATE:GetEnabledPlayers()[1]
 local greatest = 0
-local txtDist = 29
+local txtDist = 24 -- skillset row pitch
+local rowsY = frameY + 128 -- first skillset row (under the density graph)
+local rowW = 270
 local steps
 local meter = {}
 meter[1] = 0.00
@@ -98,17 +100,20 @@ t[#t + 1] = Def.Quad {
 t[#t + 1] = seraphicPanel(frameX, frameY, frameWidth, frameHeight, true)
 
 
---Skillset label function
+--Skillset rows: LR2-style banded "NAME ..... 00.00" lines
 local function littlebits(i)
+	local y = rowsY + txtDist * (i - 1)
 	local t = Def.ActorFrame {
+		seraphicRowBand(frameX + offsetX, y, rowW, txtDist - 2, i),
+		seraphicBullet(frameX + offsetX + 9, y + (txtDist - 2) / 2),
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(frameX + offsetX, frameY + 100 + txtDist * i):halign(0):valign(0):zoom(0.55):maxwidth(155 / 0.55)
+				self:xy(frameX + offsetX + 20, y + (txtDist - 2) / 2):halign(0):zoom(0.36):maxwidth(160 / 0.36)
 			end,
 			SetCommand = function(self)
 				--skillset name
 				if song and steps then
-					self:settext(ms.SkillSetsTranslated[i] .. ":")
+					self:settext(ms.SkillSetsTranslated[i])
 				else
 					self:settext("")
 				end
@@ -116,12 +121,14 @@ local function littlebits(i)
 				if greatest == i then
 					self:diffusetopedge(Saturation(getMainColor("highlight"), 0.5))
 					self:diffusebottomedge(Saturation(getMainColor("positive"), 0.6))
+				else
+					self:diffuse(color(seraphicValueColor))
 				end
 			end
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(frameX + 240, frameY + 100 + txtDist * i):halign(1):valign(0):zoom(0.55):maxwidth(110 / 0.55)
+				self:xy(frameX + offsetX + rowW - 8, y + (txtDist - 2) / 2):halign(1):zoom(0.36):maxwidth(90 / 0.36)
 			end,
 			SetCommand = function(self)
 				if song and steps then
@@ -136,19 +143,14 @@ local function littlebits(i)
 	return t
 end
 
---Tab Title Frame
-t[#t + 1] = Def.Quad {
-	InitCommand = function(self)
-		self:xy(frameX, frameY):zoomto(frameWidth, offsetY):halign(0):valign(0):diffuse(getMainColor("frames"))
-		self:diffusealpha(0.5)
-	end
-}
+--Tab Title band
+t[#t + 1] = seraphicHeaderBand(frameX, frameY, frameWidth, offsetY)
 --Tab Title
 t[#t + 1] = LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(frameX + offsetX/2, frameY + offsetY - 11):zoom(0.65):halign(0)
-		self:settextf("%s (Calc v%s)",translated_text["Title"], GetCalcVersion())
-		self:diffuse(Saturation(getMainColor("positive"), 0.1))
+		self:xy(frameX + offsetX, frameY + offsetY / 2):zoom(0.45):halign(0)
+		self:settextf("%s  CALC v%s", seraphicHeading(translated_text["Title"]), GetCalcVersion())
+		self:diffuse(color(seraphicLabelColor))
 	end
 }
 --Song Title
@@ -171,7 +173,7 @@ t[#t + 1] = LoadFont("Common Large") .. {
 -- Music Rate Display
 t[#t + 1] = LoadFont("Common Large") .. {
 	InitCommand = function(self)
-		self:xy(frameX + capWideScale(290,310), frameY + 123):visible(true):align(1,0):zoom(0.3)
+		self:xy(frameX + offsetX + capWideScale(280, 300) + 8, frameY + 122):visible(true):align(0, 1):zoom(0.3):diffuse(color(seraphicValueColor))
 	end,
 	SetCommand = function(self)
 		if steps then
