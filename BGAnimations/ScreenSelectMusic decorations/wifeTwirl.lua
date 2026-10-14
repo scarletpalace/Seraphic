@@ -435,6 +435,19 @@ t[#t + 1] = Def.Actor {
 	end
 }
 
+-- Seraphic: skillset values sit in one column just past the longest skillset name shown
+local function placeSkillsetValue(self)
+	local frame = self:GetParent()
+	local w = 0
+	for i = 1, 3 do
+		local n = frame:GetChild("SkillsetName" .. i)
+		if n and n:GetText() ~= "" then
+			w = math.max(w, n:GetZoomedWidth())
+		end
+	end
+	self:x(frameX + 120 + w + 12)
+end
+
 t[#t + 1] = Def.ActorFrame {
 	Name = "RateDependentStuff", -- msd/display score/bpm/songlength -mina
 	MintyFreshCommand = function()
@@ -462,6 +475,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	-- skillset suff (these 3 can prolly be wrapped)
 	LoadFont("Seraphic Artist") .. {
+		Name = "SkillsetName1",
 		InitCommand = function(self)
 			self:xy(frameX + 120, frameY - 60):halign(0):zoom(0.6):maxwidth(112 / 0.6)
 		end,
@@ -483,6 +497,7 @@ t[#t + 1] = Def.ActorFrame {
 		end
 	},
 	LoadFont("Seraphic Artist") .. {
+		Name = "SkillsetName2",
 		InitCommand = function(self)
 			self:xy(frameX + 120, frameY - 30):halign(0):zoom(0.6):maxwidth(112 / 0.6)
 		end,
@@ -503,6 +518,7 @@ t[#t + 1] = Def.ActorFrame {
 		end
 	},
 	LoadFont("Seraphic Artist") .. {
+		Name = "SkillsetName3",
 		InitCommand = function(self)
 			self:xy(frameX + 120, frameY):halign(0):zoom(0.6):maxwidth(112 / 0.6)
 		end,
@@ -524,7 +540,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 296, frameY - 60):halign(1):zoom(0.6)
+			self:xy(frameX + 296, frameY - 60):halign(0):zoom(0.6)
 		end,
 		MintyFreshCommand = function(self)
 			self:settext("")
@@ -534,6 +550,7 @@ t[#t + 1] = Def.ActorFrame {
 					if name == ss then
 						local v = steps:GetMSD(getCurRateValue(), i)
 						self:settextf("%05.2f", v):diffuse(byMSD(v))
+						placeSkillsetValue(self)
 						break
 					end
 				end
@@ -544,7 +561,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 296, frameY - 30):halign(1):zoom(0.6)
+			self:xy(frameX + 296, frameY - 30):halign(0):zoom(0.6)
 		end,
 		MintyFreshCommand = function(self)
 			self:settext("")
@@ -554,6 +571,7 @@ t[#t + 1] = Def.ActorFrame {
 					if name == ss then
 						local v = steps:GetMSD(getCurRateValue(), i)
 						self:settextf("%05.2f", v):diffuse(byMSD(v))
+						placeSkillsetValue(self)
 						break
 					end
 				end
@@ -564,7 +582,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 296, frameY):halign(1):zoom(0.6)
+			self:xy(frameX + 296, frameY):halign(0):zoom(0.6)
 		end,
 		MintyFreshCommand = function(self)
 			self:settext("")
@@ -574,6 +592,7 @@ t[#t + 1] = Def.ActorFrame {
 					if name == ss then
 						local v = steps:GetMSD(getCurRateValue(), i)
 						self:settextf("%05.2f", v):diffuse(byMSD(v))
+						placeSkillsetValue(self)
 						break
 					end
 				end

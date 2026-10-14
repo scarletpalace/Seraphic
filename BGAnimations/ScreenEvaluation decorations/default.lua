@@ -1555,14 +1555,18 @@ do
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
 	for i, st in ipairs(stats) do
 		local x0 = 590 + (i - 1) * 82
+		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				self:xy(x0, 172):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
+				labelW = self:GetZoomedWidth()
 			end
 		}
+		-- value follows its label instead of sitting at the far end of the slot
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0 + 78, 172):halign(1):valign(0.5):zoom(0.38):maxwidth(42 / 0.38):settext("")
+				local gap = 5
+				self:xy(x0 + labelW + gap, 172):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}
