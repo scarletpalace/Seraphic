@@ -1,11 +1,8 @@
 local t = Def.ActorFrame {}
 
 --bg
-t[#t + 1] = LoadActor(THEME:GetPathG("", "_OptionsScreen")) ..  {
-	OnCommand = function(self)
-		self:FullScreen():zoom(1):diffusealpha(1)
-	end
-}
+-- Seraphic: the title screen's sanctuary backdrop (rose window, chains, embers, clock-coloured light)
+t[#t + 1] = LoadActor("_sanctuary", SCREEN_CENTER_Y)
 
 --black dim behind songwheel text
 t[#t + 1] = Def.Quad {
