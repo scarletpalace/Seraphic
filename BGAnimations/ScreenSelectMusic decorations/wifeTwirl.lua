@@ -4,6 +4,103 @@ local boxDY = 10 -- info box moved down so it sits 6px above the bottom bar (sam
 local frameY0 = 250 + capWideScale(get43size(120), 90) + 16 + boxDY -- whole info box sits a bit lower
 local frameY = frameY0 - 20 -- contents sit higher: the old button rows above them are gone, so the box can be shorter
 local frameWidth = capWideScale(get43size(455), 455)
+-- Seraphic: LR2-style info window, one header band over three columns
+local infoTop = frameY0 - 146
+local colA = frameX -- rating, rate, note counts
+local colB = frameX + 112 -- skillsets, tags, goal
+local colC = frameX + frameWidth - 78 -- cd title, bpm, length
+local colCEnd = frameX + frameWidth - 4
+local ssRowW = math.min(140, colC - colB - 14)
+local tagsBeside = colC - (colB + 6 + ssRowW) >= 90 -- wide screens: tags get their own column next to the skillsets
+local tagX = tagsBeside and colB + ssRowW + 16 or colB + 10
+local tagY = tagsBeside and infoTop + 26 or infoTop + 100
+local goalY = tagsBeside and infoTop + 104 or infoTop + 126
+local silverC = "#bdb3b6"
+
+local function infoQuad(x, y, w, h, setup)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):halign(0):valign(0):zoomto(w, h):diffuse(color("#000000"))
+			setup(self)
+		end
+	}
+end
+
+local function infoHeader(x, y, text)
+	return LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(x, y):halign(0):zoom(0.34):diffuse(color(silverC)):settext(text)
+		end
+	}
+end
+
+local function infoBullet(x, y)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):rotationz(45):zoomto(3.5, 3.5):diffuse(color("#9c1428"))
+		end
+	}
+end
+
+-- bands, headers and dividers drawn under the info texts
+local function infoWindowDecor()
+	local d = Def.ActorFrame {
+		-- header band with a crimson rule under it
+		infoQuad(frameX + 4, infoTop + 4, frameWidth - 4, 14, function(s) s:diffusealpha(0.55) end),
+		infoQuad(frameX + 4, infoTop + 18, frameWidth - 4, 1, function(s)
+			s:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142820"))
+		end),
+		infoHeader(colA + 10, infoTop + 11, "::RATING"),
+		infoHeader(colC + 6, infoTop + 11, "::SONG"),
+		-- column dividers
+		infoQuad(colB, infoTop + 22, 1, 136, function(s)
+			s:diffuse(color("#ffffff")):diffusetopedge(color("#ffffff50")):diffusebottomedge(color("#ffffff06"))
+		end),
+		infoQuad(colC, infoTop + 22, 1, 136, function(s)
+			s:diffuse(color("#ffffff")):diffusetopedge(color("#ffffff50")):diffusebottomedge(color("#ffffff06"))
+		end),
+		-- rule between the rating and the note counts
+		infoQuad(colA + 8, infoTop + 76, 96, 1, function(s)
+			s:diffuse(color("#ffffff")):diffuseleftedge(color("#ffffff40")):diffuserightedge(color("#ffffff08"))
+		end),
+	}
+	-- note count rows, every other one banded
+	for i = 1, 5 do
+		d[#d + 1] = infoQuad(colA + 5, infoTop + 78 + 14 * i - 7, 102, 13, function(s)
+			s:diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+		end)
+	end
+	-- song rows (bpm, time)
+	for i = 1, 2 do
+		d[#d + 1] = infoQuad(colC + 4, infoTop + 84 + 18 * i - 7, colCEnd - colC - 4, 15, function(s)
+			s:diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+		end)
+	end
+	-- skillset side, hidden while the chart preview covers it
+	local b = Def.ActorFrame {
+		ChartPreviewOnMessageCommand = function(self) self:visible(false) end,
+		ChartPreviewOffMessageCommand = function(self) self:visible(true) end,
+		infoHeader(colB + 8, infoTop + 11, "::SKILLSETS"),
+		infoHeader(tagsBeside and tagX - 2 or tagX, tagsBeside and infoTop + 11 or tagY - 2, "::TAGS"),
+		infoQuad(colB + 6, goalY - 8, ssRowW, 1, function(s)
+			s:diffuse(color("#ffffff")):diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff04"))
+		end),
+	}
+	for i = 1, 3 do
+		local y = infoTop + 10 + 22 * i
+		b[#b + 1] = infoQuad(colB + 6, y - 9, ssRowW, 18, function(s)
+			s:diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+		end)
+		b[#b + 1] = infoBullet(colB + 13, y)
+	end
+	if tagsBeside then
+		b[#b + 1] = infoQuad(tagX - 6, infoTop + 22, 1, 70, function(s)
+			s:diffuse(color("#ffffff")):diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff04"))
+		end)
+	end
+	d[#d + 1] = b
+	return d
+end
 -- banner fills the space between the top bar (y 90) and the info box, 6px gap on both sides, 3.2:1
 local bannerY = 96
 local bannerH = (frameY0 - 146) - 6 - bannerY
@@ -362,25 +459,14 @@ local t = Def.ActorFrame {
 		0.05)
 	end,
 	-- Seraphic: one window for the whole left info area, split by thin lines instead of three separate frames
-	seraphicPanel(frameX, frameY0 - 146, frameWidth + 4, 164, false, 0.62),
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(-1000, frameY + 16.5):halign(0):valign(0):zoomto(frameWidth - 8, 1):diffuse(color("#ffffff"))
-			self:diffuseleftedge(color("#ffffff66")):diffuserightedge(color("#ffffff10"))
-		end
-	},
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(frameX + 112, frameY0 - 140):halign(0):valign(0):zoomto(1, 150):diffuse(color("#ffffff"))
-			self:diffusetopedge(color("#ffffff55")):diffusebottomedge(color("#ffffff08"))
-		end
-	},
+	seraphicPanel(frameX, infoTop, frameWidth + 4, 164, false, 0.62),
+	infoWindowDecor(),
 }
 
 -- Music Rate Display
 t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 	InitCommand = function(self)
-		self:xy(frameX + 58, SCREEN_BOTTOM - 210 + boxDY):visible(true):halign(0.5):zoom(0.4):maxwidth(
+		self:xy(colA + 56, infoTop + 62):visible(true):halign(0.5):zoom(0.34):maxwidth(
 			capWideScale(get43size(360), 360) / capWideScale(get43size(0.45), 0.45)
 		)
 	end,
@@ -435,19 +521,6 @@ t[#t + 1] = Def.Actor {
 	end
 }
 
--- Seraphic: skillset values sit in one column just past the longest skillset name shown
-local function placeSkillsetValue(self)
-	local frame = self:GetParent()
-	local w = 0
-	for i = 1, 3 do
-		local n = frame:GetChild("SkillsetName" .. i)
-		if n and n:GetText() ~= "" then
-			w = math.max(w, n:GetZoomedWidth())
-		end
-	end
-	self:x(frameX + 120 + w + 12)
-end
-
 t[#t + 1] = Def.ActorFrame {
 	Name = "RateDependentStuff", -- msd/display score/bpm/songlength -mina
 	MintyFreshCommand = function()
@@ -460,7 +533,7 @@ t[#t + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "MSD",
 		InitCommand = function(self)
-			self:xy(frameX + 58, frameY - 100):halign(0.5):zoom(0.6):maxwidth(110 / 0.6)
+			self:xy(colA + 56, infoTop + 38):halign(0.5):zoom(0.6):maxwidth(100 / 0.6)
 		end,
 		MintyFreshCommand = function(self)
 			if song then
@@ -477,7 +550,7 @@ t[#t + 1] = Def.ActorFrame {
 	LoadFont("Seraphic Artist") .. {
 		Name = "SkillsetName1",
 		InitCommand = function(self)
-			self:xy(frameX + 120, frameY - 60):halign(0):zoom(0.6):maxwidth(112 / 0.6)
+			self:xy(colB + 20, infoTop + 32):halign(0):zoom(0.5):maxwidth((ssRowW - 58) / 0.5):diffuse(color("#f4ecee"))
 		end,
 		MintyFreshCommand = function(self)
 			if song and GAMESTATE:GetCurrentStyle():ColumnsPerPlayer() == 4 then
@@ -499,7 +572,7 @@ t[#t + 1] = Def.ActorFrame {
 	LoadFont("Seraphic Artist") .. {
 		Name = "SkillsetName2",
 		InitCommand = function(self)
-			self:xy(frameX + 120, frameY - 30):halign(0):zoom(0.6):maxwidth(112 / 0.6)
+			self:xy(colB + 20, infoTop + 54):halign(0):zoom(0.5):maxwidth((ssRowW - 58) / 0.5):diffuse(color("#f4ecee"))
 		end,
 		MintyFreshCommand = function(self)
 			if song and GAMESTATE:GetCurrentStyle():ColumnsPerPlayer() == 4 then
@@ -520,7 +593,7 @@ t[#t + 1] = Def.ActorFrame {
 	LoadFont("Seraphic Artist") .. {
 		Name = "SkillsetName3",
 		InitCommand = function(self)
-			self:xy(frameX + 120, frameY):halign(0):zoom(0.6):maxwidth(112 / 0.6)
+			self:xy(colB + 20, infoTop + 76):halign(0):zoom(0.5):maxwidth((ssRowW - 58) / 0.5):diffuse(color("#f4ecee"))
 		end,
 		MintyFreshCommand = function(self)
 			if song and GAMESTATE:GetCurrentStyle():ColumnsPerPlayer() == 4 then
@@ -540,7 +613,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 296, frameY - 60):halign(0):zoom(0.6)
+			self:xy(colB + ssRowW, infoTop + 32):halign(1):zoom(0.5)
 		end,
 		MintyFreshCommand = function(self)
 			self:settext("")
@@ -550,7 +623,6 @@ t[#t + 1] = Def.ActorFrame {
 					if name == ss then
 						local v = steps:GetMSD(getCurRateValue(), i)
 						self:settextf("%05.2f", v):diffuse(byMSD(v))
-						placeSkillsetValue(self)
 						break
 					end
 				end
@@ -561,7 +633,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 296, frameY - 30):halign(0):zoom(0.6)
+			self:xy(colB + ssRowW, infoTop + 54):halign(1):zoom(0.5)
 		end,
 		MintyFreshCommand = function(self)
 			self:settext("")
@@ -571,7 +643,6 @@ t[#t + 1] = Def.ActorFrame {
 					if name == ss then
 						local v = steps:GetMSD(getCurRateValue(), i)
 						self:settextf("%05.2f", v):diffuse(byMSD(v))
-						placeSkillsetValue(self)
 						break
 					end
 				end
@@ -582,7 +653,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(frameX + 296, frameY):halign(0):zoom(0.6)
+			self:xy(colB + ssRowW, infoTop + 76):halign(1):zoom(0.5)
 		end,
 		MintyFreshCommand = function(self)
 			self:settext("")
@@ -592,7 +663,6 @@ t[#t + 1] = Def.ActorFrame {
 					if name == ss then
 						local v = steps:GetMSD(getCurRateValue(), i)
 						self:settextf("%05.2f", v):diffuse(byMSD(v))
-						placeSkillsetValue(self)
 						break
 					end
 				end
@@ -696,7 +766,7 @@ t[#t + 1] = Def.ActorFrame {
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		Name = "Goalll",
 		InitCommand = function(self)
-			self:xy(capWideScale(frameX + 140,frameX + 154), frameY + 27):zoom(0.6):halign(0.5):valign(0)
+			self:xy(colB + 10, goalY):zoom(0.42):halign(0):maxwidth((colC - colB - 16) / 0.42)
 			self:diffuse(getMainColor("positive"))
 		end,
 		GoalsUpdatedMessageCommand = function(self)
@@ -708,9 +778,9 @@ t[#t + 1] = Def.ActorFrame {
 				if goal then
 					local perc = notShit.round(goal:GetPercent() * 100000) / 1000
 					if (perc < 99.8) then
-						self:settextf("%s\n%.2f%%", translated_info["GoalTarget"], perc)
+						self:settextf("%s : %.2f%%", translated_info["GoalTarget"]:upper(), perc)
 					else
-						self:settextf("%s\n%.3f%%", translated_info["GoalTarget"], perc)
+						self:settextf("%s : %.3f%%", translated_info["GoalTarget"]:upper(), perc)
 					end
 				else
 					self:settext("")
@@ -789,7 +859,7 @@ t[#t + 1] = Def.ActorFrame {
 		File = THEME:GetPathF("BPMDisplay", "bpm"),
 		Name = "BPMDisplay",
 		InitCommand = function(self)
-			self:xy(capWideScale(get43size(384), 400) + 62, SCREEN_BOTTOM - 142.5 + boxDY):halign(1):zoom(0.50):maxwidth(50):diffuse(color("#a8a8a8"))
+			self:xy(colCEnd - 4, infoTop + 102):halign(1):zoom(0.44):maxwidth(40 / 0.44):diffuse(color("#f4ecee"))
 		end,
 		MintyFreshCommand = function(self)
 			if song then
@@ -803,9 +873,7 @@ t[#t + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "PlayableDuration",
 		InitCommand = function(self)
-			self:xy((capWideScale(get43size(384), 400)) + 62, SCREEN_BOTTOM - 123.5 + boxDY):visible(true):halign(1):zoom(
-				capWideScale(get43size(0.6), 0.6)
-			):maxwidth(capWideScale(get43size(360), 360) / capWideScale(get43size(0.45), 0.45))
+			self:xy(colCEnd - 4, infoTop + 120):visible(true):halign(1):zoom(0.24):maxwidth(40 / 0.24)
 		end,
 		MintyFreshCommand = function(self)
 			if song then
@@ -825,11 +893,11 @@ local function radarPairs(i)
 		Name = "radarpair_"..i,
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(frameX + 13, frameY - 48 + 13.5 * i):zoom(0.46):halign(0):maxwidth(120):diffuse(color("#a8a8a8"))
+				self:xy(colA + 10, infoTop + 78 + 14 * i):zoom(0.38):halign(0):maxwidth(50 / 0.38):diffuse(color(silverC))
 			end,
 			MintyFreshCommand = function(self)
 				if song then
-					self:settext(ms.RelevantRadarsShort[i])
+					self:settext((ms.RelevantRadarsShort[i]:gsub(":", "")):upper())
 				else
 					self:settext("")
 				end
@@ -837,11 +905,12 @@ local function radarPairs(i)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(frameX + 105, frameY - 48 + 13.5 * i):zoom(0.46):halign(1):maxwidth(60):diffuse(color("#a8a8a8"))
+				self:xy(colA + 103, infoTop + 78 + 14 * i):zoom(0.4):halign(1):maxwidth(48 / 0.4):diffuse(color("#f4ecee"))
 			end,
 			CurrentStepsChangedMessageCommand = function(self, steps)
 				if steps.ptr then
-					self:settext(steps.ptr:GetRelevantRadars()[i])
+					-- LR2 style zero padded counts
+					self:settextf("%05d", tonumber(steps.ptr:GetRelevantRadars()[i]) or 0)
 				else
 					self:settext("")
 				end
@@ -863,7 +932,7 @@ end
 -- putting lua warning here
 r[#r + 1] = LoadFont("Common Large") .. {
 	InitCommand = function(self)
-		self:xy(frameX + 120, SCREEN_BOTTOM - 229 + boxDY):visible(true):halign(0):zoom(0.5)
+		self:xy(colB + 10, goalY + 18):visible(true):halign(0):zoom(0.24):maxwidth((colC - colB - 16) / 0.24)
 		self:diffuse(getMainColor("negative"))
 	end,
 	MintyFreshCommand = function(self)
@@ -882,21 +951,31 @@ t[#t + 1] = r
 -- bpm
 t[#t + 1] =LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(capWideScale(get43size(379), 395) + 41, SCREEN_BOTTOM - 142.5 + boxDY):halign(1):zoom(0.50):diffuse(color("#a8a8a8"))
+		self:xy(colC + 8, infoTop + 102):halign(0):zoom(0.38):diffuse(color(silverC))
 	end,
 	MortyFartsCommand = function(self)
 		if song then
-			self:settext(translated_info["BPM"])
+			self:settext(translated_info["BPM"]:upper())
 		else
 			self:settext("")
 		end
 	end
 }
 
+-- length label
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(colC + 8, infoTop + 120):halign(0):zoom(0.38):diffuse(color(silverC))
+	end,
+	MortyFartsCommand = function(self)
+		self:settext(song and "TIME" or "")
+	end
+}
+
 -- cdtitle
 t[#t + 1] = UIElements.SpriteButton(1, 1, nil) .. {
 	InitCommand = function(self)
-		self.bx, self.by = capWideScale(get43size(344), 364) + 62, capWideScale(get43size(345), 271) + 12 + boxDY
+		self.bx, self.by = colC + 39, infoTop + 84
 		self:xy(self.bx, self.by)
 		self:halign(0.5):valign(1)
 		self.clicked = false
@@ -1228,49 +1307,26 @@ end
 -- end
 -- }
 
--- tags?
+-- tags: stacked in their own column on wide screens, one line under the skillsets otherwise
 t[#t + 1] = LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(frameX + 300, frameY - 60):halign(0):zoom(0.6):maxwidth(capWideScale(54, 450) / 0.6)
+		self:xy(tagX, tagsBeside and tagY or tagY + 12):halign(0):valign(0):zoom(0.4):vertspacing(4)
+		self:maxwidth((colC - tagX - 6) / 0.4):diffuse(color("#f4ecee"))
 	end,
 	MintyFreshCommand = function(self)
-		if song and ctags[1] then
-			self:settext(ctags[1])
-		else
-			self:settext("")
+		local shown = {}
+		if song and ctags then
+			for i = 1, math.min(#ctags, 3) do
+				shown[i] = ctags[i]
+			end
 		end
+		self:settext(table.concat(shown, tagsBeside and "\n" or "  /  "))
 	end,
 	ChartPreviewOnMessageCommand = function(self)
 		self:visible(false)
 	end,
 	ChartPreviewOffMessageCommand = function(self)
 		self:visible(true)
-	end
-}
-
-t[#t + 1] = LoadFont("Common Normal") .. {
-	InitCommand = function(self)
-		self:xy(frameX + 300, frameY - 30):halign(0):zoom(0.6):maxwidth(capWideScale(54, 450) / 0.6)
-	end,
-	MintyFreshCommand = function(self)
-		if song and ctags[2] then
-			self:settext(ctags[2])
-		else
-			self:settext("")
-		end
-	end
-}
-
-t[#t + 1] = LoadFont("Common Normal") .. {
-	InitCommand = function(self)
-		self:xy(frameX + 300, frameY):halign(0):zoom(0.6):maxwidth(capWideScale(54, 450) / 0.6)
-	end,
-	MintyFreshCommand = function(self)
-		if song and ctags[3] then
-			self:settext(ctags[3])
-		else
-			self:settext("")
-		end
 	end
 }
 
