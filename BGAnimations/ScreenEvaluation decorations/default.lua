@@ -1631,6 +1631,64 @@ end
 
 t[#t + 1] = LoadActor("../offsetplot")
 
+-- NEW RECORD ribbon across the top of the stage image: this play beat the previous best on this chart at this rate
+-- (only for scores set this session, so opening old results from the Scores tab doesn't show it)
+do
+	local gain
+	pcall(function()
+		local hs = score
+		if not hs then return end
+		local started = SeraphicSession and SeraphicSession.started or ""
+		if started ~= "" and hs:GetDate() < started then return end
+		local byRate = SCOREMAN:GetScoresByKey(hs:GetChartKey())
+		local list = byRate and byRate[getRate(hs)]
+		local scores = list and list:GetScores()
+		if not scores or #scores < 2 or getHighScoreIndex(scores, hs) ~= 1 then return end
+		local diff = (hs:GetWifeScore() - scores[2]:GetWifeScore()) * 100
+		if diff > 0 then gain = diff end
+	end)
+	if gain then
+		local rx, ry, rw = SCREEN_CENTER_X, 66, 230
+		t[#t + 1] = Def.ActorFrame {
+			Name = "NewRecord",
+			InitCommand = function(self)
+				self:xy(rx, ry):diffusealpha(0)
+			end,
+			OnCommand = function(self)
+				self:sleep(0.9):decelerate(0.4):diffusealpha(1)
+			end,
+			-- crimson band fading out to both ends
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(1):zoomto(rw / 2, 26)
+					self:diffuseleftedge(color("#9c142800")):diffuserightedge(color("#9c1428E0"))
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(0):zoomto(rw / 2, 26)
+					self:diffuseleftedge(color("#9c1428E0")):diffuserightedge(color("#9c142800"))
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:y(-13):zoomto(rw, 1):diffuse(color("#ffffff")):diffusealpha(0.35)
+					self:diffuseleftedge(color("#ffffff00")):diffuserightedge(color("#ffffff00"))
+				end
+			},
+			LoadFont("Seraphic Title") .. {
+				InitCommand = function(self)
+					self:y(-1):zoom(0.5):maxwidth((rw - 20) / 0.5):diffuse(color("#f4ecee"))
+					self:settext(string.format("New Record  +%.2f%%", gain))
+				end,
+				OnCommand = function(self)
+					self:sleep(1.3):diffuseshift():effectcolor1(color("#ffffff")):effectcolor2(color("#e8b8c2")):effectperiod(2)
+				end
+			}
+		}
+	end
+end
+
 -- session chronicle: record this play once per results screen (Scripts/05 SeraphicSession.lua)
 t[#t + 1] = Def.Actor {
 	OnCommand = function(self)
