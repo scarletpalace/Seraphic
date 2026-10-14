@@ -1,7 +1,8 @@
 local tzoom = 0.5
 local pdh = 48 * tzoom
-local ygap = 2
+local ygap = 0 -- Seraphic: contiguous LR2-style row bands
 local packspaceY = pdh + ygap
+local expandedFrameH = 346 -- ends above the bottom bar (y 386)
 local currentCountry = "Global"
 
 local numscores = 13
@@ -9,7 +10,7 @@ local ind = 0
 local offx = 5
 local width = SCREEN_WIDTH * 0.56
 local dwidth = width - offx * 2
-local height = (numscores + 2) * packspaceY - packspaceY / 3 -- account dumbly for header being moved up
+local height = expandedFrameH + packspaceY / 2 -- frame is drawn height - headeroff tall
 
 local adjx = 14
 local c0x = 10
@@ -154,7 +155,7 @@ local o = Def.ActorFrame {
 	ExpandCommand = function(self)
 		tzoom = 0.5
 		pdh = 48 * tzoom
-		ygap = 2
+		ygap = 0
 		packspaceY = pdh + ygap
 
 		numscores = 13
@@ -162,7 +163,7 @@ local o = Def.ActorFrame {
 		offx = 5
 		width = SCREEN_WIDTH * 0.56
 		dwidth = width - offx * 2
-		height = (numscores + 2) * packspaceY - packspaceY / 3
+		height = expandedFrameH + packspaceY / 2
 
 		adjx = 14
 		c0x = 10
@@ -197,7 +198,14 @@ local o = Def.ActorFrame {
 	Def.Quad {
 		Name = "HeaderBar",
 		InitCommand = function(self)
-			self:zoomto(width, pdh - 8 * tzoom):halign(0):diffuse(getMainColor("frames")):diffusealpha(0.5):valign(0)
+			self:zoomto(width, pdh - 8 * tzoom):halign(0):valign(0):diffuse(color("#000000")):diffusealpha(0.55)
+		end
+	},
+	Def.Quad {
+		Name = "HeaderRule",
+		InitCommand = function(self)
+			self:xy(0, pdh - 8 * tzoom):zoomto(width, 1):halign(0):valign(0)
+			self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142820"))
 		end
 	},
 	-- grabby thing
@@ -261,7 +269,7 @@ local o = Def.ActorFrame {
 			if collapsed then
 				self:xy(c1x, headeroff + 15):zoom(tzoom):halign(0)
 			else
-				self:xy(c1x, headeroff + 25):zoom(tzoom):halign(0)
+				self:xy(c1x, headeroff + 25):zoom(0.45):halign(0):diffuse(color(seraphicLabelColor))
 			end
 		end,
 		UpdateCommand = function(self)
@@ -297,8 +305,8 @@ local o = Def.ActorFrame {
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		--current rate toggle
 		InitCommand = function(self)
-			self:xy(c5x, headeroff):zoom(tzoom):halign(1):valign(1)
-			self:diffuse(getMainColor("positive"))
+			self:xy(c5x, (pdh - 8 * tzoom) / 2):zoom(collapsed and tzoom or 0.42):halign(1):valign(0.5)
+			self:diffuse(color(seraphicLabelColor))
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -308,9 +316,9 @@ local o = Def.ActorFrame {
 		end,
 		UpdateCommand = function(self)
 			if DLMAN:GetCurrentRateFilter() then
-				self:settext(filts[2])
+				self:settext(tostring(filts[2]):upper())
 			else
-				self:settext(filts[1])
+				self:settext(tostring(filts[1]):upper())
 			end
 		end,
 		MouseDownCommand = function(self, params)
@@ -324,11 +332,11 @@ local o = Def.ActorFrame {
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		--top score/all score toggle
 		InitCommand = function(self)
-			self:diffuse(getMainColor("positive"))
+			self:diffuse(color(seraphicLabelColor))
 			if collapsed then
-				self:xy(c5x - 175, headeroff):zoom(tzoom):halign(1):valign(1)
+				self:xy(c5x - 175, (pdh - 8 * tzoom) / 2):zoom(tzoom):halign(1):valign(0.5)
 			else
-				self:xy(c5x - capWideScale(160,190), headeroff):zoom(tzoom):halign(1):valign(1)
+				self:xy(c5x - capWideScale(160,190), (pdh - 8 * tzoom) / 2):zoom(0.42):halign(1):valign(0.5)
 			end
 		end,
 		MouseOverCommand = function(self)
@@ -339,9 +347,9 @@ local o = Def.ActorFrame {
 		end,
 		UpdateCommand = function(self)
 			if DLMAN:GetTopScoresOnlyFilter() then
-				self:settext(topornah[1])
+				self:settext(tostring(topornah[1]):upper())
 			else
-				self:settext(topornah[2])
+				self:settext(tostring(topornah[2]):upper())
 			end
 		end,
 		MouseDownCommand = function(self, params)
@@ -355,13 +363,13 @@ local o = Def.ActorFrame {
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		--ccon/off filter toggle
 		InitCommand = function(self)
-			self:diffuse(getMainColor("positive"))
+			self:diffuse(color(seraphicLabelColor))
 			if collapsed then
 				self:visible(false)
 				--self:xy(c5x - 110, headeroff):zoom(tzoom):halign(1):valign(1)
 			else
 				self:visible(true)
-				self:xy(c5x - capWideScale(80,96), headeroff):zoom(tzoom):halign(1):valign(1)
+				self:xy(c5x - capWideScale(80,96), (pdh - 8 * tzoom) / 2):zoom(0.42):halign(1):valign(0.5)
 			end
 		end,
 		MouseOverCommand = function(self)
@@ -372,9 +380,9 @@ local o = Def.ActorFrame {
 		end,
 		UpdateCommand = function(self)
 			if DLMAN:GetValidFilter() then
-				self:settext(ccornah[1])
+				self:settext(tostring(ccornah[1]):upper())
 			else
-				self:settext(ccornah[2])
+				self:settext(tostring(ccornah[2]):upper())
 			end
 		end,
 		MouseDownCommand = function(self, params)
@@ -421,14 +429,14 @@ local function makeScoreDisplay(i)
 				self:x(offx):zoomto(dwidth, pdh):halign(0)
 			end,
 			DisplayCommand = function(self)
-				self:diffuse(color("#111111CC"))
-				self:diffusealpha(0.8)
+				self:diffuse(color("#000000"))
+				self:diffusealpha(i % 2 == 1 and 0.4 or 0.15)
 			end,
 		},
 		LoadFont("Common normal") .. {
 			--rank
 			InitCommand = function(self)
-				self:x(c0x):zoom(tzoom):halign(0):valign(0)
+				self:x(c0x):zoom(tzoom - 0.05):halign(0):valign(0.5):diffuse(color(seraphicLabelColor))
 				if collapsed then
 					self:x(c0x):zoom(tzoom):halign(0):valign(0.5)
 				end
@@ -440,7 +448,7 @@ local function makeScoreDisplay(i)
 		LoadFont("Common normal") .. {
 			--ssr
 			InitCommand = function(self)
-				self:x(c2x - c1x + offx):zoom(tzoom + 0.05):halign(0.5):valign(1)
+				self:x(c2x - c1x + offx):zoom(tzoom):halign(0.5):valign(1)
 				if collapsed then
 					self:x(46):zoom(tzoom + 0.15):halign(0.5):valign(0.5):maxwidth(20 / tzoom)
 				end
@@ -453,7 +461,7 @@ local function makeScoreDisplay(i)
 		LoadFont("Common normal") .. {
 			--rate
 			InitCommand = function(self)
-				self:x(c2x - c1x + offx):zoom(tzoom - 0.05):halign(0.5):valign(0):addy(row2yoff)
+				self:x(c2x - c1x + offx):zoom(tzoom - 0.08):halign(0.5):valign(0):addy(row2yoff):diffuse(color(seraphicLabelColor))
 				if collapsed then
 					self:x(c4x - 14):zoom(tzoom):halign(1):valign(0.5):addy(-row2yoff):maxwidth(30 / tzoom)
 				end
@@ -469,7 +477,7 @@ local function makeScoreDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common Normal") .. {
 			Name = "Burt" .. i,
 			InitCommand = function(self)
-				self:x(c2x):zoom(tzoom + 0.1):maxwidth((c3x - c2x - capWideScale(10, 40)) / tzoom):halign(0):valign(1)
+				self:x(c2x):zoom(tzoom):maxwidth((c3x - c2x - capWideScale(10, 40)) / tzoom):halign(0):valign(1)
 				if collapsed then
 					self:x(c2x + 10):maxwidth(60 / tzoom):zoom(tzoom + 0.2):valign(0.5)
 				end
@@ -479,7 +487,7 @@ local function makeScoreDisplay(i)
 				if not hs:GetEtternaValid() then
 					self:diffuse(color("#F0EEA6"))
 				else
-					self:diffuse(getMainColor("positive"))
+					self:diffuse(color(seraphicValueColor))
 				end
 			end,
 			MouseOverCommand = function(self)
@@ -498,7 +506,7 @@ local function makeScoreDisplay(i)
 			Name = "Ernie" .. i,
 			InitCommand = function(self)
 				if not collapsed then
-					self:x(c2x):zoom(tzoom - 0.05):halign(0):valign(0):maxwidth(width / 2 / tzoom):addy(row2yoff)
+					self:x(c2x):zoom(tzoom - 0.08):halign(0):valign(0):maxwidth(width / 2 / tzoom):addy(row2yoff)
 				end
 			end,
 			DisplayCommand = function(self)
@@ -506,7 +514,7 @@ local function makeScoreDisplay(i)
 				if not hs:GetEtternaValid() then
 					self:diffuse(color("#F0EEA6"))
 				else
-					self:diffuse(getMainColor("positive"))
+					self:diffuse(color(seraphicLabelColor))
 				end
 			end,
 			MouseOverCommand = function(self)
@@ -555,9 +563,9 @@ local function makeScoreDisplay(i)
 			Name = "Replay" .. i,
 			InitCommand = function(self)
 				if not collapsed then
-					self:x(capWideScale(c3x + 52, c3x)):zoom(tzoom - 0.05):halign(1):valign(0):maxwidth(width / 2 / tzoom):addy(
+					self:x(capWideScale(c3x + 52, c3x)):zoom(tzoom - 0.1):halign(1):valign(0):maxwidth(width / 2 / tzoom):addy(
 						row2yoff
-					):diffuse(getMainColor("enabled"))
+					):diffuse(color(seraphicValueColor))
 				end
 			end,
 			BeginCommand = function(self)
@@ -568,7 +576,7 @@ local function makeScoreDisplay(i)
 			DisplayCommand = function(self)
 				if GAMESTATE:GetCurrentSteps() then
 					if hs:HasReplayData() then
-						self:settext(translated_info["Watch"])
+						self:settext(tostring(translated_info["Watch"]):upper())
 					else
 						self:settext("")
 					end
@@ -640,7 +648,7 @@ local function makeScoreDisplay(i)
 			--percent
 			Name="NormalText",
 			InitCommand = function(self)
-				self:x(c5x):zoom(tzoom + 0.15):halign(1):valign(1)
+				self:x(c5x):zoom(tzoom + 0.05):halign(1):valign(1)
 				if collapsed then
 					self:x(c5x):zoom(tzoom + 0.15):halign(1):valign(0.5):maxwidth(30 / tzoom)
 				end
@@ -653,7 +661,7 @@ local function makeScoreDisplay(i)
 			--percent
 			Name="LongerText",
 			InitCommand = function(self)
-				self:x(c5x):zoom(tzoom + 0.15):halign(1):valign(1)
+				self:x(c5x):zoom(tzoom + 0.05):halign(1):valign(1)
 				if collapsed then
 					self:x(c5x):zoom(tzoom + 0.15):halign(1):valign(0.5):maxwidth(30 / tzoom)
 				end
@@ -669,7 +677,7 @@ local function makeScoreDisplay(i)
 			--date
 			InitCommand = function(self)
 				if not collapsed then
-					self:x(c5x):zoom(tzoom - 0.05):halign(1):valign(0):maxwidth(width / 4 / tzoom):addy(row2yoff)
+					self:x(c5x):zoom(tzoom - 0.08):halign(1):valign(0):maxwidth(width / 4 / tzoom):addy(row2yoff):diffuse(color(seraphicLabelColor))
 				end
 			end,
 			DisplayCommand = function(self)
