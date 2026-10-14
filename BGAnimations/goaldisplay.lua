@@ -1,21 +1,21 @@
 local tzoom = 0.5 -- column layout scale
 local rzoom = 0.36 -- row text (two lines per row, small enough to leave a gap)
 local hzoom = 0.42 -- header labels
-local pdh = 24
+local pdh = 22
 local ygap = 2
 local packspaceY = pdh + ygap -- row pitch
 
-local numgoals = 12
+local numgoals = 11 -- rows per page (fits the 96..384 window)
 local ind = 0
 local offx = 5
 local width = SCREEN_WIDTH * 0.56
 local dwidth = width - offx * 2
--- the actor sits at (10, 50) on screen; the window starts at y 40 like the other tabs
--- and ends at the bottom bar (y 386)
-local topY = -10
-local frameH = 346
+-- the actor sits at (10, 50) on screen; the window spans screen y 96..384 like the other tabs
+-- (header band 96..116, rows 116..380)
+local topY = 46
+local frameH = 288
 local hdrH = 20
-local firstRowY = topY + hdrH + 2 + packspaceY / 2 -- centre of the first row
+local firstRowY = topY + hdrH + packspaceY / 2 -- centre of the first row
 
 local adjx = 10
 local c0x = 20 -- for: priority and delete button
