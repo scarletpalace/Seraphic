@@ -75,10 +75,10 @@ else
 	tabNames = {"Chatbox", "Search", "Profile"}
 end
 
--- Seraphic: LR2 toggles (dark glass, soft edge, crimson when selected) along the top of the bottom bar
+-- Seraphic: LR2 toggles (dark glass, soft edge, crimson when selected) under the room search window
 local frameWidth = 104
-local frameX = 20 + frameWidth / 2
-local frameY = SCREEN_HEIGHT - 66
+local frameX = 12 + frameWidth / 2
+local frameY = 386 -- under the room search window, above the bottom bar (it starts at y 408)
 
 local function tabs(index)
 	local t = Def.ActorFrame {

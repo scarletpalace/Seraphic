@@ -3,10 +3,10 @@ local usersWidth = capWideScale(50,66)
 local usersWidthSmall = capWideScale(36,48)
 local usersWidthZoom = usersWidth * (1 / usersZoom)
 local usersWidthSmallZoom = usersWidthSmall * (1 / usersZoom)
-local usersRowSize = 7
-local usersRowSizeSmall = 10
-local usersX = 6
-local usersY = SCREEN_TOP + 40
+local usersRowSize = 3 -- Seraphic: a narrow block in the top bar, right of the Music Select logo
+local usersRowSizeSmall = 6
+local usersX = 272
+local usersY = SCREEN_TOP + 14
 local usersXGap = 3
 local usersYGap = 4
 local usersHeight = 8
@@ -77,7 +77,7 @@ local function userLabel(i)
 				end
 				if qty < 8 then
 					self:x(usersX + (usersWidth + usersXGap) * ((i-1) % usersRowSize))
-					self:y(usersY + 6.5)
+					self:y(usersY + math.floor((i-1) / usersRowSize) * (usersHeight + usersYGap))
 					self:maxwidth(usersWidthZoom)
 				elseif qty < 15 then
 					self:x(usersX + (usersWidth + usersXGap) * ((i-1) % usersRowSize))
