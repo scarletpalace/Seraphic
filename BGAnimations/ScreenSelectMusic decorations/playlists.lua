@@ -34,10 +34,11 @@ local t = Def.ActorFrame {
 }
 
 local frameX = 10
-local frameY = 45
+local frameY = 40
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 350
-local fontScale = 0.25
+local frameHeight = 346 -- ends at the bottom bar
+local fontScale = 0.22
+local btnScale = 0.21 -- small uppercase buttons (Common Large)
 
 local scoreYspacing = 13
 local distY = 15
@@ -98,22 +99,18 @@ t[#t + 1] = Def.Quad {
 }
 t[#t + 1] = seraphicPanel(frameX, frameY, frameWidth, frameHeight, true)
 
-t[#t + 1] = Def.Quad {
+t[#t + 1] = seraphicHeaderBand(frameX, frameY, frameWidth, offsetY)
+t[#t + 1] = LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(frameX, frameY):zoomto(frameWidth, offsetY):halign(0):valign(0)
-		self:diffuse(getMainColor("frames")):diffusealpha(0.5)
+		self:xy(frameX + 10, frameY + offsetY / 2):zoom(0.45):halign(0)
+		self:diffuse(color(seraphicLabelColor))
+		self:settext(seraphicHeading(translated_info["Title"]))
 	end
 }
 t[#t + 1] = LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(frameX + 5, frameY + offsetY - 11):zoom(0.65):halign(0)
-		self:diffuse(Saturation(getMainColor("positive"), 0.1))
-		self:settext(translated_info["Title"])
-	end
-}
-t[#t + 1] = LoadFont("Common Normal") .. {
-	InitCommand = function(self)
-		self:xy(frameWidth, frameY + offsetY - 11):zoom(0.65):halign(1)
+		self:xy(frameX + frameWidth - 8, frameY + offsetY / 2):zoom(0.38):halign(1)
+		self:diffuse(color(seraphicLabelColor)):maxwidth((frameWidth - 110) / 0.38)
 	end,
 	DisplaySinglePlaylistMessageCommand = function(self)
 		self:settext(translated_info["ExplainAdd"])
@@ -131,6 +128,46 @@ end
 
 local function ButtonActive(self)
 	return isOver(self) and update
+end
+
+-- left edge / width of the banded rows, relative to a row's own on-screen x
+local rowBandW = frameWidth - 16
+local function rowBandX(rowScreenX)
+	return frameX + 8 - rowScreenX
+end
+
+-- dark button plate with a crimson underline, sized to the named sibling text
+local function buttonPlate(target)
+	local function fit(self)
+		local txt = self:GetParent():GetChild(target)
+		if not txt then return end
+		local w = txt:GetZoomedWidth() + 10
+		local x = txt:GetX() -- the buttons are centre aligned
+		if self.underline then
+			self:xy(x, 7):zoomto(w, 1)
+		else
+			self:xy(x, 0):zoomto(w, 14)
+		end
+	end
+	return Def.ActorFrame {
+		Def.Quad {
+			InitCommand = function(self)
+				self:diffuse(color("#000000")):diffusealpha(0.55)
+			end,
+			OnCommand = fit,
+			DisplaySinglePlaylistMessageCommand = fit,
+			DisplayAllPlaylistsMessageCommand = fit,
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self.underline = true
+				self:diffuse(color("#9c1428")):diffusealpha(0.8)
+			end,
+			OnCommand = fit,
+			DisplaySinglePlaylistMessageCommand = fit,
+			DisplayAllPlaylistsMessageCommand = fit,
+		}
+	}
 end
 
 local r = Def.ActorFrame {
@@ -168,7 +205,8 @@ local r = Def.ActorFrame {
 	end,
 	LoadFont("Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX, rankingY):zoom(0.4):halign(0):maxwidth(460)
+			self:xy(frameX, rankingY):zoom(0.3):halign(0):maxwidth(200 / 0.3)
+			self:diffuse(color(seraphicValueColor))
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
 			pl = SONGMAN:GetActivePlaylist()
@@ -189,7 +227,7 @@ local function RateDisplayButton(i)
 	local o = Def.ActorFrame {
 		Name = "RateDisplay",
 		InitCommand = function(self)
-			self:x(200):diffuse(getMainColor("positive"))
+			self:x(200):diffuse(color(seraphicValueColor))
 		end,
 		UIElements.TextToolTip(1, 1, "Common Large") .. {
 			Name = "Text",
@@ -258,7 +296,7 @@ local function TitleDisplayButton(i)
 				if chartentry == nil then return end
 				if chartentry:IsLoaded() then
 					local songentry = songlist[i + ((currentchartpage - 1) * chartsperplaylist)]
-					self:diffuse(getMainColor("positive"))
+					self:diffuse(color(seraphicValueColor))
 					self:settext(songentry:GetDisplayMainTitle())
 				else
 					self:diffuse(byJudgment("TapNoteScore_Miss"))
@@ -438,7 +476,7 @@ local function rankingLabel(i)
 	local chartloaded
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + offsetX, rankingY + offsetY + 10 + (i - 1) * scoreYspacing)
+			self:xy(rankingX + offsetX, rankingY + offsetY + 2 + (i - 1) * scoreYspacing)
 			self:visible(false)
 		end,
 		DisplayAllPlaylistsMessageCommand = function(self)
@@ -455,6 +493,7 @@ local function rankingLabel(i)
 					self:GetChild("RateDisplay"):queuecommand("DisplaySinglePlaylistLevel2")
 					self:GetChild("PBDisplay"):queuecommand("DisplaySinglePlaylistLevel2")
 					self:GetChild("DisplayDiff"):queuecommand("DisplaySinglePlaylistLevel2")
+					self:GetChild("RowBand"):visible(true)
 					self:GetChild("DeleteButton"):visible(true)
 					self:GetChild("TitleDisplay"):visible(true)
 					self:GetChild("RateDisplay"):visible(true)
@@ -463,6 +502,7 @@ local function rankingLabel(i)
 					self:GetChild("PackMouseOver"):visible(true)
 					self:GetChild("ChartNumber"):visible(true)
 				else
+					self:GetChild("RowBand"):visible(false)
 					self:GetChild("DeleteButton"):visible(false)
 					self:GetChild("TitleDisplay"):visible(false)
 					self:GetChild("RateDisplay"):visible(false)
@@ -475,6 +515,10 @@ local function rankingLabel(i)
 				self:visible(true)
 			end
 		end,
+		Def.ActorFrame {
+			Name = "RowBand",
+			seraphicRowBand(rowBandX(frameX + rankingX + offsetX), -scoreYspacing / 2, rowBandW, scoreYspacing, i)
+		},
 		LoadFont("Common Large") .. {
 			Name = "ChartNumber",
 			InitCommand = function(self)
@@ -483,7 +527,7 @@ local function rankingLabel(i)
 			end,
 			DisplayPPMessageCommand = function(self)
 				self:halign(0.5)
-				self:diffuse(getMainColor("positive"))
+				self:diffuse(color(seraphicLabelColor))
 				self:settext(((rankingPage - 1) * chartsperplaylist) + i + ((currentchartpage - 1) * chartsperplaylist) .. ".")
 			end
 		},
@@ -600,10 +644,13 @@ local b2 = Def.ActorFrame {
 	end
 }
 
+b2[#b2 + 1] = buttonPlate("CourseButton")
+b2[#b2 + 1] = buttonPlate("BackButton")
 b2[#b2 + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
+	Name = "CourseButton",
 	InitCommand = function(self)
-		self:zoom(0.3):x(capWideScale(86,107)):diffuse(getMainColor("positive"))
-		self:settext(translated_info["PlayAsCourse"])
+		self:zoom(btnScale):x(capWideScale(86,107)):diffuse(color(seraphicLabelColor))
+		self:settext(translated_info["PlayAsCourse"]:upper())
 	end,
 	MouseDownCommand = function(self, params)
 		if params.event == "DeviceButton_left mouse button" and update and singleplaylistactive then
@@ -620,9 +667,10 @@ b2[#b2 + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 
 -- Back button
 b2[#b2 + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
+	Name = "BackButton",
 	InitCommand = function(self)
-		self:zoom(0.3):x(capWideScale(5,20)):diffuse(getMainColor("positive"))
-		self:settext(translated_info["Back"])
+		self:zoom(btnScale):x(capWideScale(5,20)):diffuse(color(seraphicLabelColor))
+		self:settext(translated_info["Back"]:upper())
 	end,
 	MouseDownCommand = function(self, params)
 		if params.event == "DeviceButton_left mouse button" and update and singleplaylistactive then
@@ -639,6 +687,12 @@ b2[#b2 + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 
 r[#r + 1] = b2
 
+-- footer strip behind Previous / Showing / Next / Download
+r[#r + 1] = Def.ActorFrame {
+	seraphicRowBand(8, frameY + rankingY + 250 - 7, frameWidth - 16, 14, 1),
+	seraphicSoftEdge(8, frameY + rankingY + 250 - 7, frameWidth - 16, 14, 0.08)
+}
+
 -- next/prev pages for individual playlists, i guess these could be merged with the allplaylists buttons for efficiency but meh
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
@@ -646,8 +700,8 @@ r[#r + 1] = Def.ActorFrame {
 	end,
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:x(capWideScale(190,200)):halign(0):zoom(0.25):diffuse(getMainColor("positive"))
-			self:settext(translated_info["Next"])
+			self:x(capWideScale(190,200)):halign(0):zoom(btnScale):diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["Next"]:upper())
 		end,
 		DisplayAllPlaylistsMessageCommand = function(self)
 			self:visible(false)
@@ -671,8 +725,8 @@ r[#r + 1] = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:halign(0):zoom(0.25):diffuse(getMainColor("positive"))
-			self:settext(translated_info["Previous"])
+			self:halign(0):zoom(btnScale):diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["Previous"]:upper())
 		end,
 		DisplayAllPlaylistsMessageCommand = function(self)
 			self:visible(false)
@@ -696,7 +750,7 @@ r[#r + 1] = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:halign(0):zoom(0.25):diffuse(getMainColor("positive"))
+			self:halign(0):zoom(btnScale):diffuse(color(seraphicLabelColor))
 			self:x(capWideScale(230,245))
 			self.state = "Download"
 			self:queuecommand("MaintainState")
@@ -727,13 +781,13 @@ r[#r + 1] = Def.ActorFrame {
 		DisplayAllPlaylistsMessageCommand = function(self)
 			self.state = "Download"
 			self:queuecommand("MaintainState")
-			self:settext(translated_info["DownloadMissing"])
+			self:settext(translated_info["DownloadMissing"]:upper())
 			self:x(capWideScale(250,265))
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
 			self.state = "Upload"
 			self:queuecommand("MaintainState")
-			self:settext(translated_info["UploadOnline"])
+			self:settext(translated_info["UploadOnline"]:upper())
 			self:x(capWideScale(230,245))
 		end,
 		MouseDownCommand = function(self, params)
@@ -774,9 +828,9 @@ r[#r + 1] = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:halign(0):zoom(0.25):diffuse(getMainColor("positive"))
+			self:halign(0):zoom(btnScale):diffuse(color(seraphicLabelColor))
 			self:x(capWideScale(290,300))
-			self:settext(translated_info["DownloadOnline"])
+			self:settext(translated_info["DownloadOnline"]:upper())
 			self:queuecommand("MaintainState")
 		end,
 		MaintainStateCommand = function(self)
@@ -832,12 +886,12 @@ r[#r + 1] = Def.ActorFrame {
 	},
 	LoadFont("Common Large") .. {
 		InitCommand = function(self)
-			self:x(125):halign(0.5):zoom(0.25)
+			self:x(125):halign(0.5):zoom(btnScale):diffuse(color(seraphicValueColor))
 		end,
 		SetCommand = function(self)
 			self:settextf(
 				"%s %i-%i (%i)",
-				translated_info["Showing"],
+				translated_info["Showing"]:upper(),
 				math.min(((currentchartpage - 1) * chartsperplaylist) + 1, #chartlist),
 				math.min(currentchartpage * chartsperplaylist, #chartlist),
 				#chartlist
@@ -884,7 +938,7 @@ local function PlaylistTitleDisplayButton(i)
 			Name = "Text",
 			InitCommand = function(self)
 				self:halign(0):maxwidth(frameWidth * 3 + 140)
-				self:diffuse(getMainColor("positive"))
+				self:diffuse(color(seraphicValueColor))
 			end,
 			AllDisplayMessageCommand = function(self)
 				self:zoom(fontScale)
@@ -944,7 +998,7 @@ end
 local function PlaylistSelectLabel(i)
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + offsetX, rankingY + offsetY + 20 + (i - 1) * PlaylistYspacing)
+			self:xy(rankingX + offsetX, rankingY + offsetY + 10 + (i - 1) * PlaylistYspacing)
 			self:visible(true)
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
@@ -958,10 +1012,12 @@ local function PlaylistSelectLabel(i)
 				self:visible(false)
 			end
 		end,
+		seraphicRowBand(rowBandX(rankingX + offsetX), -8, rowBandW, PlaylistYspacing - 2, i),
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
 				self:halign(0):zoom(fontScale)
 				self:maxwidth(100)
+				self:diffuse(color(seraphicLabelColor))
 			end,
 			AllDisplayMessageCommand = function(self)
 				self:halign(0.5)
@@ -971,13 +1027,13 @@ local function PlaylistSelectLabel(i)
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
 				self:halign(0):zoom(fontScale)
-				self:xy(15, row2Yoffset)
+				self:xy(15, row2Yoffset):diffuse(color(seraphicLabelColor))
 			end,
 			AllDisplayMessageCommand = function(self)
 				if allplaylists[i + ((currentplaylistpage - 1) * playlistsperpage)] then
 					self:settextf(
 						"%s: %d",
-						translated_info["ChartCount"],
+						translated_info["ChartCount"]:upper(),
 						allplaylists[i + ((currentplaylistpage - 1) * playlistsperpage)]:GetNumCharts()
 					)
 				end
@@ -986,10 +1042,10 @@ local function PlaylistSelectLabel(i)
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
 				self:halign(0):zoom(fontScale)
-				self:xy(200, row2Yoffset)
+				self:xy(200, row2Yoffset):diffuse(color(seraphicLabelColor))
 			end,
 			AllDisplayMessageCommand = function(self)
-				self:settextf("%s:", translated_info["AverageRating"])
+				self:settextf("%s:", translated_info["AverageRating"]:upper())
 			end
 		},
 		LoadFont("Common Large") .. {
@@ -1053,8 +1109,8 @@ r[#r + 1] = Def.ActorFrame {
 	end,
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:x(capWideScale(190,200)):halign(0):zoom(0.25):diffuse(getMainColor("positive"))
-			self:settext(translated_info["Next"])
+			self:x(capWideScale(190,200)):halign(0):zoom(btnScale):diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["Next"]:upper())
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
 			if update then
@@ -1081,8 +1137,8 @@ r[#r + 1] = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:halign(0):zoom(0.25):diffuse(getMainColor("positive"))
-			self:settext(translated_info["Previous"])
+			self:halign(0):zoom(btnScale):diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["Previous"]:upper())
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
 			self:visible(false)
@@ -1105,12 +1161,12 @@ r[#r + 1] = Def.ActorFrame {
 	},
 	LoadFont("Common Large") .. {
 		InitCommand = function(self)
-			self:x(125):halign(0.5):zoom(0.25)
+			self:x(125):halign(0.5):zoom(btnScale):diffuse(color(seraphicValueColor))
 		end,
 		SetCommand = function(self)
 			self:settextf(
 				"%s %i-%i (%i)",
-				translated_info["Showing"],
+				translated_info["Showing"]:upper(),
 				math.min(((currentplaylistpage - 1) * playlistsperpage) + 1, #allplaylists),
 				math.min(currentplaylistpage * playlistsperpage, #allplaylists),
 				#allplaylists
