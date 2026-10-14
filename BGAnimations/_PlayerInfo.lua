@@ -218,6 +218,42 @@ t[#t + 1] = Def.ActorFrame {
 			end
 		end
 	},
+	-- Seraphic: name and judge sit on a thin dark plate, split by a diamond (select screen only)
+	Def.ActorFrame {
+		InitCommand = function(self)
+			self:visible(onSelect)
+		end,
+		TabChangedMessageCommand = function(self, params)
+			if onSelect then self:visible(((params and params.to) or getTabIndex()) == 0) end
+		end,
+		ChartPreviewOnMessageCommand = function(self) if onSelect then self:visible(false) end end,
+		ChartPreviewOffMessageCommand = function(self) if onSelect then self:visible(getTabIndex() == 0) end end,
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 78):halign(0):zoomto(196, 15):diffuse(color("#0a0507")):diffusealpha(0.75):faderight(0.25)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 70):halign(0):zoomto(196, 1):diffuse(color("#e2e2e2")):diffusealpha(0.6):faderight(0.6)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 86):halign(0):zoomto(196, 1):diffuse(color("#9c1428")):diffusealpha(0.8):faderight(0.6)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 78):rotationz(45):zoomto(4, 4):diffuse(color("#ffffff"))
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(151, 78):rotationz(45):zoomto(4, 4):diffuse(color("#ffffff")):diffusealpha(0.85)
+			end
+		}
+	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		Name = "Name",
 		InitCommand = function(self)
