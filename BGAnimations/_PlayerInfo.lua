@@ -658,7 +658,7 @@ t[#t + 1] = Def.ActorFrame {
 			self:xy(dateBoxX, dateBoxY):halign(0):valign(0):zoomto(dateBoxW, dateBoxH)
 		end
 	},
-	(onSelect and LoadFont("Seraphic Artist") or LoadFont("Common Normal")) .. {
+	(onSelect and LoadFont("Seraphic Date") or LoadFont("Common Normal")) .. {
 		Name = "CurrentTime",
 		InitCommand = function(self)
 			if onSelect then
