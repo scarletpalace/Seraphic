@@ -1,23 +1,24 @@
 
+-- Seraphic: the search box is a dark band, crimson-tinted while typing
 local function diffuseIfActiveButton(self, cond)
 	if cond then
-		self:diffuse(color("#666666"))
+		self:diffuse(color("#3a0c16"))
 	else
-		self:diffuse(color("#ffffff"))
+		self:diffuse(color("#000000"))
 	end
 end
 
 local function diffuseIfActiveText(self, cond)
 	if cond then
-		self:diffuse(color("#FFFFFF"))
+		self:diffuse(color(seraphicValueColor))
 	else
-		self:diffuse(color("#666666"))
+		self:diffuse(color("#7d7579"))
 	end
 end
 
-local activealpha = 0.1
-local inactivealpha = 0.3
-local highlightalpha = 0.5
+local activealpha = 0.8
+local inactivealpha = 0.6
+local highlightalpha = 0.75
 
 local translated_info = {
 	CancelCurrent = THEME:GetString("ScreenPackDownloader", "CancelCurrentDownload"),
@@ -45,6 +46,89 @@ local cancelButtonSpace = 4
 local leftSpace = 10
 local cancelFrameY = 56
 
+-- Seraphic window layout (854x480 at 16:9)
+local winTop = 14 -- top of every window
+local winBottom = SCREEN_HEIGHT - 10 -- bottom of the tag filter and pack windows
+local headH = 20 -- header band height
+local winGap = 10
+local btnH = 24 -- cancel buttons
+local smallBtnH = 22 -- apply / reset / or
+local dlWinH = headH + 6 + btnH + 8 -- "pack downloads" window
+local tagTop = winTop + dlWinH + winGap -- tag filter window top
+local rightX = leftSpace + tagFrameWidth + winGap -- pack search / table window
+local rightW = SCREEN_WIDTH - 10 - rightX
+local tableY = tagTop -- pack table top (lines up with the tag filter window)
+local labelZoomL = 0.21 -- Common Large zoom for small labels (= Common Normal 0.42)
+local accent = "#9c1428"
+
+-- translucent dark window body with a faint filigree footer and a soft 1px edge
+local function windowQuad(x, y, w, h, name)
+	return Def.Quad {
+		Name = name,
+		InitCommand = function(self)
+			self:xy(x, y):halign(0):valign(0):zoomto(w, h)
+			self:diffuseupperleft(color("#262626E6")):diffuseupperright(color("#1a1a1aE6"))
+			self:diffuselowerleft(color("#0a0a0aF0")):diffuselowerright(color("#060606F0"))
+			self:diffusealpha(0.7)
+		end
+	}
+end
+local function windowDecor(x, y, w, h)
+	return Def.ActorFrame {
+		Def.Sprite {
+			Texture = THEME:GetPathG("", "seraphic_filigree"),
+			InitCommand = function(self)
+				self:xy(x + 4, y + h - 3):halign(0):valign(1):zoomto(w - 8, 30):diffusealpha(0.18)
+			end
+		},
+		seraphicSoftEdge(x, y, w, h)
+	}
+end
+local function windowBody(x, y, w, h)
+	return Def.ActorFrame { windowQuad(x, y, w, h), windowDecor(x, y, w, h) }
+end
+
+-- "::HEADING" text vertically centred in a header band
+local function headingText(x, y, text)
+	return LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(x, y + headH / 2):halign(0):zoom(0.45):diffuse(color(seraphicLabelColor))
+			self:settext(seraphicHeading(text))
+		end
+	}
+end
+
+-- thin crimson rule under a button (top-left anchored at x, y)
+local function crimsonRule(x, y, w)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):halign(0):valign(0):zoomto(w, 1)
+			self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142830"))
+		end
+	}
+end
+
+-- dark band button: silver uppercase text, crimson-tinted band on hover
+local function styleButton(self, w, h, text)
+	self.txt:xy(w / 2, h / 2)
+	self.txt:valign(0.5)
+	self.txt:settext(text:upper())
+	self.txt:zoom(labelZoomL)
+	self.txt:maxwidth((w - 8) / labelZoomL)
+	self.bg:zoomto(w, h)
+	self.bg:halign(0):valign(0)
+	self.alphaDeterminingFunction = function(self)
+		if isOver(self.bg) then
+			self.bg:diffuse(color("#4a0e1a")):diffusealpha(0.8)
+			self.txt:diffuse(color(seraphicValueColor))
+		else
+			self.bg:diffuse(color("#000000")):diffusealpha(0.55)
+			self.txt:diffuse(color(seraphicLabelColor))
+		end
+	end
+	self:alphaDeterminingFunction()
+end
+
 local selectedTags = {}
 local tagsMatchAny = true
 local nameInput = ""
@@ -53,7 +137,7 @@ local o = Def.ActorFrame {
 	Name = "MainFrame",
 	InitCommand = function(self)
 		self:xy(0, 0):halign(0.5):valign(0)
-		self:GetChild("PacklistDisplay"):xy(SCREEN_WIDTH / 2.5 - offx, offy * 2 + 14)
+		self:GetChild("PacklistDisplay"):xy(rightX + 4, tableY)
 	end,
 	WheelUpSlowMessageCommand = function(self)
 		self:queuecommand("PrevPage")
@@ -73,49 +157,52 @@ local o = Def.ActorFrame {
 
 }
 
+-- sanctuary backdrop, dimmed so it stays behind the windows
+o[#o + 1] = LoadActor("_sanctuary", SCREEN_CENTER_Y)
+o[#o + 1] = Def.Quad {
+	InitCommand = function(self)
+		self:FullScreen():diffuse(color("#000000")):diffusealpha(0.35)
+	end
+}
 
+-- right window: pack search + pack table
+o[#o + 1] = Def.ActorFrame {
+	Name = "PackWindow",
+	windowBody(rightX, winTop, rightW, winBottom - winTop),
+	seraphicHeaderBand(rightX, winTop, rightW, headH),
+	headingText(rightX + 8, winTop, "Pack Search"),
+}
+
+local dlBtnW = (tagFrameWidth - 18) / 2
 
 o[#o+1] = Def.ActorFrame {
 	Name = "LeftButtonFrame",
 	InitCommand = function(self)
-		self:xy(leftSpace + tagFrameWidth/2, cancelFrameY)
+		self:xy(leftSpace, winTop)
 	end,
 
-	LoadFont("Common Large") .. {
+	windowBody(0, 0, tagFrameWidth, dlWinH),
+	seraphicHeaderBand(0, 0, tagFrameWidth, headH),
+	LoadFont("Common Normal") .. {
 		Name = "TitleText",
 		InitCommand = function(self)
-			self:y(-cancelFrameY/2)
-			self:zoom(0.4)
-			self:maxwidth(SCREEN_WIDTH / 2)
-			self:settext("Pack Downloads")
+			self:xy(8, headH / 2):halign(0)
+			self:zoom(0.45)
+			self:maxwidth((tagFrameWidth - 16) / 0.45)
+			self:diffuse(color(seraphicLabelColor))
+			self:settext(seraphicHeading("Pack Downloads"))
 		end
 	},
+	crimsonRule(6, headH + 6 + btnH, dlBtnW),
+	crimsonRule(12 + dlBtnW, headH + 6 + btnH, dlBtnW),
 	UIElements.TextButton(1, 1, "Common Large") .. {
 		Name = "StopAllDownloadsButton",
 		InitCommand = function(self)
 			self.txt = self:GetChild("Text")
 			self.bg = self:GetChild("BG")
 
-			self:xy(-tagFrameWidth/2, packh)
-
-			self.txt:xy(tagFrameWidth/4 - leftSpace/4, packh/2)
-			self.txt:valign(0.5)
-			self.txt:settext(translated_info["CancelAll"])
-			self.txt:zoom(0.4)
-			self.txt:maxwidth((tagFrameWidth/2 - leftSpace) / 0.4)
-
-			self.bg:zoomto(tagFrameWidth/2 - leftSpace/2, packh)
-			self.bg:halign(0):valign(0)
-			self.bg:diffuse(color("#ffffff"))
-
-			self.alphaDeterminingFunction = function(self)
-				if isOver(self.bg) then
-					self.bg:diffusealpha(0.8)
-				else
-					self.bg:diffusealpha(0.4)
-				end
-			end
-			self:alphaDeterminingFunction()
+			self:xy(6, headH + 6)
+			styleButton(self, dlBtnW, btnH, translated_info["CancelAll"])
 		end,
 		RolloverUpdateCommand = function(self, params)
 			self:alphaDeterminingFunction()
@@ -143,26 +230,8 @@ o[#o+1] = Def.ActorFrame {
 			self.txt = self:GetChild("Text")
 			self.bg = self:GetChild("BG")
 
-			self:xy(leftSpace/2, packh)
-
-			self.txt:xy(tagFrameWidth/4 - leftSpace/4, packh/2)
-			self.txt:valign(0.5)
-			self.txt:settext(translated_info["CancelCurrent"])
-			self.txt:zoom(0.4)
-			self.txt:maxwidth((tagFrameWidth/2 - leftSpace) / 0.4)
-
-			self.bg:zoomto(tagFrameWidth/2 - leftSpace/2, packh)
-			self.bg:halign(0):valign(0)
-			self.bg:diffuse(color("#ffffff"))
-
-			self.alphaDeterminingFunction = function(self)
-				if isOver(self.bg) then
-					self.bg:diffusealpha(0.8)
-				else
-					self.bg:diffusealpha(0.4)
-				end
-			end
-			self:alphaDeterminingFunction()
+			self:xy(12 + dlBtnW, headH + 6)
+			styleButton(self, dlBtnW, btnH, translated_info["CancelCurrent"])
 		end,
 		RolloverUpdateCommand = function(self, params)
 			self:alphaDeterminingFunction()
@@ -190,13 +259,15 @@ local function tagframe()
 	local maxtags = 12
 	local curpage = 1
 
-	local frameBGHeight = SCREEN_HEIGHT - (f0y-30) - leftSpace
+	local frameBGHeight = winBottom - tagTop
 	local frameBGWidth = SCREEN_WIDTH / 3
 	local tagSpacing = 2
-	local tagHeight = ((frameBGHeight * 0.7) / maxtags)
-	local tagWidth = frameBGWidth - tagSpacing*2
-	local tagTextSize = 0.5
-	local tagListStartY = frameBGHeight * 0.22
+	local tagListStartY = headH + 24 + smallBtnH + 8
+	local tagHeight = (frameBGHeight - tagListStartY - 8) / maxtags - tagSpacing
+	local tagWidth = frameBGWidth - 12
+	local tagTextSize = 0.42
+	local btn3W = (frameBGWidth - 24) / 3
+	local btnRowY = headH + 24
 
 	local orderedTags = {}
 	local function loadTags()
@@ -230,7 +301,7 @@ local function tagframe()
 	local t = Def.ActorFrame {
 		Name = "TagFrame",
 		InitCommand = function(self)
-			self:xy(leftSpace, f0y - 30)
+			self:xy(leftSpace, tagTop)
 		end,
 		BeginCommand = function(self)
 			SCREENMAN:GetTopScreen():AddInputCallback(function(event)
@@ -253,31 +324,32 @@ local function tagframe()
 			loadTags()
 		end,
 	
-		Def.Quad {
-			Name = "BG",
-			InitCommand = function(self)
-				self:halign(0):valign(0)
-				self:zoomto(frameBGWidth, frameBGHeight)
-				self:diffuse(color("#666666"))
-				self:diffusealpha(0.4)
-			end
-		},
+		-- window body; also the mouse wheel area for paging tags
+		windowQuad(0, 0, frameBGWidth, frameBGHeight, "BG"),
+		windowDecor(0, 0, frameBGWidth, frameBGHeight),
+		seraphicHeaderBand(0, 0, frameBGWidth, headH),
+		headingText(8, 0, "Tag Filter"),
+		crimsonRule(6, btnRowY + smallBtnH, btn3W),
+		crimsonRule(12 + btn3W, btnRowY + smallBtnH, btn3W),
+		crimsonRule(18 + btn3W * 2, btnRowY + smallBtnH, btn3W),
 		LoadFont("Common Large") .. {
 			Name = "TagExplain",
 			InitCommand = function(self)
 				self:settext("Select tags to filter packs")
-				self:zoom(0.4)
-				self:valign(0)
-				self:xy(frameBGWidth/2, leftSpace)
-				self:maxwidth(frameBGWidth/0.4)
+				self:zoom(0.18)
+				self:valign(0.5)
+				self:xy(frameBGWidth/2, headH + 12)
+				self:maxwidth((frameBGWidth - 16) / 0.18)
+				self:diffuse(color(seraphicLabelColor))
 			end,
 		},
 		LoadFont("Common Large") .. {
 			Name = "PageNum",
 			InitCommand = function(self)
-				self:zoom(0.2)
-				self:valign(1):halign(1)
-				self:xy(frameBGWidth - leftSpace/1.4, tagListStartY - tagSpacing - (packh*0.85))
+				self:zoom(0.18)
+				self:valign(0.5):halign(1)
+				self:xy(frameBGWidth - 8, headH / 2)
+				self:diffuse(color(seraphicValueColor))
 			end,
 			UpdateTagsCommand = function(self)
 				self:settextf("%d-%d of %d", (curpage-1) * maxtags + 1, math.min(#orderedTags, curpage * maxtags), #orderedTags)
@@ -288,24 +360,8 @@ local function tagframe()
 			InitCommand = function(self)
 				self.bg = self:GetChild("BG")
 				self.txt = self:GetChild("Text")
-				self:xy(tagSpacing, tagListStartY - tagSpacing - packh*0.8)
-
-				self.txt:xy(tagFrameWidth/6 - leftSpace/4, (packh*0.8)/2)
-				self.txt:settext("Apply")
-				self.txt:zoom(0.4)
-				self.txt:maxwidth((tagFrameWidth/3 - leftSpace) / 0.4)
-				self.bg:zoomto(tagFrameWidth/3 - leftSpace/2, packh*0.8)
-				self.bg:halign(0):valign(0)
-				self.bg:diffuse(color("#ffffff"))
-
-				self.alphaDeterminingFunction = function(self)
-					if isOver(self.bg) then
-						self.bg:diffusealpha(0.8)
-					else
-						self.bg:diffusealpha(0.4)
-					end
-				end
-				self:alphaDeterminingFunction()
+				self:xy(6, btnRowY)
+				styleButton(self, btn3W, smallBtnH, "Apply")
 			end,
 			RolloverUpdateCommand = function(self, params)
 				self:alphaDeterminingFunction()
@@ -326,24 +382,8 @@ local function tagframe()
 			InitCommand = function(self)
 				self.bg = self:GetChild("BG")
 				self.txt = self:GetChild("Text")
-				self:xy(tagFrameWidth/3 - leftSpace/4 + tagSpacing, tagListStartY - tagSpacing - packh*0.8)
-
-				self.txt:xy(tagFrameWidth/6 - leftSpace/4, (packh*0.8)/2)
-				self.txt:settext("Reset")
-				self.txt:zoom(0.4)
-				self.txt:maxwidth((tagFrameWidth/3 - leftSpace) / 0.4)
-				self.bg:zoomto(tagFrameWidth/3 - leftSpace/2, packh*0.8)
-				self.bg:halign(0):valign(0)
-				self.bg:diffuse(color("#ffffff"))
-
-				self.alphaDeterminingFunction = function(self)
-					if isOver(self.bg) then
-						self.bg:diffusealpha(0.8)
-					else
-						self.bg:diffusealpha(0.4)
-					end
-				end
-				self:alphaDeterminingFunction()
+				self:xy(12 + btn3W, btnRowY)
+				styleButton(self, btn3W, smallBtnH, "Reset")
 			end,
 			RolloverUpdateCommand = function(self, params)
 				self:alphaDeterminingFunction()
@@ -360,24 +400,8 @@ local function tagframe()
 			InitCommand = function(self)
 				self.bg = self:GetChild("BG")
 				self.txt = self:GetChild("Text")
-				self:xy(tagFrameWidth/3 + tagFrameWidth/3 - leftSpace/3.3, tagListStartY - tagSpacing - packh*0.8)
-
-				self.txt:xy(tagFrameWidth/6 - leftSpace/4, (packh*0.8)/2)
-				self.txt:settext(tagsMatchAny and "OR" or "AND")
-				self.txt:zoom(0.4)
-				self.txt:maxwidth((tagFrameWidth/3 - leftSpace) / 0.4)
-				self.bg:zoomto(tagFrameWidth/3 - leftSpace/2, packh*0.8)
-				self.bg:halign(0):valign(0)
-				self.bg:diffuse(color("#ffffff"))
-
-				self.alphaDeterminingFunction = function(self)
-					if isOver(self.bg) then
-						self.bg:diffusealpha(0.8)
-					else
-						self.bg:diffusealpha(0.4)
-					end
-				end
-				self:alphaDeterminingFunction()
+				self:xy(18 + btn3W * 2, btnRowY)
+				styleButton(self, btn3W, smallBtnH, tagsMatchAny and "OR" or "AND")
 			end,
 			RolloverUpdateCommand = function(self, params)
 				self:alphaDeterminingFunction()
@@ -412,14 +436,18 @@ local function tagframe()
 
 				self.bg:zoomto(tagWidth, tagHeight)
 				self.txt:zoom(tagTextSize)
+				self.txt:maxwidth((tagWidth - 10) / tagTextSize)
 				self.bg:diffuse(color("#000000FF"))
 
+				-- alternating dark bands; a selected tag is a crimson-tinted band with bright text
 				self.alphaDeterminingFunction = function(self)
-					local mult = selectedTags[tagtxt] and 1.5 or 1
-					if isOver(self.bg) then
-						self.bg:diffusealpha(0.8 * mult)
+					local over = isOver(self.bg)
+					if selectedTags[tagtxt] then
+						self.bg:diffuse(color("#6a1020")):diffusealpha(over and 0.9 or 0.7)
+						self.txt:diffuse(color(seraphicValueColor))
 					else
-						self.bg:diffusealpha(0.3 * mult*mult)
+						self.bg:diffuse(color("#000000")):diffusealpha(over and 0.65 or (i % 2 == 1 and 0.4 or 0.15))
+						self.txt:diffuse(color(over and seraphicValueColor or seraphicLabelColor))
 					end
 				end
 				self:alphaDeterminingFunction()
@@ -458,11 +486,11 @@ local function tagframe()
 end
 o[#o+1] = tagframe()
 
-local nwidth = SCREEN_WIDTH / 2
-local namex = nwidth
-local namey = 40
+local namex = rightX + 54 -- box left edge; the "NAME:" label sits to its left
+local namey = winTop + headH + 15
 local nhite = 22
-local nameoffx = 20
+local nameoffx = 8
+local nboxw = rightX + rightW - 8 - namex
 local inputting = 0
 
 -- name string search
@@ -520,7 +548,7 @@ o[#o + 1] = Def.ActorFrame {
 	UIElements.QuadButton(1, 1) .. {
 		Name = "SearchBox",
 		InitCommand = function(self)
-			self:zoomto(nwidth - leftSpace, nhite):halign(0)
+			self:zoomto(nboxw, nhite):halign(0)
 			self:diffusealpha(inactivealpha)
 		end,
 		MouseDownCommand = function(self, params)
@@ -547,12 +575,25 @@ o[#o + 1] = Def.ActorFrame {
 			self:diffusealpha(inactivealpha)
 		end,
 	},
+	seraphicSoftEdge(0, -nhite / 2, nboxw, nhite, 0.15),
+	-- crimson rule under the box while typing
+	Def.Quad {
+		Name = "SearchActiveRule",
+		InitCommand = function(self)
+			self:xy(0, nhite / 2):halign(0):valign(0):zoomto(nboxw, 1)
+			self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142830"))
+			self:visible(false)
+		end,
+		SetCommand = function(self)
+			self:visible(inputting == 1)
+		end,
+	},
 	LoadFont("Common Large") .. {
 		Name = "UserInputText",
 		InitCommand = function(self)
 			self:x(nameoffx):halign(0)
-			self:zoom(fontScale)
-			self:maxwidth((nwidth - leftSpace - nameoffx) / fontScale)
+			self:zoom(0.22)
+			self:maxwidth((nboxw - nameoffx * 2) / 0.22)
 		end,
 		SetCommand = function(self)
 			local fval = nameInput
@@ -563,17 +604,21 @@ o[#o + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "SearchLabel",
 		InitCommand = function(self)
-			self:xy(-2,-1) -- font problems
+			self:xy(-6, 0)
 			self:halign(1)
-			self:zoom(fontScale)
-			self:settextf("%s:", translated_info["SearchName"])
+			self:zoom(labelZoomL)
+			self:maxwidth((namex - rightX - 12) / labelZoomL)
+			self:diffuse(color(seraphicLabelColor))
+			self:settextf("%s:", translated_info["SearchName"]:upper())
 		end,
 	},
 	LoadFont("Common Normal") .. {
 		Name = "PackSizeRestrictionLabel",
 		InitCommand = function(self)
-			self:xy(-90, 40):halign(0):valign(0)
-			self:zoom(fontScale)
+			self:xy(rightX + 8 - namex, nhite / 2 + 11):halign(0):valign(0.5)
+			self:zoom(0.34)
+			self:maxwidth((rightW - 16) / 0.34)
+			self:diffuse(color("#8a8285"))
 			self:settextf("%s", translated_info["SizeExplanation"])
 		end,
 	}
