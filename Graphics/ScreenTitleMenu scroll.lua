@@ -1,42 +1,75 @@
 local gc = Var("GameCommand")
 
-return Def.ActorFrame {
-	-- lit bar behind the focused entry (same sprite as the selected song on the music wheel)
-	Def.Sprite {
-		Texture = THEME:GetPathG("", "seraphic_barsel_full"),
+-- Seraphic: centred entries; the focused one is lifted on a crimson glow between two wings
+local wingH = 30
+local function wing(dir)
+	return Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_tab_feather"),
 		InitCommand = function(self)
-			self:xy(266, -72):halign(0):zoomto(0, 26):diffusealpha(0)
+			self:x(dir * 80):rotationz(dir * 62):zoomto(dir * wingH * 160 / 256, wingH)
+			self:diffusealpha(0)
 		end,
 		GainFocusCommand = function(self)
-			self:stoptweening():diffusealpha(1):linear(0.12):zoomto(232, 26)
+			local text = self:GetParent():GetChild("Label")
+			local half = text and text:GetWidth() * 0.34 / 2 or 60
+			self:stoptweening():x(dir * (half + 4)):diffusealpha(0)
+			self:decelerate(0.18):x(dir * (half + 20)):diffusealpha(0.9)
 		end,
 		LoseFocusCommand = function(self)
-			self:stoptweening():linear(0.08):diffusealpha(0):zoomto(0, 26)
+			self:stoptweening():linear(0.1):diffusealpha(0)
 		end
-	},
-	-- diamond bullet: bright on the focused entry, dim on the others
+	}
+end
+
+return Def.ActorFrame {
+	-- crimson glow behind the focused entry, fading out at both ends
 	Def.Quad {
 		InitCommand = function(self)
-			self:xy(279, -72):rotationz(45):zoomto(5, 5):diffuse(color("#ffffff")):diffusealpha(0.4)
+			self:zoomto(0, 20):diffuse(color("#9c1428")):diffusealpha(0):fadeleft(0.45):faderight(0.45)
 		end,
 		GainFocusCommand = function(self)
-			self:stoptweening():linear(0.1):diffusealpha(1):zoomto(7, 7)
+			self:stoptweening():decelerate(0.15):zoomto(280, 20):diffusealpha(0.55)
 		end,
 		LoseFocusCommand = function(self)
-			self:stoptweening():linear(0.1):diffusealpha(0.4):zoomto(5, 5)
+			self:stoptweening():linear(0.1):zoomto(120, 20):diffusealpha(0)
 		end
 	},
-	LoadFont("Common Large") ..
-		{
-			Text = THEME:GetString("ScreenTitleMenu", gc:GetText()),
-			OnCommand = function(self)
-				self:xy(293, -72):align(0, 0.5):maxwidth(190 / 0.34)
-			end,
-			GainFocusCommand = function(self)
-				self:stoptweening():linear(0.1):zoom(0.34):diffuse(color("#ffffff"))
-			end,
-			LoseFocusCommand = function(self)
-				self:stoptweening():linear(0.1):zoom(0.29):diffuse(getTitleColor('Line_Left')):diffusealpha(0.75)
-			end
-		}
+	-- hairlines above and below the glow
+	Def.Quad {
+		InitCommand = function(self)
+			self:y(-10):zoomto(0, 1):diffuse(color("#f0dada")):diffusealpha(0):fadeleft(0.5):faderight(0.5)
+		end,
+		GainFocusCommand = function(self)
+			self:stoptweening():decelerate(0.15):zoomto(240, 1):diffusealpha(0.7)
+		end,
+		LoseFocusCommand = function(self)
+			self:stoptweening():linear(0.1):zoomto(0, 1):diffusealpha(0)
+		end
+	},
+	Def.Quad {
+		InitCommand = function(self)
+			self:y(10):zoomto(0, 1):diffuse(color("#f0dada")):diffusealpha(0):fadeleft(0.5):faderight(0.5)
+		end,
+		GainFocusCommand = function(self)
+			self:stoptweening():decelerate(0.15):zoomto(240, 1):diffusealpha(0.7)
+		end,
+		LoseFocusCommand = function(self)
+			self:stoptweening():linear(0.1):zoomto(0, 1):diffusealpha(0)
+		end
+	},
+	LoadFont("Common Large") .. {
+		Name = "Label",
+		Text = THEME:GetString("ScreenTitleMenu", gc:GetText()),
+		OnCommand = function(self)
+			self:maxwidth(200 / 0.34)
+		end,
+		GainFocusCommand = function(self)
+			self:stoptweening():linear(0.1):zoom(0.34):diffuse(color("#ffffff"))
+		end,
+		LoseFocusCommand = function(self)
+			self:stoptweening():linear(0.1):zoom(0.28):diffuse(color("#bdb3b6")):diffusealpha(0.7)
+		end
+	},
+	wing(-1),
+	wing(1)
 }
