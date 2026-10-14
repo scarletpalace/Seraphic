@@ -22,7 +22,7 @@ local onSelect = loadingScreen == "ScreenSelectMusic" or loadingScreen == "Scree
 local AvatarY = SCREEN_HEIGHT - 62 -- must be set before uploadY below (it was nil there off the select screen, which broke every overlay loading this file)
 local AvatarX = onResults and 62 or 424
 local centerBlockX = onResults and 470 or 668 -- login / judge column, sits between the profile and the right column
-local uploadX = onSelect and 250 or (centerBlockX - 50)
+local uploadX = onSelect and 276 or (centerBlockX - 50) -- select: right of the LOG IN button
 local uploadY = onSelect and 72 or (AvatarY + 41)
 local uploadTextY = onSelect and 58 or (AvatarY + 27)
 local nameMaxWidth = onResults and 240 or 122 -- keeps the profile name clear of the login column
@@ -314,6 +314,74 @@ t[#t + 1] = Def.ActorFrame {
 		MouseOutCommand = function(self)
 			highlightIfOver(self)
 		end,
+	},
+	-- Seraphic (select screen): visible LOG IN / LOG OUT toggle at the end of the nick + judge row.
+	-- Dark when offline, crimson while logged in; uses the same login flow as clicking the nick.
+	Def.ActorFrame {
+		Name = "SelectLoginButton",
+		InitCommand = function(self)
+			self:xy(238, 78):visible(onSelect)
+		end,
+		BeginCommand = function(self)
+			self:queuecommand("Paint")
+		end,
+		PaintCommand = function(self)
+			local on = DLMAN:IsLoggedIn()
+			local q = self:GetChild("BG")
+			if on then
+				q:diffuse(color("#9c1428")):diffusealpha(q.over and 0.7 or 0.45)
+			else
+				q:diffuse(color("#000000")):diffusealpha(q.over and 0.3 or 0.5)
+			end
+			self:GetChild("Label"):settext(on and "LOG OUT" or "LOG IN")
+			self:GetChild("Label"):diffuse(color(on and seraphicValueColor or seraphicLabelColor))
+		end,
+		LoginMessageCommand = function(self) self:queuecommand("Paint") end,
+		LogOutMessageCommand = function(self) self:queuecommand("Paint") end,
+		LoginFailedMessageCommand = function(self) self:queuecommand("Paint") end,
+		OnlineUpdateMessageCommand = function(self) self:queuecommand("Paint") end,
+		TabChangedMessageCommand = function(self, params)
+			if onSelect then self:visible(((params and params.to) or getTabIndex()) == 0) end
+		end,
+		ChartPreviewOnMessageCommand = function(self) if onSelect then self:visible(false) end end,
+		ChartPreviewOffMessageCommand = function(self) if onSelect then self:visible(getTabIndex() == 0) end end,
+		UIElements.QuadButton(1, 1) .. {
+			Name = "BG",
+			InitCommand = function(self)
+				self:zoomto(54, 13):diffuse(color("#000000")):diffusealpha(0.5)
+			end,
+			MouseOverCommand = function(self)
+				self.over = true
+				self:GetParent():queuecommand("Paint")
+			end,
+			MouseOutCommand = function(self)
+				self.over = false
+				self:GetParent():queuecommand("Paint")
+			end,
+			MouseDownCommand = function(self, params)
+				if not onSelect or params.event ~= "DeviceButton_left mouse button" then return end
+				if SCREENMAN:get_input_redirected(PLAYER_1) then return end
+				local loginActor = self:GetParent():GetParent():GetChild("loginlogout")
+				if DLMAN:IsLoggedIn() then
+					-- same as the login actor's LogOut handling: forget the saved token, then log out
+					playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).UserName = ""
+					playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).PasswordToken = ""
+					playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
+					playerConfig:save(pn_to_profile_slot(PLAYER_1))
+					DLMAN:Logout()
+					MESSAGEMAN:Broadcast("LogOut")
+				else
+					loginStep1(loginActor)
+				end
+			end
+		},
+		seraphicSoftEdge(-27, -6.5, 54, 13, 0.22),
+		LoadFont("Common Normal") .. {
+			Name = "Label",
+			InitCommand = function(self)
+				self:zoom(0.32):maxwidth(48 / 0.32):diffuse(color(seraphicLabelColor)):settext("LOG IN")
+			end
+		}
 	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		Name = "loginlogout",
