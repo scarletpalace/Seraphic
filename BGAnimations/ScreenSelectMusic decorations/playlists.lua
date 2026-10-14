@@ -34,13 +34,13 @@ local t = Def.ActorFrame {
 }
 
 local frameX = 10
-local frameY = 40
+local frameY = 96 -- window spans screen y 96..384 (below the top bar)
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 346 -- ends at the bottom bar
-local fontScale = 0.22
+local frameHeight = 288
+local fontScale = 0.21
 local btnScale = 0.21 -- small uppercase buttons (Common Large)
 
-local scoreYspacing = 13
+local scoreYspacing = 12
 local distY = 15
 local offsetX = -10
 local offsetY = 20
@@ -48,6 +48,11 @@ local rankingPage = 1
 local rankingWidth = frameWidth - capWideScale(15, 50)
 local rankingX = capWideScale(30, 50)
 local rankingY = capWideScale(40, 40)
+-- vertical layout inside the window (content between header y+20 and y+284)
+local nameY = 30 -- playlist name / Back / Play As Course (window-relative)
+local chartRowY = 45 -- centre of the first chart row (window-relative)
+local listRowY = frameY + offsetY + 10 -- centre of the first playlist row (screen)
+local footerY = frameHeight - 15 -- Previous / Showing / Next strip (window-relative)
 local rankingTitleSpacing = (rankingWidth / (#ms.SkillSets))
 local whee
 
@@ -65,12 +70,12 @@ local chartlist = {}
 
 local currentchartpage = 1
 local numchartpages
-local chartsperplaylist = 20
+local chartsperplaylist = 18
 
 local allplaylists
 local currentplaylistpage = 1
 local numplaylistpages = 1
-local playlistsperpage = 10
+local playlistsperpage = 8
 
 local translated_info = {
 	Delete = THEME:GetString("TabPlaylists", "Delete"),
@@ -205,7 +210,7 @@ local r = Def.ActorFrame {
 	end,
 	LoadFont("Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX, rankingY):zoom(0.3):halign(0):maxwidth(200 / 0.3)
+			self:xy(frameX, nameY):zoom(0.3):halign(0):maxwidth(200 / 0.3)
 			self:diffuse(color(seraphicValueColor))
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
@@ -476,7 +481,7 @@ local function rankingLabel(i)
 	local chartloaded
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + offsetX, rankingY + offsetY + 2 + (i - 1) * scoreYspacing)
+			self:xy(rankingX + offsetX, chartRowY + (i - 1) * scoreYspacing)
 			self:visible(false)
 		end,
 		DisplayAllPlaylistsMessageCommand = function(self)
@@ -634,7 +639,7 @@ end
 -- Buttons for individual playlist manipulation
 local b2 = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(215, rankingY)
+		self:xy(215, nameY)
 	end,
 	DisplayAllPlaylistsMessageCommand = function(self)
 		self:visible(false)
@@ -689,14 +694,14 @@ r[#r + 1] = b2
 
 -- footer strip behind Previous / Showing / Next / Download
 r[#r + 1] = Def.ActorFrame {
-	seraphicRowBand(8, frameY + rankingY + 250 - 7, frameWidth - 16, 14, 1),
-	seraphicSoftEdge(8, frameY + rankingY + 250 - 7, frameWidth - 16, 14, 0.08)
+	seraphicRowBand(8, footerY - 7, frameWidth - 16, 14, 1),
+	seraphicSoftEdge(8, footerY - 7, frameWidth - 16, 14, 0.08)
 }
 
 -- next/prev pages for individual playlists, i guess these could be merged with the allplaylists buttons for efficiency but meh
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(frameX + 10, frameY + rankingY + 250)
+		self:xy(frameX + 10, footerY)
 	end,
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
@@ -998,7 +1003,7 @@ end
 local function PlaylistSelectLabel(i)
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + offsetX, rankingY + offsetY + 10 + (i - 1) * PlaylistYspacing)
+			self:xy(rankingX + offsetX, listRowY + (i - 1) * PlaylistYspacing)
 			self:visible(true)
 		end,
 		DisplaySinglePlaylistMessageCommand = function(self)
@@ -1105,7 +1110,7 @@ end
 -- next/prev for all playlists
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(frameX + 10, frameY + rankingY + 250)
+		self:xy(frameX + 10, footerY)
 	end,
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
