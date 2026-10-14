@@ -31,7 +31,7 @@ local frameHeight = 20
 local frameX = SCREEN_WIDTH - 40
 local frameY = 15
 
-t[#t + 1] = LoadFont("Common Large") .. {
+t[#t + 1] = LoadFont("Seraphic Title") .. {
 	InitCommand = function(self)
 		self:xy(frameX, frameY + 10):halign(1):zoom(0.55):maxwidth((frameWidth - 40) / 0.35)
 	end,
