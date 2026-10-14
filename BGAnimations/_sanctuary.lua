@@ -13,12 +13,12 @@ local moods = {
 	-- day: cool silver-blue light, a few slow embers
 	day = {
 		overlay = 0.5, floor = {0.32, 0.40, 0.55, 0.5}, halo = {0.62, 0.72, 0.92, 0.2},
-		ember = {0.82, 0.90, 1.0}, embers = 6, speed = 0.7, candles = 0
+		ember = {0.82, 0.90, 1.0}, embers = 6, speed = 0.7, candles = 0.55
 	},
 	-- dusk: warm amber/crimson floor (#7a2a10), a touch brighter
 	dusk = {
 		overlay = 0.5, floor = {0.478, 0.165, 0.063, 0.75}, halo = {0.78, 0.25, 0.12, 0.3},
-		ember = {1.0, 0.68, 0.45}, embers = 10, speed = 1.0, candles = 0
+		ember = {1.0, 0.68, 0.45}, embers = 10, speed = 1.0, candles = 0.8
 	},
 	-- night: deeper dark, crimson glow, more embers rising faster, candles at the foot
 	night = {
@@ -147,7 +147,7 @@ t[#t + 1] = Def.Sprite {
 	end
 }
 
--- embers drifting up through the window, and at night a few candle flames at the foot.
+-- embers drifting up through the window, and candle flames at the foot (faint by day, full at night).
 -- Driven by an update function rather than tweens: the menu locks input until every tween on
 -- the screen has finished, so looping tweens here would keep the menu frozen.
 do
