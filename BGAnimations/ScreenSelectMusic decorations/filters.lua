@@ -1,16 +1,16 @@
 local numbershers = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"}
 local frameX = 10
-local frameY = 45
+local frameY = 96 -- window spans y 96..384, under the top bar
 local active = false
 local whee
-local spacingY = 22 -- filter row pitch
+local spacingY = 20 -- filter row pitch
 local textzoom = 0.35
 local ActiveSS = 0
 local SSQuery = {}
 SSQuery[0] = {}
 SSQuery[1] = {}
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 341 -- ends at the bottom bar (y 386)
+local frameHeight = 288
 local offsetX = 10
 local offsetY = 20
 local activebound = 0
@@ -105,7 +105,7 @@ local translated_info = {
 local labelZoom = 0.4 -- Common Normal, silver uppercase labels
 local valueZoom = 0.21 -- Common Large (== Common Normal 0.42), light values
 local rowH = 18
-local rowsY = 82 -- top of the first filter row (under the help text)
+local rowsY = 74 -- top of the first filter row (under the help text)
 local function rowTop(i) return rowsY + (i - 1) * spacingY end
 local function rowMid(i) return rowTop(i) + rowH / 2 end
 -- left column: filter rows with two value boxes
@@ -128,7 +128,7 @@ local resetX = rightX + rightW - resetW / 2
 local function helpLine(n, text)
 	return LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(offsetX, offsetY + 10 + (n - 1) * 12):zoom(0.38):halign(0):maxwidth((frameWidth - 2 * offsetX) / 0.38)
+			self:xy(offsetX, offsetY + 10 + (n - 1) * 11):zoom(0.36):halign(0):maxwidth((frameWidth - 2 * offsetX) / 0.36)
 			self:diffuse(color(seraphicLabelColor)):settext(text)
 		end
 	}

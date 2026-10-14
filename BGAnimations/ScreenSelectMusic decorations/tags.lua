@@ -6,9 +6,9 @@ local song
 local steps
 local curInput = ""
 local frameX = 10
-local frameY = 40
+local frameY = 96
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 346 -- ends at the bottom bar
+local frameHeight = 288 -- y 96..384, under the top bar
 local fontScale = 0.4
 local tagsperpage = 14
 local offsetX = 10
@@ -18,14 +18,14 @@ local buttondiffuse = 0
 local buttonheight = 10
 local currenttagpage = 1
 local numtagpages = 1
-local tagYSpacing = 28
+local tagYSpacing = 26
 local smallZoom = 0.42 -- Common Normal zoom for small labels
-local tabsY = frameY + 24 -- mode switch tabs (top)
-local tabHeight = 18
-local rowsY = tabsY + tabHeight + 8 -- first tag row (top)
+local tabsY = frameY + offsetY + 4 -- mode switch tabs (top)
+local tabHeight = 16
+local rowsY = tabsY + tabHeight + 6 -- first tag row (top)
 local colWidth = frameWidth / 2 - 15
-local addY = rowsY + 7 * tagYSpacing + 14 -- "Add new tag" / filter mode line (centre)
-local pageY = addY + 26 -- paginator line (centre)
+local addY = rowsY + 7 * tagYSpacing + 12 -- "Add new tag" / filter mode line (centre)
+local pageY = addY + 24 -- paginator line (centre)
 local crimson = "#9c1428"
 local whee
 local filterChanged = false
