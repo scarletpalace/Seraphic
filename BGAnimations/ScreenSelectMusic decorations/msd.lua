@@ -3,17 +3,17 @@ local update = false
 local steps
 local song
 local frameX = 10
-local frameY = 40
+local frameY = 96 -- under the top bar, same box as the banner + info panel
 local frameWidth = SCREEN_WIDTH * 0.56
-local frameHeight = 346 -- ends at the bottom bar
+local frameHeight = 288 -- ends where the info panel ends (y 384)
 local fontScale = 0.4
 local distY = 15
 local offsetX = 10
 local offsetY = 20
 local pn = GAMESTATE:GetEnabledPlayers()[1]
 local greatest = 0
-local txtDist = 24 -- skillset row pitch
-local rowsY = frameY + 128 -- first skillset row (under the density graph)
+local txtDist = 21 -- skillset row pitch
+local rowsY = frameY + 110 -- first skillset row (under the density graph)
 local rowW = 270
 local steps
 local meter = {}
@@ -32,7 +32,7 @@ local t = Def.ActorFrame {
 	Name = "MSDTab",
 	BeginCommand = function(self)
 		cd = self:GetChild("ChordDensityGraph")
-		cd:xy(frameX + offsetX, frameY + 122):visible(false)
+		cd:xy(frameX + offsetX, frameY + 104):visible(false)
 		self:queuecommand("Set"):visible(false)
 	end,
 	OffCommand = function(self)
@@ -108,7 +108,7 @@ local function littlebits(i)
 		seraphicBullet(frameX + offsetX + 9, y + (txtDist - 2) / 2),
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(frameX + offsetX + 20, y + (txtDist - 2) / 2):halign(0):zoom(0.36):maxwidth(160 / 0.36)
+				self:xy(frameX + offsetX + 20, y + (txtDist - 2) / 2):halign(0):zoom(0.32):maxwidth(160 / 0.32)
 			end,
 			SetCommand = function(self)
 				--skillset name
@@ -128,7 +128,7 @@ local function littlebits(i)
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(frameX + offsetX + rowW - 8, y + (txtDist - 2) / 2):halign(1):zoom(0.36):maxwidth(90 / 0.36)
+				self:xy(frameX + offsetX + rowW - 8, y + (txtDist - 2) / 2):halign(1):zoom(0.32):maxwidth(90 / 0.32)
 			end,
 			SetCommand = function(self)
 				if song and steps then
@@ -156,7 +156,7 @@ t[#t + 1] = LoadFont("Common Normal") .. {
 --Song Title
 t[#t + 1] = LoadFont("Common Large") .. {
 	InitCommand = function(self)
-		self:xy(frameX + offsetX, frameY + 35):zoom(0.6):halign(0):diffuse(getMainColor("positive"))
+		self:xy(frameX + offsetX, frameY + 34):zoom(0.45):halign(0):diffuse(getMainColor("positive"))
 		self:maxwidth(SCREEN_CENTER_X / 0.7)
 		self:diffusetopedge(Saturation(getMainColor("highlight"), 0.5))
 		self:diffusebottomedge(Saturation(getMainColor("positive"), 0.6))
@@ -173,7 +173,7 @@ t[#t + 1] = LoadFont("Common Large") .. {
 -- Music Rate Display
 t[#t + 1] = LoadFont("Common Large") .. {
 	InitCommand = function(self)
-		self:xy(frameX + offsetX + capWideScale(280, 300) + 8, frameY + 122):visible(true):align(0, 1):zoom(0.3):diffuse(color(seraphicValueColor))
+		self:xy(frameX + offsetX + capWideScale(280, 300) + 8, frameY + 104):visible(true):align(0, 1):zoom(0.3):diffuse(color(seraphicValueColor))
 	end,
 	SetCommand = function(self)
 		if steps then
@@ -188,7 +188,7 @@ t[#t + 1] = LoadFont("Common Large") .. {
 t[#t + 1] = LoadFont("Common Normal") .. {
 	Name = "StepsAndMeter",
 	InitCommand = function(self)
-		self:xy(frameX + offsetX, frameY + offsetY + 44):zoom(0.5):halign(0):maxwidth(350)
+		self:xy(frameX + offsetX, frameY + offsetY + 33):zoom(0.42):halign(0):maxwidth(350)
 	end,
 	SetCommand = function(self)
 		steps = GAMESTATE:GetCurrentSteps()
@@ -210,7 +210,7 @@ t[#t + 1] = LoadFont("Common Normal") .. {
 t[#t + 1] = LoadFont("Common Normal") .. {
 	Name = "NPS",
 	InitCommand = function(self)
-		self:xy(frameX + offsetX + 175, frameY + offsetY + 44):zoom(0.45):halign(0)
+		self:xy(frameX + offsetX + 175, frameY + offsetY + 33):zoom(0.4):halign(0)
 	end,
 	SetCommand = function(self)
 		steps = GAMESTATE:GetCurrentSteps()
