@@ -1,11 +1,11 @@
 local tzoom = 0.5 -- column layout scale
-local rzoom = 0.36 -- row text (two lines per row, small enough to leave a gap)
+local rzoom = 0.44 -- row text
 local hzoom = 0.42 -- header labels
-local pdh = 22
+local pdh = 24
 local ygap = 2
 local packspaceY = pdh + ygap -- row pitch
 
-local numgoals = 11 -- rows per page (fits the 96..384 window)
+local numgoals = 10 -- rows per page (fits the 96..384 window at full text size)
 local ind = 0
 local offx = 5
 local width = SCREEN_WIDTH * 0.56
@@ -292,7 +292,7 @@ local function makeGoalDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common normal") .. {
 			--priority
 			InitCommand = function(self)
-				self:x(c0x):zoom(rzoom):halign(0.5):valign(1):y(-1.5)
+				self:x(c0x):zoom(rzoom):halign(0.5):valign(1):y(-0.5)
 			end,
 			DisplayCommand = function(self)
 				self:settext(sg:GetPriority())
@@ -351,7 +351,7 @@ local function makeGoalDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common normal") .. {
 			--rate
 			InitCommand = function(self)
-				self:x(c1x):zoom(rzoom):halign(0.5):valign(1):y(-1.5)
+				self:x(c1x):zoom(rzoom):halign(0.5):valign(1):y(-0.5)
 			end,
 			DisplayCommand = function(self)
 				local ratestring = string.format("%.2f", sg:GetRate()):gsub("%.?0$", "") .. "x"
@@ -381,7 +381,7 @@ local function makeGoalDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common normal") .. {
 			--percent
 			InitCommand = function(self)
-				self:x(c1x):zoom(rzoom):halign(0.5):valign(0):maxwidth((50 - capWideScale(10, 10)) / rzoom):y(1.5)
+				self:x(c1x):zoom(rzoom):halign(0.5):valign(0):maxwidth((50 - capWideScale(10, 10)) / rzoom):y(0.5)
 			end,
 			DisplayCommand = function(self)
 				local perc = notShit.round(sg:GetPercent() * 100000) / 1000
@@ -417,7 +417,7 @@ local function makeGoalDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common normal") .. {
 			--song name
 			InitCommand = function(self)
-				self:x(c2x):zoom(rzoom):maxwidth((c3x - c2x - capWideScale(50, 80)) / rzoom):halign(0):valign(1):draworder(1):y(-1.5)
+				self:x(c2x):zoom(rzoom):maxwidth((c3x - c2x - capWideScale(50, 80)) / rzoom):halign(0):valign(1):draworder(1):y(-0.5)
 			end,
 			DisplayCommand = function(self)
 				if goalsong then
@@ -447,7 +447,7 @@ local function makeGoalDisplay(i)
 		LoadFont("Common normal") .. {
 			--pb
 			InitCommand = function(self)
-				self:x(c2x):zoom(rzoom):halign(0):valign(0):y(1.5)
+				self:x(c2x):zoom(rzoom):halign(0):valign(0):y(0.5)
 			end,
 			DisplayCommand = function(self)
 				local pb = sg:GetPBUpTo()
@@ -476,7 +476,7 @@ local function makeGoalDisplay(i)
 		LoadFont("Common normal") .. {
 			--assigned
 			InitCommand = function(self)
-				self:x(c4x):zoom(rzoom):halign(1):valign(0):maxwidth(width / 3.5 / rzoom):y(1.5)
+				self:x(c4x):zoom(rzoom):halign(1):valign(0):maxwidth(width / 3.5 / rzoom):y(0.5)
 			end,
 			DisplayCommand = function(self)
 				self:settextf("%s: %s", translated_info["Assigned"], sg:WhenAssigned()):diffuse(byAchieved(sg))
@@ -485,7 +485,7 @@ local function makeGoalDisplay(i)
 		LoadFont("Common normal") .. {
 			--achieved
 			InitCommand = function(self)
-				self:x(c4x):zoom(rzoom):halign(1):valign(1):maxwidth(width / 3.5 / rzoom):y(-1.5)
+				self:x(c4x):zoom(rzoom):halign(1):valign(1):maxwidth(width / 3.5 / rzoom):y(-0.5)
 			end,
 			DisplayCommand = function(self)
 				if sg:IsAchieved() then
@@ -501,7 +501,7 @@ local function makeGoalDisplay(i)
 		LoadFont("Common normal") .. {
 			--msd diff
 			InitCommand = function(self)
-				self:x(c5x):zoom(rzoom):halign(1):valign(1):y(-1.5)
+				self:x(c5x):zoom(rzoom):halign(1):valign(1):y(-0.5)
 			end,
 			DisplayCommand = function(self)
 				if goalsteps then
@@ -515,7 +515,7 @@ local function makeGoalDisplay(i)
 		LoadFont("Common normal") .. {
 			--steps diff
 			InitCommand = function(self)
-				self:x(c5x):zoom(rzoom):halign(1):valign(0):y(1.5)
+				self:x(c5x):zoom(rzoom):halign(1):valign(0):y(0.5)
 			end,
 			DisplayCommand = function(self)
 				if goalsteps and goalsong then
