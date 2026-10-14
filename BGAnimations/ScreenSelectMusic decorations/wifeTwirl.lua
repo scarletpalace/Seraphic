@@ -1180,6 +1180,7 @@ do
 		}
 	end
 	t[#t + 1] = Def.ActorFrame {
+		seraKeep = true, -- banner outline: stays when the info window hides on packs
 		InitCommand = function(self) self:visible(BannersEnabled()) end,
 		ChartPreviewOnMessageCommand = function(self) self:visible(false) end,
 		ChartPreviewOffMessageCommand = function(self) self:visible(BannersEnabled()) end,
@@ -1547,6 +1548,49 @@ t[#t + 1] =
 		end,
 	}
 }
+
+-- Seraphic: the info window only shows on songs; on a pack row (no song selected) it fades away.
+-- Everything except the banner, its outline and the off-screen buttons moves into one frame for that.
+do
+	local keep = {Banner = true, LittleButtonsOnTheLeft = true, Ready = true, ForceStart = true}
+	local panel = Def.ActorFrame {
+		Name = "InfoPanel",
+		BeginCommand = function(self)
+			self:playcommand("SeraPanel", {instant = true})
+		end,
+		CurrentSongChangedMessageCommand = function(self)
+			self:playcommand("SeraPanel")
+		end,
+		SeraPanelCommand = function(self, params)
+			local show = GAMESTATE:GetCurrentSong() ~= nil
+			if show == self.shown then return end
+			self.shown = show
+			self:stoptweening()
+			if show then
+				self:visible(true)
+				if params and params.instant then self:diffusealpha(1) else self:linear(0.15):diffusealpha(1) end
+			elseif params and params.instant then
+				self:diffusealpha(0):visible(false)
+			else
+				self:linear(0.15):diffusealpha(0):queuecommand("SeraPanelHide")
+			end
+		end,
+		SeraPanelHideCommand = function(self)
+			if not self.shown then self:visible(false) end
+		end
+	}
+	local rest = {}
+	for _, a in ipairs(t) do
+		if (a.Name and keep[a.Name]) or a.seraKeep then
+			rest[#rest + 1] = a
+		else
+			panel[#panel + 1] = a
+		end
+	end
+	for i = #t, 1, -1 do t[i] = nil end
+	t[1] = panel
+	for _, a in ipairs(rest) do t[#t + 1] = a end
+end
 
 t[#t + 1] = LoadActorWithParams("../_chartpreview.lua", {yPos = prevY, yPosReverse = prevrevY})
 return t
