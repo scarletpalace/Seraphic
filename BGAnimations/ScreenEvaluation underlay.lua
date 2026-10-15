@@ -102,7 +102,7 @@ if BannersEnabled() then
 			local bnpath = song and song:GetBannerPath()
 			if not bnpath then bnpath = THEME:GetPathG("Common", "fallback banner") end
 			self:LoadBackground(bnpath)
-			self:scaletoclipped(bw, bh)
+			seraphicFitBanner(self, bnpath, bw, bh)
 			MESSAGEMAN:Broadcast("SeraBannerSized", {w = bw, h = bh})
 		end
 	}
