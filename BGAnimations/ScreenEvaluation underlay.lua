@@ -90,9 +90,10 @@ seraWindow(10, 24, 262, 432)
 seraWindow(582, 24, 262, 432)
 
 -- small banner next to the song data block (right column):
--- shown whole (not cropped to the centre), anchored top-left, with the frame hugging the actual image
+-- same 3.2:1 shape as the song select banner, cropped to fit the same way (scaletoclipped)
 if BannersEnabled() then
-	local bx, by, bw, bh = 590, 54, 246, 76.3
+	local bx, by, bw = 590, 54, 246
+	local bh = bw / 3.2
 	t[#t + 1] = Def.Sprite {
 		Name = "Banner",
 		OnCommand = function(self)
@@ -101,22 +102,8 @@ if BannersEnabled() then
 			local bnpath = song and song:GetBannerPath()
 			if not bnpath then bnpath = THEME:GetPathG("Common", "fallback banner") end
 			self:LoadBackground(bnpath)
-			local w, h = self:GetWidth(), self:GetHeight()
-			local zw, zh = bw, bh
-			if w > 0 and h > 0 then
-				-- as wide as the box; if the banner is taller than the box show its top part (no centre crop)
-				local fullh = h * (bw / w)
-				self:zoomto(bw, fullh)
-				if fullh > bh then
-					self:cropbottom((fullh - bh) / fullh)
-					zh = bh
-				else
-					zh = fullh
-				end
-			else
-				self:zoomto(bw, bh)
-			end
-			MESSAGEMAN:Broadcast("SeraBannerSized", {w = zw, h = zh})
+			self:scaletoclipped(bw, bh)
+			MESSAGEMAN:Broadcast("SeraBannerSized", {w = bw, h = bh})
 		end
 	}
 	local function edge(place)
