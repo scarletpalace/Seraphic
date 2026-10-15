@@ -147,4 +147,13 @@ t[#t + 1] =
 	}
 }
 
+-- Seraphic: keep the song list's title font (7 large pages with kanji) loaded for the whole session.
+-- This layer lives from startup to exit, so the font is read once while the game starts,
+-- instead of on the first visit to song select (it was ~3 s there).
+t[#t + 1] = LoadFont("Seraphic Title") .. {
+	InitCommand = function(self)
+		self:visible(false):settext("")
+	end
+}
+
 return t
