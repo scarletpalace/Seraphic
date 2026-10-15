@@ -1212,7 +1212,9 @@ local sigil = Def.ActorFrame {
 				v[#v + 1] = {{0, 0, 0}, faintCol}
 				v[#v + 1] = {{x, y, 0}, faintCol}
 			end
-			self:SetDrawState({Mode = "DrawMode_Lines"})
+			v[#v + 1] = {{0, 0, 0}, faintCol}
+			-- spokes as one line strip that runs out to each point and back (there is no DrawMode_Lines)
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
 			self:SetLineWidth(1)
 			self:SetVertices(v)
 		end
