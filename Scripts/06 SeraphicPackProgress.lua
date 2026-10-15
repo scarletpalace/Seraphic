@@ -79,3 +79,11 @@ function SeraphicPackProgressReset(pack)
 		SeraphicPackProgressCache = {}
 	end
 end
+
+-- load-time diagnostics: "[Seraphic] t=<clock> +<since last stamp> <label>" lines in the log
+local seraphicLastStamp
+function SeraphicStamp(label)
+	local now = os.clock()
+	Warn(string.format("[Seraphic] t=%.3f +%.3f %s", now, now - (seraphicLastStamp or now), label))
+	seraphicLastStamp = now
+end

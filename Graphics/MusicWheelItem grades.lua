@@ -1,3 +1,4 @@
+if SeraphicStamp then SeraphicStamp("wheel item grades") end
 -- bar geometry (same numbers as MusicWheelItem Song NormalPart)
 local barX, barW, barH = 8, capWideScale(get43size(342), 342), 38
 
