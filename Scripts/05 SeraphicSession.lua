@@ -79,7 +79,12 @@ function SeraphicSessionRecordScore(hs)
 		SeraphicSession.keys[key] = true
 	end
 	table.insert(SeraphicSession.scores, 1, snap)
-	if SeraphicPackProgressReset then SeraphicPackProgressReset() end
+	-- only the played song's pack needs recounting (recounting every pack made song select slow after each score)
+	if SeraphicPackProgressReset then
+		local pack
+		pcall(function() pack = GAMESTATE:GetCurrentSong():GetGroupName() end)
+		SeraphicPackProgressReset(pack)
+	end
 	SeraphicSessionRecordPlay(snap:GetWifeScore(), snap:GetSkillsetSSR("Overall"))
 end
 

@@ -392,7 +392,8 @@ t[#t+1] = Def.Quad {
 
 -- Seraphic: hover + click for the score entries, driven by isOver() polling and our own input callback
 -- (the BUTTON MouseOver/MouseDown events never reached these quads on the results screen)
-t[#t+1] = Def.Actor {
+-- an ActorFrame, not a plain Actor: only frames have SetUpdateFunction
+t[#t+1] = Def.ActorFrame {
 	OnCommand = function(self)
 		local root = self:GetParent()
 		local function each(fn)
