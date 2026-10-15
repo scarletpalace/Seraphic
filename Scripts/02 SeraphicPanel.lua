@@ -167,3 +167,32 @@ function seraphicCenteredBorder(getSize)
 		diamond(-1, -1), diamond(1, -1), diamond(-1, 1), diamond(1, 1)
 	}
 end
+
+-- Banner fitting. Pictures use scaletoclipped. Video banners get an exact centre crop computed from the
+-- movie texture's real image size (scaletoclipped mis-placed the crop on movies, showing mostly the
+-- black letterbox at the top); the crop fills the whole w x h box at the banner's ratio.
+local videoExt = {mp4 = true, avi = true, mkv = true, webm = true, mpg = true, mpeg = true, mov = true,
+	wmv = true, flv = true, ogv = true, m4v = true, f4v = true}
+function seraphicIsVideo(path)
+	if type(path) ~= "string" then return false end
+	local ext = path:match("%.([%w]+)$")
+	return ext ~= nil and videoExt[ext:lower()] == true
+end
+function seraphicFitBanner(spr, path, w, h)
+	if not seraphicIsVideo(path) then
+		spr:scaletoclipped(w, h)
+		return
+	end
+	local ok = pcall(function()
+		local tex = spr:GetTexture()
+		local iw, ih = tex:GetImageWidth(), tex:GetImageHeight()
+		local tw, th = tex:GetTextureWidth(), tex:GetTextureHeight()
+		if iw <= 0 or ih <= 0 or tw <= 0 or th <= 0 then error("no size") end
+		local s = math.max(w / iw, h / ih)
+		local vw, vh = w / s, h / s
+		local u0, v0 = (iw - vw) / 2 / tw, (ih - vh) / 2 / th
+		spr:customtexturerect(u0, v0, u0 + vw / tw, v0 + vh / th)
+		spr:zoomto(w, h)
+	end)
+	if not ok then spr:scaletoclipped(w, h) end
+end
