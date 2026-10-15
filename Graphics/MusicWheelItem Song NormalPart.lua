@@ -33,7 +33,8 @@ function seraphicBar(name, texH, alpha, vis)
 	}
 end
 
-local progX, progY, progW, progH = 22, 13, barW - 52, 3
+-- tube under the pack name, with room on the right for the "played / total" count
+local progX, progY, progW, progH = 24, 10, barW - 104, 6
 -- grade colour softened toward silver so it sits with the theme: lit top, deeper bottom
 local function progShade(c, toWhite, dark)
 	local m = 0.18
@@ -64,11 +65,21 @@ function seraphicPackProgressBar()
 			end
 			-- small crystal riding the end of the filled part
 			self:GetChild("Head"):x(x):visible(x > progX + 1 and x < progX + progW - 1)
+			local played = 0
+			for i = 1, #prog.counts do played = played + prog.counts[i] end
+			self:GetChild("Count"):settextf("%d / %d", played, prog.total)
 		end,
 		-- tube: dark glass with a silver rim (brighter on top), fading in at both ends
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(progX, progY):halign(0):zoomto(progW, progH + 2):diffuse(color("#050505")):diffusealpha(0.75)
+				self:xy(progX, progY):halign(0):zoomto(progW, progH + 2):diffuse(color("#050505")):diffusealpha(0.8)
+			end
+		},
+		-- inner shadow at the top of the empty tube
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(progX, progY - progH / 2):halign(0):valign(0):zoomto(progW, progH / 2)
+				self:diffusetopedge(color("#00000099")):diffusebottomedge(color("#00000000"))
 			end
 		},
 		Def.Quad {
@@ -106,8 +117,8 @@ function seraphicPackProgressBar()
 	-- glass sheen over the fill
 	f[#f + 1] = Def.Quad {
 		InitCommand = function(self)
-			self:xy(progX, progY - progH / 2 + 0.5):halign(0):zoomto(progW, 1):diffuse(color("#ffffff"))
-			self:diffusealpha(0.18):blend("BlendMode_Add")
+			self:xy(progX, progY - progH / 2):halign(0):valign(0):zoomto(progW, progH * 0.45)
+			self:diffusetopedge(color("#ffffff40")):diffusebottomedge(color("#ffffff08")):blend("BlendMode_Add")
 		end
 	}
 	-- crystal caps at both ends (like the grade gauge) and a small one at the fill's tip
@@ -120,9 +131,16 @@ function seraphicPackProgressBar()
 			end
 		}
 	end
-	f[#f + 1] = crystal("CapL", progX - 3, 0.2)
-	f[#f + 1] = crystal("CapR", progX + progW + 3, 0.2)
-	f[#f + 1] = crystal("Head", progX, 0.13)
+	f[#f + 1] = crystal("CapL", progX - 4, 0.28)
+	f[#f + 1] = crystal("CapR", progX + progW + 4, 0.28)
+	f[#f + 1] = crystal("Head", progX, 0.18)
+	-- songs with a score / songs in the pack
+	f[#f + 1] = LoadFont("Common Normal") .. {
+		Name = "Count",
+		InitCommand = function(self)
+			self:xy(progX + progW + 14, progY):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor))
+		end
+	}
 	return f
 end
 
