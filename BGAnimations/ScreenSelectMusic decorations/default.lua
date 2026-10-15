@@ -2,6 +2,7 @@ local t = Def.ActorFrame {}
 -- Seraphic: load-time measurement, written to the log as "[Seraphic] ..." lines. For each part it logs the time
 -- to read its file and the time to build its actors (a marker actor before and after it in this frame).
 local clock0 = os.clock()
+if SeraphicStamp then SeraphicStamp("decorations start") end
 local mark = 0
 local function timed(name)
 	local c = os.clock()
@@ -35,6 +36,7 @@ Warn(string.format("[Seraphic] decorations files read in %.3fs", os.clock() - cl
 t[#t + 1] = Def.Actor {
 	InitCommand = function()
 		Warn(string.format("[Seraphic] decorations built in %.3fs", os.clock() - clock0))
+		if SeraphicStamp then SeraphicStamp("decorations init done") end
 	end
 }
 return t

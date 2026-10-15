@@ -1,3 +1,4 @@
+if SeraphicStamp then SeraphicStamp("wheel item part") end
 local lastclick = GetTimeSinceStart()
 local requiredtimegap = 0.1
 

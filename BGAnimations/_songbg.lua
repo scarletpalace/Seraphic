@@ -1,3 +1,4 @@
+if SeraphicStamp then SeraphicStamp("underlay (_songbg) start") end
 local enabled = PREFSMAN:GetPreference("ShowBackgrounds")
 local brightness = 0.3
 
@@ -66,4 +67,5 @@ t[#t+1] = UIElements.QuadButton(-1000, 1) .. {-- a fullscreen button for right c
 	end
 }
 
+if SeraphicStamp then SeraphicStamp("underlay read") end
 return t
