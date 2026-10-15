@@ -59,15 +59,23 @@ function SeraphicPackProgress(pack)
 	local songs
 	pcall(function() songs = SONGMAN:GetSongsInGroup(pack) end)
 	if not songs or #songs == 0 then return nil end
+	local c = os.clock()
 	local out = {total = #songs, counts = {0, 0, 0, 0, 0}}
 	for _, song in ipairs(songs) do
 		local f = familyOf(songBest(song))
 		if f then out.counts[f] = out.counts[f] + 1 end
 	end
 	SeraphicPackProgressCache[pack] = out
+	local took = os.clock() - c
+	if took > 0.01 then Warn(string.format("[Seraphic] pack progress %s: %.3fs", pack, took)) end
 	return out
 end
 
-function SeraphicPackProgressReset()
-	SeraphicPackProgressCache = {}
+-- drop one pack's cached counts (a score was set in it), or all of them when no pack is given
+function SeraphicPackProgressReset(pack)
+	if pack then
+		SeraphicPackProgressCache[pack] = nil
+	else
+		SeraphicPackProgressCache = {}
+	end
 end
