@@ -63,21 +63,24 @@ local judges = {
 	"TapNoteScore_Miss"
 }
 
--- Seraphic: soft dark strip so the song text stays readable over busy backgrounds
+-- Seraphic: soft dark pool behind the song text (rate, title, artist, pack) so it stays readable over busy
+-- backgrounds; it covers all four lines and fades out on every side instead of ending in hard edges
 t[#t + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(SCREEN_CENTER_X, 388)
+		self:xy(SCREEN_CENTER_X, 397)
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(1):valign(0):zoomto(200, 40):diffuse(color("#000000"))
-			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000A0"))
+			self:halign(1):zoomto(150, 70)
+			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000C0"))
+			self:fadetop(0.3):fadebottom(0.3)
 		end
 	},
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(0):valign(0):zoomto(200, 40):diffuse(color("#000000"))
-			self:diffuseleftedge(color("#000000A0")):diffuserightedge(color("#00000000"))
+			self:halign(0):zoomto(150, 70)
+			self:diffuseleftedge(color("#000000C0")):diffuserightedge(color("#00000000"))
+			self:fadetop(0.3):fadebottom(0.3)
 		end
 	}
 }
