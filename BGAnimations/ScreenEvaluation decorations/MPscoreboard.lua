@@ -1,8 +1,12 @@
 local lines = 32 -- number of scores to display
-local framex = SCREEN_WIDTH - capWideScale(get43size(230), 230)
-local framey = 60
-local frameWidth = capWideScale(get43size(220), 220)
+-- Seraphic: the players' scores go in the ::SCORE HISTORY window (right column, under the judge details),
+-- three rows at a time; the mouse wheel over the window scrolls through the rest
+local framex = 600
+local framey = 349
+local frameWidth = 236
 local spacing = 34
+local shownRows = 3
+local scrollOffset = 0
 local multiscores = {}
 local selectedplayer = -1
 
@@ -75,6 +79,18 @@ local function updateScoreBoard(self)
 		SetActivePlayer(1)
 	end
 end
+-- mouse wheel over the score window scrolls it (see ScrollArea below)
+local function MPinput(event)
+	if event.type == "InputEventType_FirstPress" then
+		if event.DeviceInput.button == "DeviceButton_mousewheel up" then
+			MESSAGEMAN:Broadcast("WheelUpSlow")
+		elseif event.DeviceInput.button == "DeviceButton_mousewheel down" then
+			MESSAGEMAN:Broadcast("WheelDownSlow")
+		end
+	end
+	return false
+end
+
 local t = Def.ActorFrame {
 	Name = "scoreBoard",
 	InitCommand = function(self)
@@ -94,14 +110,15 @@ local function scoreitem(pn, i)
 			self:visible(false)
 		end,
 		UpdateNetScoreCommand = function(self)
-			self:visible(i <= #multiscores)
+			self:visible(i <= #multiscores and i > scrollOffset and i <= scrollOffset + shownRows)
+			self:y(-scrollOffset * spacing)
 		end,
 		--The main quad
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
 				self:xy(framex, framey + ((i - 1) * spacing) - 4):zoomto(frameWidth, 30):halign(0):valign(0):diffuse(
-					color("#333333")
-				):diffusealpha(1):diffuserightedge(color("#33333333"))
+					color("#000000")
+				):diffusealpha(i % 2 == 1 and 0.45 or 0.25)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" then
@@ -113,8 +130,8 @@ local function scoreitem(pn, i)
 		Def.Quad {
 			InitCommand = function(self)
 				self:xy(framex, framey + ((i - 1) * spacing) - 4):zoomto(frameWidth, 30):halign(0):valign(0):diffuse(
-					color("#ffffff")
-				):diffusealpha(0.3):diffuserightedge(color("#33333300"))
+					color("#9c1428")
+				):diffusealpha(0.35):diffuserightedge(color("#9c142800"))
 			end,
 			UpdateNetScoreCommand = function(self)
 				self:visible(multiscores[i] and SCREENMAN:GetTopScreen():GetCurrentPlayer() == multiscores[i].idx or false)
@@ -135,7 +152,7 @@ local function scoreitem(pn, i)
 		--ClearType lamps
 		Def.Quad {
 			UpdateNetScoreCommand = function(self)
-				self:xy(framex, framey + ((i - 1) * spacing) - 4):zoomto(8, 30):halign(0):valign(0):diffuse(
+				self:xy(framex, framey + ((i - 1) * spacing) - 4):zoomto(3, 30):halign(0):valign(0):diffuse(
 					getClearTypeFromScore(pn, hs, 2)
 				)
 			end
@@ -148,9 +165,9 @@ local function scoreitem(pn, i)
 			UpdateNetScoreCommand = function(self)
 				self:settext(i)
 				if multiscores[i] and SCREENMAN:GetTopScreen():GetCurrentPlayer() == multiscores[i].idx then
-					self:diffuse(color("#ffcccc"))
+					self:diffuse(color("#e8b8c2"))
 				else
-					self:diffuse(color("#FFFFFF"))
+					self:diffuse(color(seraphicLabelColor))
 				end
 			end,
 			UpdateNetEvalStatsMessageCommand = function(self)
@@ -196,7 +213,7 @@ local function scoreitem(pn, i)
 		LoadFont("Common normal") .. {
 			Name = "grade",
 			InitCommand = function(self)
-				self:xy(framex + 130 + capWideScale(get43size(0), 50), framey + 2 + ((i - 1) * spacing)):zoom(0.35):halign(0.5):maxwidth(
+				self:xy(framex + frameWidth * 0.818, framey + 2 + ((i - 1) * spacing)):zoom(0.35):halign(0.5):maxwidth(
 					(frameWidth - 15) / 0.35
 				)
 			end,
@@ -208,7 +225,7 @@ local function scoreitem(pn, i)
 		LoadFont("Common normal") .. {
 			Name = "clear",
 			InitCommand = function(self)
-				self:xy(framex + 130 + capWideScale(get43size(0), 50), framey + 12 + ((i - 1) * spacing)):zoom(0.35):halign(0.5):maxwidth(
+				self:xy(framex + frameWidth * 0.818, framey + 12 + ((i - 1) * spacing)):zoom(0.35):halign(0.5):maxwidth(
 					(frameWidth - 15) / 0.35
 				)
 			end,
@@ -220,7 +237,7 @@ local function scoreitem(pn, i)
 		LoadFont("Common normal") .. {
 			Name = "combo",
 			InitCommand = function(self)
-				self:xy(framex + 130 + capWideScale(get43size(0), 50), framey + 22 + ((i - 1) * spacing)):zoom(0.35):halign(0.5):maxwidth(
+				self:xy(framex + frameWidth * 0.818, framey + 22 + ((i - 1) * spacing)):zoom(0.35):halign(0.5):maxwidth(
 					(frameWidth - 15) / 0.35
 				)
 			end,
@@ -264,5 +281,28 @@ end
 for i = 1, lines do
 	t[#t + 1] = scoreitem(1, i)
 end
+
+local function scroll(self, n)
+	local maxOffset = math.max(0, #multiscores - shownRows)
+	local new = math.max(0, math.min(maxOffset, scrollOffset + n))
+	if new ~= scrollOffset then
+		scrollOffset = new
+		for i = 1, lines do
+			self:GetParent():GetChild(i):playcommand("UpdateNetScore")
+		end
+	end
+end
+t[#t + 1] = Def.Quad {
+	Name = "ScrollArea",
+	InitCommand = function(self)
+		self:xy(framex - 20, framey - 10):halign(0):valign(0):zoomto(frameWidth + 20, spacing * shownRows + 6):diffusealpha(0)
+	end,
+	WheelUpSlowMessageCommand = function(self)
+		if isOver(self) then scroll(self, -1) end
+	end,
+	WheelDownSlowMessageCommand = function(self)
+		if isOver(self) then scroll(self, 1) end
+	end
+}
 
 return t
