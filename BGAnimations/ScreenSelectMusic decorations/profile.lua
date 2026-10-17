@@ -97,6 +97,9 @@ local bandW = frameWidth - 12
 local toggleW = 52 -- header toggles (Percent/Recent, Local/Online)
 local labelZoom = 0.42 -- Common Normal, uppercase silver labels
 local tabZoom = 0.36 -- Common Normal, skillset tabs
+-- short skillset tab names (Overall .. Technical); all tabs share one zoom that fits the widest name
+local tabNames = {"OVERALL", "STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
+local tabTextW = {}
 local crimson = "#9c1428"
 -- header toggle / tab look: selected = crimson tint + light text, otherwise faint dark + silver text
 local function styleToggleQuad(self, selected)
@@ -443,11 +446,19 @@ local function rankingButton(i)
 		LoadFont("Common Large") .. {
 			Name = "RankButtonTxt",
 			InitCommand = function(self)
-				self:zoom(tabZoom):maxwidth((tabW - 5) / tabZoom)
+				self:zoom(tabZoom)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
+				self:settext(tabNames[i] or tostring(ms.SkillSetsTranslated[i]):upper())
+				tabTextW[i] = self:GetWidth()
+			end,
+			OnCommand = function(self)
+				local widest = 1
+				for _, w in pairs(tabTextW) do
+					if w > widest then widest = w end
+				end
+				self:zoom(math.min(tabZoom, (tabW - 10) / widest))
 			end,
 			UpdateRankingMessageCommand = function(self)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
