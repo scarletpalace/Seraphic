@@ -1143,7 +1143,6 @@ t[#t + 1] = Def.Sprite {
 				bnpath = THEME:GetPathG("Common", "fallback banner")
 			end
 			self:LoadBackground(bnpath)
-			self.seraPath = bnpath
 		else
 			local bnpath = SONGMAN:GetSongGroupBannerPath(SCREENMAN:GetTopScreen():GetMusicWheel():GetSelectedSection())
 			if not BannersEnabled() then
@@ -1152,15 +1151,12 @@ t[#t + 1] = Def.Sprite {
 				bnpath = THEME:GetPathG("Common", "fallback banner")
 			end
 			self:LoadBackground(bnpath)
-			self.seraPath = bnpath
 		end
 		if self:GetNumStates() > 1 then
 			self:StopUsingCustomTexCoords()
 		else
 			self:EnableCustomTexCoords()
 		end
-		-- 3.2 : 1 like the original theme (256x80 banners); video banners are centre-cropped to the same shape
-		seraphicFitBanner(self, self.seraPath, bannerW, bannerH)
 		self:diffusealpha(1)
 	end,
 	ChartPreviewOnMessageCommand = function(self)
