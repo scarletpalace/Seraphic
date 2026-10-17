@@ -5,7 +5,8 @@ local packspaceY = pdh + ygap
 
 local numpacks = 15
 local offx = 5
-local width = SCREEN_WIDTH * 0.6
+-- fills the Seraphic pack window in the underlay (SCREEN_WIDTH*2/3 - 30 wide), 4px inset each side
+local width = SCREEN_WIDTH * 2 / 3 - 38
 local dwidth = width - offx * 2
 local height = (numpacks + 2) * packspaceY
 
@@ -20,6 +21,9 @@ local c2xc3x = (c3x - adjx - (tzoom * 6 * adjx))
 local headeroff = packspaceY / 1.5
 
 local hoverAlpha = 0.6
+local vzoom = 0.45 -- row values
+local hzoom = 0.4 -- header labels
+local dlBandW = 58 -- download / installed button band
 
 local translated_info = {
 	Name = THEME:GetString("PacklistDisplay", "Name"),
@@ -84,30 +88,24 @@ local o = Def.ActorFrame {
 	PrevPageCommand = function(self)
 		self:queuecommand("Update")
 	end,
+	-- also the mouse wheel area for paging the table
 	Def.Quad {
 		Name = "BG",
 		InitCommand = function(self)
 			self:zoomto(width, height - headeroff)
 			self:halign(0):valign(0)
-			self:diffuse(color("#888888"))
+			self:diffuse(color("#000000")):diffusealpha(0.2)
 		end
 	},
 	-- headers
-	Def.Quad {
-		Name = "HeaderBG",
-		InitCommand = function(self)
-			self:xy(offx, headeroff)
-			self:zoomto(dwidth, pdh)
-			self:halign(0)
-			self:diffuse(color("#333333"))
-		end
-	},
+	seraphicHeaderBand(offx, headeroff - pdh / 2, dwidth, pdh),
 	LoadFont("Common Normal") .. {
 		Name = "TotalPacks",
 		InitCommand = function(self)
 			self:xy(c1x, headeroff)
-			self:zoom(tzoom)
+			self:zoom(hzoom)
 			self:halign(0)
+			self:diffuse(color(seraphicValueColor))
 		end,
 		UpdateCommand = function(self)
 			self:settext(packlist:GetTotalResults())
@@ -117,9 +115,10 @@ local o = Def.ActorFrame {
 		Name = "NameHeader",
 		InitCommand = function(self)
 			self:xy(c2x, headeroff)
-			self:zoom(tzoom)
+			self:zoom(hzoom)
 			self:halign(0)
-			self:settext(translated_info["Name"])
+			self:diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["Name"]:upper())
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -138,9 +137,10 @@ local o = Def.ActorFrame {
 		Name = "AverageDiffHeader",
 		InitCommand = function(self)
 			self:xy(c2xc3x, headeroff)
-			self:zoom(tzoom)
+			self:zoom(hzoom)
 			self:halign(1)
-			self:settext(translated_info["AverageDiff"])
+			self:diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["AverageDiff"]:upper())
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -159,9 +159,10 @@ local o = Def.ActorFrame {
 		Name = "SizeHeader",
 		InitCommand = function(self)
 			self:xy(c3x, headeroff)
-			self:zoom(tzoom)
+			self:zoom(hzoom)
 			self:halign(1)
-			self:settext(translated_info["Size"])
+			self:diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["Size"]:upper())
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -180,9 +181,10 @@ local o = Def.ActorFrame {
 		Name = "PlaysHeader",
 		InitCommand = function(self)
 			self:xy(c4x, headeroff)
-			self:zoom(tzoom)
+			self:zoom(hzoom)
 			self:halign(1)
-			self:settext(translated_info["PackPlays"])
+			self:diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["PackPlays"]:upper())
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -201,9 +203,10 @@ local o = Def.ActorFrame {
 		Name = "SongCountHeader",
 		InitCommand = function(self)
 			self:xy(c5x, headeroff)
-			self:zoom(tzoom)
+			self:zoom(hzoom)
 			self:halign(1)
-			self:settext(translated_info["SongCount"])
+			self:diffuse(color(seraphicLabelColor))
+			self:settext(translated_info["SongCount"]:upper())
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -222,8 +225,9 @@ local o = Def.ActorFrame {
 		Name = "AwaitingOrNoResults",
 		InitCommand = function(self)
 			self:xy(width/2, height/2)
-			self:zoom(tzoom)
-			self:maxwidth(width / tzoom)
+			self:zoom(0.25)
+			self:maxwidth((width - 20) / 0.25)
+			self:diffuse(color(seraphicLabelColor))
 		end,
 		UpdateCommand = function(self)
 			if packlist:IsAwaitingRequest() then
@@ -272,19 +276,39 @@ local function makePackDisplay(i)
 				self:halign(0)
 			end,
 			DisplayCommand = function(self)
+				-- alternating dark bands; installed packs get a faint warm lift
 				if installed then
-					self:diffuse(color("#444444CC"))
+					self:diffuse(color("#5a4650")):diffusealpha(i % 2 == 1 and 0.32 or 0.22)
 				else
-					self:diffuse(color("#111111CC"))
+					self:diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.15)
 				end
+			end
+		},
+		-- download / installed button: dark band with a crimson rule
+		Def.Quad {
+			Name = "DownloadBand",
+			InitCommand = function(self)
+				self:x(c6x + 3):halign(1):zoomto(dlBandW, pdh - 5)
+				self:diffuse(color("#000000")):diffusealpha(0.55)
+			end
+		},
+		Def.Quad {
+			Name = "DownloadRule",
+			InitCommand = function(self)
+				self:xy(c6x + 3, (pdh - 5) / 2):halign(1):valign(0):zoomto(dlBandW, 1)
+				self:diffuseleftedge(color("#9c142830")):diffuserightedge(color("#9c1428E6"))
+			end,
+			DisplayCommand = function(self)
+				self:diffusealpha(installed and 0.35 or 1)
 			end
 		},
 		LoadFont("Common normal") .. {
 			Name = "PackIndex",
 			InitCommand = function(self)
 				self:x(c1x)
-				self:zoom(tzoom)
+				self:zoom(vzoom)
 				self:halign(0)
+				self:diffuse(color(seraphicLabelColor))
 			end,
 			DisplayCommand = function(self)
 				self:settextf("%i.", i + ((packlist:GetCurrentPage()-1) * numpacks))
@@ -294,10 +318,10 @@ local function makePackDisplay(i)
 			Name = "PackName",
 			InitCommand = function(self)
 				self:x(c2x)
-				self:zoom(tzoom)
+				self:zoom(vzoom)
 
 				 -- x of left aligned col 2 minus x of right aligned col 3 minus roughly how wide column 3 is plus margin
-				self:maxwidth((c2xc3x - c2x - c2x*0.8) / tzoom)
+				self:maxwidth((c2xc3x - c2x - c2x*0.8) / vzoom)
 				self:halign(0)
 			end,
 			DisplayCommand = function(self)
@@ -339,7 +363,7 @@ local function makePackDisplay(i)
 			Name = "PackAverageDiff",
 			InitCommand = function(self)
 				self:x(c2xc3x)
-				self:zoom(tzoom)
+				self:zoom(vzoom)
 				self:halign(1)
 			end,
 			DisplayCommand = function(self)
@@ -351,7 +375,7 @@ local function makePackDisplay(i)
 		LoadFont("Common normal") .. {
 			Name = "PackSize",
 			InitCommand = function(self)
-				self:x(c3x):zoom(tzoom):halign(1)
+				self:x(c3x):zoom(vzoom):halign(1)
 			end,
 			DisplayCommand = function(self)
 				local psize = packinfo:GetSize() / 1024 / 1024
@@ -362,7 +386,8 @@ local function makePackDisplay(i)
 		LoadFont("Common normal") .. {
 			Name = "PackPlays",
 			InitCommand = function(self)
-				self:x(c4x):zoom(tzoom):halign(1)
+				self:x(c4x):zoom(vzoom):halign(1)
+				self:diffuse(color(seraphicValueColor))
 			end,
 			DisplayCommand = function(self)
 				self:settextf("%d", packinfo:GetPlayCount())
@@ -371,7 +396,8 @@ local function makePackDisplay(i)
 		LoadFont("Common normal") .. {
 			Name = "PackSongs",
 			InitCommand = function(self)
-				self:x(c5x):zoom(tzoom):halign(1)
+				self:x(c5x):zoom(vzoom):halign(1)
+				self:diffuse(color(seraphicValueColor))
 			end,
 			DisplayCommand = function(self)
 				self:settextf("%d", packinfo:GetSongCount())
@@ -380,15 +406,18 @@ local function makePackDisplay(i)
 		UIElements.TextToolTip(1, 1, "Common normal") .. {
 			Name = "PackDownload",
 			InitCommand = function(self)
-				self:x(c6x)
-				self:zoom(tzoom)
-				self:halign(1)
+				self:x(c6x + 3 - dlBandW / 2)
+				self:zoom(0.36)
+				self:halign(0.5)
+				self:maxwidth((dlBandW - 6) / 0.36)
 			end,
 			DisplayCommand = function(self)
 				if installed then
-					self:settext(translated_info["Installed"])
+					self:settext(translated_info["Installed"]:upper())
+					self:diffuse(color("#7d7579"))
 				else
-					self:settext(translated_info["Download"])
+					self:settext(translated_info["Download"]:upper())
+					self:diffuse(color(seraphicLabelColor))
 				end
 			end,
 			MouseOverCommand = function(self)

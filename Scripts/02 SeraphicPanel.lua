@@ -1,5 +1,69 @@
 -- Seraphic panel: dark gradient body, silver beveled double border, corner diamonds, filigree footer.
 -- Returns an ActorFrame positioned with its top-left at (x, y).
+-- LR2-style window pieces, shared by the music select tabs and the info panel ---------------------------
+
+-- faint 1px outline around a window
+function seraphicSoftEdge(x, y, w, h, alpha)
+	local a = alpha or 0.1
+	local function edge(ex, ey, ew, eh)
+		return Def.Quad {
+			InitCommand = function(self)
+				self:xy(x + ex, y + ey):halign(0):valign(0):zoomto(ew, eh):diffuse(color("#ffffff")):diffusealpha(a)
+			end
+		}
+	end
+	return Def.ActorFrame {
+		edge(0, 0, w, 1), edge(0, h - 1, w, 1), edge(0, 1, 1, h - 2), edge(w - 1, 1, 1, h - 2)
+	}
+end
+
+-- dark header band with a crimson rule along its bottom edge
+function seraphicHeaderBand(x, y, w, h)
+	return Def.ActorFrame {
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(x, y):halign(0):valign(0):zoomto(w, h):diffuse(color("#000000")):diffusealpha(0.55)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(x, y + h):halign(0):valign(0):zoomto(w, 1)
+				self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142820"))
+			end
+		}
+	}
+end
+
+-- alternating row band (odd rows darker); i is the 1-based row number
+function seraphicRowBand(x, y, w, h, i)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):halign(0):valign(0):zoomto(w, h):diffuse(color("#000000"))
+			self:diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+		end
+	}
+end
+
+-- small crimson diamond used as a row bullet
+function seraphicBullet(x, y)
+	return Def.Quad {
+		InitCommand = function(self)
+			self:xy(x, y):rotationz(45):zoomto(3.5, 3.5):diffuse(color("#9c1428"))
+		end
+	}
+end
+
+-- "::SECTION" style header text. A literal "::" is turned into a line break by the engine's text
+-- handling, so the two colons are split by a soft hyphen (U+00AD, a blank 1px glyph in the serif font).
+seraphicColons = ":\194\173:"
+function seraphicHeading(text)
+	return seraphicColons .. tostring(text):upper()
+end
+
+-- colors for LR2-style labels and values
+seraphicLabelColor = "#bdb3b6"
+seraphicValueColor = "#f4ecee"
+
 function seraphicPanel(x, y, w, h, borderOnly, bodyAlpha)
 	local function edge(ex, ey, ew, eh, setup)
 		return Def.Quad {
@@ -17,6 +81,19 @@ function seraphicPanel(x, y, w, h, borderOnly, bodyAlpha)
 		}
 	end
 	local fh = math.min(h * 0.35, 30)
+	-- tab windows (border only): LR2-style soft edge instead of the silver frame
+	if borderOnly == true then
+		return Def.ActorFrame {
+			InitCommand = function(self) self:xy(x, y) end,
+			Def.Sprite {
+				Texture = THEME:GetPathG("", "seraphic_filigree"),
+				InitCommand = function(self)
+					self:xy(4, h - 3):halign(0):valign(1):zoomto(w - 8, fh):diffusealpha(0.16)
+				end
+			},
+			seraphicSoftEdge(0, 0, w, h)
+		}
+	end
 	return Def.ActorFrame {
 		InitCommand = function(self) self:xy(x, y) end,
 		-- body (skipped when the panel already has its own background)
@@ -89,4 +166,36 @@ function seraphicCenteredBorder(getSize)
 		piece(function(self, w, h) self:xy(w / 2, 0):zoomto(1, h) end),
 		diamond(-1, -1), diamond(1, -1), diamond(-1, 1), diamond(1, 1)
 	}
+end
+
+-- Banner fitting. Pictures use scaletoclipped. Video banners get an exact centre crop computed from the
+-- movie texture's real image size (scaletoclipped mis-placed the crop on movies, showing mostly the
+-- black letterbox at the top); the crop fills the whole w x h box at the banner's ratio.
+local videoExt = {mp4 = true, avi = true, mkv = true, webm = true, mpg = true, mpeg = true, mov = true,
+	wmv = true, flv = true, ogv = true, m4v = true, f4v = true}
+function seraphicIsVideo(path)
+	if type(path) ~= "string" then return false end
+	local ext = path:match("%.([%w]+)$")
+	return ext ~= nil and videoExt[ext:lower()] == true
+end
+function seraphicFitBanner(spr, path, w, h)
+	if not seraphicIsVideo(path) then
+		spr:scaletoclipped(w, h)
+		return
+	end
+	local ok = pcall(function()
+		local tex = spr:GetTexture()
+		local iw, ih = tex:GetImageWidth(), tex:GetImageHeight()
+		local tw, th = tex:GetTextureWidth(), tex:GetTextureHeight()
+		if iw <= 0 or ih <= 0 or tw <= 0 or th <= 0 then error("no size") end
+		-- many video banners are 4:3 pictures inside a wide frame with black side bars baked in, so
+		-- wide videos are first narrowed to their centre 4:3 area (the bars can't be detected from Lua)
+		local cw = math.min(iw, ih * 4 / 3)
+		local s = math.max(w / cw, h / ih)
+		local vw, vh = w / s, h / s
+		local u0, v0 = (iw - vw) / 2 / tw, (ih - vh) / 2 / th
+		spr:customtexturerect(u0, v0, u0 + vw / tw, v0 + vh / th)
+		spr:zoomto(w, h)
+	end)
+	if not ok then spr:scaletoclipped(w, h) end
 end

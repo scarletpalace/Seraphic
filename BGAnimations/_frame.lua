@@ -1,5 +1,5 @@
 local t = Def.ActorFrame {}
-local onSelect = (Var("LoadingScreen") or "") == "ScreenSelectMusic"
+local onSelect = (Var("LoadingScreen") or "") == "ScreenSelectMusic" or (Var("LoadingScreen") or "") == "ScreenNetSelectMusic"
 local topFrameHeight = onSelect and 90 or 40
 local bottomFrameHeight = onSelect and 90 or 72
 -- select screen: the top bar is as tall as the bottom bar. Its right part (clock + pack, x >= stripX) is drawn here,
@@ -192,7 +192,7 @@ if onSelect then
 			self:xy(rx + 0.7, 140)
 			self:SetUpdateFunction(function(f)
 				local top = SCREENMAN:GetTopScreen()
-				if not top or top:GetName() ~= "ScreenSelectMusic" then return end
+				if not top or (top:GetName() ~= "ScreenSelectMusic" and top:GetName() ~= "ScreenNetSelectMusic") then return end
 				local w = top:GetMusicWheel()
 				if not w then return end
 				local n = w:GetNumItems()

@@ -111,12 +111,11 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 				self:playcommand("Hide")
 			end
 		end,
-		--The main quad
+		--The main quad (LR2 style: alternating dark row bands)
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(framex, framey + (drawindex * spacing) - 4):zoomto(frameWidth, 30 * S):halign(0):valign(0):diffuse(
-					color("#333333")
-				):diffusealpha(1):diffuserightedge(color("#33333333"))
+				self:xy(framex - 10, framey + (drawindex * spacing) - 4):zoomto(frameWidth + 10, 30 * S):halign(0):valign(0)
+				self:diffuse(color("#000000")):diffusealpha(drawindex % 2 == 0 and 0.4 or 0.15)
 			end,
 			BeginCommand = function(self)
 				self:visible(GAMESTATE:IsHumanPlayer())
@@ -125,9 +124,8 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		--Highlight quad for the current score
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(framex, framey + (drawindex * spacing) - 4):zoomto(frameWidth, 30 * S):halign(0):valign(0):diffuse(
-					color("#ffffff")
-				):diffusealpha(0.3):diffuserightedge(color("#33333300"))
+				self:xy(framex - 10, framey + (drawindex * spacing) - 4):zoomto(frameWidth + 10, 30 * S):halign(0):valign(0)
+				self:diffuseleftedge(color("#9c142866")):diffuserightedge(color("#9c142808"))
 			end,
 			HahaThisCodeINeedHelpCommand = function(self, params)
 				local equis = params.doot == index
@@ -141,8 +139,8 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		UIElements.QuadButton(1, 1) .. {
 			Name = "mouseOver",
 			InitCommand = function(self)
-				self:xy(framex, framey + (drawindex * spacing) - 4):zoomto(frameWidth*2, 30 * S):halign(0):valign(0):diffuse(
-					getMainColor("highlight")
+				self:xy(framex, framey + (drawindex * spacing) - 4):zoomto(frameWidth, 30 * S):halign(0):valign(0):diffuse(
+					color("#ffffff")
 				):diffusealpha(0)
 			end,
 			MouseDownCommand = function(self, params)
@@ -174,7 +172,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 				end
 			end,
 			MouseOverCommand = function(self)
-				self:diffusealpha(0.2)
+				self:diffusealpha(0.08)
 			end,
 			MouseOutCommand = function(self)
 				local p = self:GetParent()
@@ -194,7 +192,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		--ClearType lamps
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(framex, framey + (drawindex * spacing) - 4):zoomto(8, 30 * S):halign(0):valign(0)
+				self:xy(framex, framey + (drawindex * spacing) - 4):zoomto(3, 30 * S):halign(0):valign(0)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -205,13 +203,13 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		--rank
 		LoadFont("Common normal") .. {
 			InitCommand = function(self)
-				self:xy(framex - 8 * S, framey + 12 * S + (drawindex * spacing)):zoom(0.35 * S)
+				self:xy(framex - 5, framey + 12 * S + (drawindex * spacing)):zoom(0.34):diffuse(color(seraphicLabelColor))
 			end,
 			HahaThisCodeINeedHelpCommand = function(self, params)
 				if params.doot == index then
 					self:diffuse(color("#ffcccc"))
 				else
-					self:diffuse(color("ffffff"))
+					self:diffuse(color(seraphicLabelColor))
 				end
 			end,
 			BeginCommand = function(self)
@@ -230,7 +228,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		LoadFont("Common normal") .. {
 			Name = "grade",
 			InitCommand = function(self)
-				self:xy(framex + 10 * S, framey + 11 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0):maxwidth((frameWidth - 15) / (0.3 * S))
+				self:xy(framex + 8, framey + 11 * S + (drawindex * spacing)):zoom(0.36):halign(0):maxwidth((frameWidth - 90) / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -255,7 +253,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		LoadFont("Common normal") .. {
 			Name = "option",
 			InitCommand = function(self)
-				self:xy(framex + 10 * S, framey + 11 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0):maxwidth((frameWidth - 15) / (0.35 * S))
+				self:xy(framex + 8, framey + 11 * S + (drawindex * spacing)):zoom(0.36):halign(0):maxwidth((frameWidth - 90) / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -267,9 +265,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		LoadFont("Common normal") .. {
 			Name = "Grade",
 			InitCommand = function(self)
-				self:xy(framex + frameWidth * 0.818, framey + 2 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0.5):maxwidth(
-					(frameWidth - 15) / 0.35
-				)
+				self:xy(framex + frameWidth * 0.818, framey + 2 * S + (drawindex * spacing)):zoom(0.36):halign(0.5):maxwidth(76 / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -283,9 +279,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		LoadFont("Common normal") .. {
 			Name = "ClearType",
 			InitCommand = function(self)
-				self:xy(framex + frameWidth * 0.818, framey + 12 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0.5):maxwidth(
-					(frameWidth - 15) / 0.35
-				)
+				self:xy(framex + frameWidth * 0.818, framey + 12 * S + (drawindex * spacing)):zoom(0.36):halign(0.5):maxwidth(76 / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -298,9 +292,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		--max combo
 		LoadFont("Common normal") .. {
 			InitCommand = function(self)
-				self:xy(framex + frameWidth * 0.818, framey + 22 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0.5):maxwidth(
-					(frameWidth - 15) / 0.35
-				)
+				self:xy(framex + frameWidth * 0.818, framey + 22 * S + (drawindex * spacing)):zoom(0.36):halign(0.5):maxwidth(76 / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -313,7 +305,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		LoadFont("Common normal") .. {
 			Name = "judge",
 			InitCommand = function(self)
-				self:xy(framex + 10 * S, framey + 20 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0):maxwidth((frameWidth - 15) / (0.35 * S))
+				self:xy(framex + 8, framey + 20 * S + (drawindex * spacing)):zoom(0.36):halign(0):maxwidth((frameWidth - 90) / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -334,7 +326,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 		LoadFont("Common normal") .. {
 			Name = "date",
 			InitCommand = function(self)
-				self:xy(framex + 10 * S, framey + 20 * S + (drawindex * spacing)):zoom(0.35 * S):halign(0)
+				self:xy(framex + 8, framey + 20 * S + (drawindex * spacing)):zoom(0.36):halign(0):maxwidth((frameWidth - 90) / 0.36)
 			end,
 			BeginCommand = function(self)
 				if hsTable[index] == nil then return end
@@ -400,7 +392,8 @@ t[#t+1] = Def.Quad {
 
 -- Seraphic: hover + click for the score entries, driven by isOver() polling and our own input callback
 -- (the BUTTON MouseOver/MouseDown events never reached these quads on the results screen)
-t[#t+1] = Def.Actor {
+-- an ActorFrame, not a plain Actor: only frames have SetUpdateFunction
+t[#t+1] = Def.ActorFrame {
 	OnCommand = function(self)
 		local root = self:GetParent()
 		local function each(fn)

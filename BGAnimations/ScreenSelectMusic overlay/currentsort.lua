@@ -43,7 +43,7 @@ t[#t + 1] = Def.Sprite {
 }
 
 local group_rand = ""
-t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
+t[#t + 1] = UIElements.TextToolTip(1, 1, "Seraphic Title") .. {
 	Name="rando",
 	InitCommand = function(self)
 		self:xy(boxX + boxW / 2, boxY + boxH / 2):halign(0.5):valign(0.5):zoom(0.34):maxwidth((boxW - 44) / 0.34)

@@ -18,14 +18,14 @@ local loadingScreen = Var("LoadingScreen") or ""
 local onResults = loadingScreen:find("Evaluation") ~= nil
 -- Seraphic (select screen): nick + judge move to the top-left, clock to the top-right, the rest of the old
 -- bottom-right profile block is moved off screen (the bottom-right now holds the score panel, _scorepanel.lua)
-local onSelect = loadingScreen == "ScreenSelectMusic"
+local onSelect = loadingScreen == "ScreenSelectMusic" or loadingScreen == "ScreenNetSelectMusic"
+local AvatarY = SCREEN_HEIGHT - 62 -- must be set before uploadY below (it was nil there off the select screen, which broke every overlay loading this file)
 local AvatarX = onResults and 62 or 424
 local centerBlockX = onResults and 470 or 668 -- login / judge column, sits between the profile and the right column
-local uploadX = onSelect and 250 or (centerBlockX - 50)
+local uploadX = onSelect and 276 or (centerBlockX - 50) -- select: right of the LOG IN button
 local uploadY = onSelect and 72 or (AvatarY + 41)
 local uploadTextY = onSelect and 58 or (AvatarY + 27)
 local nameMaxWidth = onResults and 240 or 122 -- keeps the profile name clear of the login column
-local AvatarY = SCREEN_HEIGHT - 62
 local playerRating = 0
 local uploadbarwidth = 100
 local uploadbarheight = 10
@@ -218,6 +218,42 @@ t[#t + 1] = Def.ActorFrame {
 			end
 		end
 	},
+	-- Seraphic: name and judge sit on a thin dark plate, split by a diamond (select screen only)
+	Def.ActorFrame {
+		InitCommand = function(self)
+			self:visible(onSelect)
+		end,
+		TabChangedMessageCommand = function(self, params)
+			if onSelect then self:visible(((params and params.to) or getTabIndex()) == 0) end
+		end,
+		ChartPreviewOnMessageCommand = function(self) if onSelect then self:visible(false) end end,
+		ChartPreviewOffMessageCommand = function(self) if onSelect then self:visible(getTabIndex() == 0) end end,
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 78):halign(0):zoomto(196, 15):diffuse(color("#0a0507")):diffusealpha(0.75):faderight(0.25)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 70):halign(0):zoomto(196, 1):diffuse(color("#e2e2e2")):diffusealpha(0.6):faderight(0.6)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 86):halign(0):zoomto(196, 1):diffuse(color("#9c1428")):diffusealpha(0.8):faderight(0.6)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(22, 78):rotationz(45):zoomto(4, 4):diffuse(color("#ffffff"))
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(151, 78):rotationz(45):zoomto(4, 4):diffuse(color("#ffffff")):diffusealpha(0.85)
+			end
+		}
+	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		Name = "Name",
 		InitCommand = function(self)
@@ -279,6 +315,74 @@ t[#t + 1] = Def.ActorFrame {
 			highlightIfOver(self)
 		end,
 	},
+	-- Seraphic (select screen): visible LOG IN / LOG OUT toggle at the end of the nick + judge row.
+	-- Dark when offline, crimson while logged in; uses the same login flow as clicking the nick.
+	Def.ActorFrame {
+		Name = "SelectLoginButton",
+		InitCommand = function(self)
+			self:xy(238, 78):visible(onSelect)
+		end,
+		BeginCommand = function(self)
+			self:queuecommand("Paint")
+		end,
+		PaintCommand = function(self)
+			local on = DLMAN:IsLoggedIn()
+			local q = self:GetChild("BG")
+			if on then
+				q:diffuse(color("#9c1428")):diffusealpha(q.over and 0.7 or 0.45)
+			else
+				q:diffuse(color("#000000")):diffusealpha(q.over and 0.3 or 0.5)
+			end
+			self:GetChild("Label"):settext(on and "LOG OUT" or "LOG IN")
+			self:GetChild("Label"):diffuse(color(on and seraphicValueColor or seraphicLabelColor))
+		end,
+		LoginMessageCommand = function(self) self:queuecommand("Paint") end,
+		LogOutMessageCommand = function(self) self:queuecommand("Paint") end,
+		LoginFailedMessageCommand = function(self) self:queuecommand("Paint") end,
+		OnlineUpdateMessageCommand = function(self) self:queuecommand("Paint") end,
+		TabChangedMessageCommand = function(self, params)
+			if onSelect then self:visible(((params and params.to) or getTabIndex()) == 0) end
+		end,
+		ChartPreviewOnMessageCommand = function(self) if onSelect then self:visible(false) end end,
+		ChartPreviewOffMessageCommand = function(self) if onSelect then self:visible(getTabIndex() == 0) end end,
+		UIElements.QuadButton(1, 1) .. {
+			Name = "BG",
+			InitCommand = function(self)
+				self:zoomto(54, 13):diffuse(color("#000000")):diffusealpha(0.5)
+			end,
+			MouseOverCommand = function(self)
+				self.over = true
+				self:GetParent():queuecommand("Paint")
+			end,
+			MouseOutCommand = function(self)
+				self.over = false
+				self:GetParent():queuecommand("Paint")
+			end,
+			MouseDownCommand = function(self, params)
+				if not onSelect or params.event ~= "DeviceButton_left mouse button" then return end
+				if SCREENMAN:get_input_redirected(PLAYER_1) then return end
+				local loginActor = self:GetParent():GetParent():GetChild("loginlogout")
+				if DLMAN:IsLoggedIn() then
+					-- same as the login actor's LogOut handling: forget the saved token, then log out
+					playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).UserName = ""
+					playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).PasswordToken = ""
+					playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
+					playerConfig:save(pn_to_profile_slot(PLAYER_1))
+					DLMAN:Logout()
+					MESSAGEMAN:Broadcast("LogOut")
+				else
+					loginStep1(loginActor)
+				end
+			end
+		},
+		seraphicSoftEdge(-27, -6.5, 54, 13, 0.22),
+		LoadFont("Common Normal") .. {
+			Name = "Label",
+			InitCommand = function(self)
+				self:zoom(0.32):maxwidth(48 / 0.32):diffuse(color(seraphicLabelColor)):settext("LOG IN")
+			end
+		}
+	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		Name = "loginlogout",
 		InitCommand = function(self)
@@ -303,7 +407,7 @@ t[#t + 1] = Def.ActorFrame {
 				playerConfig:save(pn_to_profile_slot(PLAYER_1))
 				DLMAN:Logout()
 			end
-			if top == "ScreenSelectMusic" or top == "ScreenTextEntry" then
+			if top == "ScreenSelectMusic" or top == "ScreenNetSelectMusic" or top == "ScreenTextEntry" then
 				self:settext(translated_info["ClickLogin"])
 			else
 				self:settext(translated_info["NotLoggedIn"])
@@ -317,7 +421,7 @@ t[#t + 1] = Def.ActorFrame {
 			playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).PasswordToken = DLMAN:GetToken()
 			playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
 			playerConfig:save(pn_to_profile_slot(PLAYER_1))
-			if top == "ScreenSelectMusic" or top == "ScreenTextEntry" then
+			if top == "ScreenSelectMusic" or top == "ScreenNetSelectMusic" or top == "ScreenTextEntry" then
 				self:settext(translated_info["ClickLogout"])
 			else
 				self:settext("")
@@ -448,7 +552,7 @@ t[#t + 1] = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(onSelect and 160 or centerBlockX, onSelect and 78 or (AvatarY + 30)):halign(onSelect and 0 or 0.5):zoom(onSelect and 0.34 or 0.38):diffuse(ButtonColor)
+			self:xy(onSelect and 160 or centerBlockX, onSelect and 78 or (AvatarY + 31)):halign(onSelect and 0 or 0.5):zoom(onSelect and 0.34 or 0.38):diffuse(ButtonColor)
 		end,
 		BeginCommand = function(self)
 			self:queuecommand("Set")
@@ -463,7 +567,7 @@ t[#t + 1] = Def.ActorFrame {
 		ChartPreviewOffMessageCommand = function(self) if onSelect then self:visible(getTabIndex() == 0) end end,
 		SetCommand = function(self)
 			local online = IsNetSMOnline() and IsSMOnlineLoggedIn() and NSMAN:IsETTP()
-			self:y(onSelect and 78 or (AvatarY + 21))
+			self:y(onSelect and 78 or (AvatarY + 31)) -- below "Logged in as" (AvatarY + 19), not on top of it
 			self:settextf("%s: %s", translated_info["Judge"], GetTimingDifficulty())
 		end,
 		MouseOverCommand = function(self)
@@ -658,7 +762,7 @@ t[#t + 1] = Def.ActorFrame {
 			self:xy(dateBoxX, dateBoxY):halign(0):valign(0):zoomto(dateBoxW, dateBoxH)
 		end
 	},
-	(onSelect and LoadFont("Seraphic Artist") or LoadFont("Common Normal")) .. {
+	(onSelect and LoadFont("Seraphic Date") or LoadFont("Common Normal")) .. {
 		Name = "CurrentTime",
 		InitCommand = function(self)
 			if onSelect then

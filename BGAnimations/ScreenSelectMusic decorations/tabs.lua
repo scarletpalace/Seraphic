@@ -183,7 +183,7 @@ local function tabs(index)
 		return LoadFont("TextBanner text") .. {
 			Name = name,
 			InitCommand = function(self)
-				self:xy(labelX, labelY):rotationz(labelAngle):zoom(labelZoom * 1.55):maxwidth(labelMaxLen / (labelZoom * 1.55))
+				self:xy(labelX, labelY):rotationz(labelAngle):zoom(labelZoom * 1.39):maxwidth(labelMaxLen / (labelZoom * 1.39))
 				if not main then
 					-- offsets are in screen space, so rotate them with the text
 					local a = math.rad(-labelAngle)

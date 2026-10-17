@@ -1,3 +1,4 @@
+if SeraphicStamp then SeraphicStamp("wheel item part") end
 local lastclick = GetTimeSinceStart()
 local requiredtimegap = 0.1
 
@@ -32,6 +33,117 @@ function seraphicBar(name, texH, alpha, vis)
 	}
 end
 
+-- tube under the pack name, with room on the right for the "played / total" count
+local progX, progY, progW, progH = 24, 10, barW - 104, 6
+-- grade colour softened toward silver so it sits with the theme: lit top, deeper bottom
+local function progShade(c, toWhite, dark)
+	local m = 0.18
+	local r, g, b = c[1] + (0.91 - c[1]) * m, c[2] + (0.87 - c[2]) * m, c[3] + (0.88 - c[3]) * m
+	if toWhite then
+		return {r + (1 - r) * toWhite, g + (1 - g) * toWhite, b + (1 - b) * toWhite, 0.95}
+	end
+	return {r * dark, g * dark, b * dark, 0.95}
+end
+function seraphicPackProgressBar()
+	local f = Def.ActorFrame {
+		InitCommand = function(self) self:visible(false) end,
+		SetCommand = function(self, params)
+			local isPack = params and params.Song == nil and type(params.Text) == "string" and params.Text ~= ""
+				and (params.Type == nil or tostring(params.Type):find("Section") ~= nil)
+			local prog = isPack and SeraphicPackProgress and SeraphicPackProgress(params.Text)
+			if not prog then
+				self:visible(false)
+				return
+			end
+			self:visible(true)
+			local x = progX
+			for i = 1, #SeraphicPackProgressFamilies do
+				local w = progW * prog.counts[i] / prog.total
+				self:GetChild("Seg" .. i):x(x):zoomto(w, progH):visible(w > 0)
+				self:GetChild("Sep" .. i):x(x + w):visible(w > 0 and x + w < progX + progW - 1)
+				x = x + w
+			end
+			-- small crystal riding the end of the filled part
+			self:GetChild("Head"):x(x):visible(x > progX + 1 and x < progX + progW - 1)
+			local played = 0
+			for i = 1, #prog.counts do played = played + prog.counts[i] end
+			self:GetChild("Count"):settextf("%d / %d", played, prog.total)
+		end,
+		-- tube: dark glass with a silver rim (brighter on top), fading in at both ends
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(progX, progY):halign(0):zoomto(progW, progH + 2):diffuse(color("#050505")):diffusealpha(0.8)
+			end
+		},
+		-- inner shadow at the top of the empty tube
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(progX, progY - progH / 2):halign(0):valign(0):zoomto(progW, progH / 2)
+				self:diffusetopedge(color("#00000099")):diffusebottomedge(color("#00000000"))
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(progX, progY - progH / 2 - 1.5):halign(0):zoomto(progW, 1):diffuse(color("#ffffff"))
+				self:diffusealpha(0.32):fadeleft(0.08):faderight(0.08)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(progX, progY + progH / 2 + 1.5):halign(0):zoomto(progW, 1):diffuse(color("#bdb3b6"))
+				self:diffusealpha(0.22):fadeleft(0.08):faderight(0.08)
+			end
+		}
+	}
+	for i, fam in ipairs(SeraphicPackProgressFamilies or {}) do
+		local c = getGradeColor(fam.grade)
+		f[#f + 1] = Def.Quad {
+			Name = "Seg" .. i,
+			InitCommand = function(self)
+				self:xy(progX, progY):halign(0):zoomto(0, progH)
+				self:diffusetopedge(progShade(c, 0.45)):diffusebottomedge(progShade(c, nil, 0.6))
+			end
+		}
+	end
+	-- hairline breaks between grade families
+	for i = 1, #(SeraphicPackProgressFamilies or {}) do
+		f[#f + 1] = Def.Quad {
+			Name = "Sep" .. i,
+			InitCommand = function(self)
+				self:xy(progX, progY):zoomto(1, progH):diffuse(color("#000000")):diffusealpha(0.6)
+			end
+		}
+	end
+	-- glass sheen over the fill
+	f[#f + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:xy(progX, progY - progH / 2):halign(0):valign(0):zoomto(progW, progH * 0.45)
+			self:diffusetopedge(color("#ffffff40")):diffusebottomedge(color("#ffffff08")):blend("BlendMode_Add")
+		end
+	}
+	-- crystal caps at both ends (like the grade gauge) and a small one at the fill's tip
+	local function crystal(name, x, z)
+		return Def.Sprite {
+			Name = name,
+			Texture = THEME:GetPathG("", "seraphic_crystal"),
+			InitCommand = function(self)
+				self:xy(x, progY):zoom(z)
+			end
+		}
+	end
+	f[#f + 1] = crystal("CapL", progX - 4, 0.28)
+	f[#f + 1] = crystal("CapR", progX + progW + 4, 0.28)
+	f[#f + 1] = crystal("Head", progX, 0.18)
+	-- songs with a score / songs in the pack
+	f[#f + 1] = LoadFont("Common Normal") .. {
+		Name = "Count",
+		InitCommand = function(self)
+			self:xy(progX + progW + 14, progY):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor))
+		end
+	}
+	return f
+end
+
 return Def.ActorFrame {
 	seraphicBar("bar", 31, 1, 0.78),
 	-- silver sheen along the top, like the lit edge on the LR2 bars
@@ -41,6 +153,9 @@ return Def.ActorFrame {
 			self:diffuseleftedge(color("#ffffff66")):diffuserightedge(color("#ffffff00"))
 		end
 	},
+	-- pack progress: one thin bar under the pack name, split by grade family (best first), dark for the rest
+	-- (Scripts/06 SeraphicPackProgress.lua); only shown on pack rows
+	seraphicPackProgressBar(),
     UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
 			self:halign(0)

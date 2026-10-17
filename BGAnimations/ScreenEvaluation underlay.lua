@@ -50,7 +50,8 @@ t[#t + 1] = Def.Sprite {
 		self:diffusealpha(0):sleep(0.2):smooth(0.6):diffusealpha(1)
 	end
 }
-t[#t + 1] = seraphicPanel(cx - cw / 2, cy, cw, ch, "clean")
+-- LR2 style: faint edge instead of the bright silver frame (crystals below stay)
+t[#t + 1] = seraphicSoftEdge(cx - cw / 2, cy, cw, ch, 0.3)
 do
 	local function gem(x, y, zx, zy)
 		return Def.Sprite {
@@ -67,23 +68,32 @@ do
 end
 
 -- Seraphic: one window per column (drawn here so the banner stays on top of the body)
+-- LR2 window: translucent dark body, faint filigree footer and a soft 1px edge (no silver frame / diamonds)
 local function seraWindow(x, y, w, h)
 	t[#t + 1] = Def.Quad {
 		InitCommand = function(self)
 			self:xy(x, y):halign(0):valign(0):zoomto(w, h)
 			self:diffuseupperleft(color("#262626E6")):diffuseupperright(color("#1a1a1aE6"))
 			self:diffuselowerleft(color("#0a0a0aF0")):diffuselowerright(color("#060606F0"))
+			self:diffusealpha(0.62)
 		end
 	}
-	t[#t + 1] = seraphicPanel(x, y, w, h, "clean")
+	t[#t + 1] = Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_filigree"),
+		InitCommand = function(self)
+			self:xy(x + 4, y + h - 3):halign(0):valign(1):zoomto(w - 8, 30):diffusealpha(0.16)
+		end
+	}
+	t[#t + 1] = seraphicSoftEdge(x, y, w, h)
 end
 seraWindow(10, 24, 262, 432)
 seraWindow(582, 24, 262, 432)
 
 -- small banner next to the song data block (right column):
--- shown whole (not cropped to the centre), anchored top-left, with the frame hugging the actual image
+-- same 3.2:1 shape as the song select banner, cropped to fit the same way (scaletoclipped)
 if BannersEnabled() then
-	local bx, by, bw, bh = 590, 54, 246, 76.3
+	local bx, by, bw = 590, 54, 246
+	local bh = bw / 3.2
 	t[#t + 1] = Def.Sprite {
 		Name = "Banner",
 		OnCommand = function(self)
@@ -92,28 +102,14 @@ if BannersEnabled() then
 			local bnpath = song and song:GetBannerPath()
 			if not bnpath then bnpath = THEME:GetPathG("Common", "fallback banner") end
 			self:LoadBackground(bnpath)
-			local w, h = self:GetWidth(), self:GetHeight()
-			local zw, zh = bw, bh
-			if w > 0 and h > 0 then
-				-- as wide as the box; if the banner is taller than the box show its top part (no centre crop)
-				local fullh = h * (bw / w)
-				self:zoomto(bw, fullh)
-				if fullh > bh then
-					self:cropbottom((fullh - bh) / fullh)
-					zh = bh
-				else
-					zh = fullh
-				end
-			else
-				self:zoomto(bw, bh)
-			end
-			MESSAGEMAN:Broadcast("SeraBannerSized", {w = zw, h = zh})
+			seraphicFitBanner(self, bnpath, bw, bh)
+			MESSAGEMAN:Broadcast("SeraBannerSized", {w = bw, h = bh})
 		end
 	}
 	local function edge(place)
 		return Def.Quad {
 			InitCommand = function(self)
-				self:halign(0):valign(0):diffuse(color("#ffffff")):diffusealpha(0.35)
+				self:halign(0):valign(0):diffuse(color("#ffffff")):diffusealpha(0.2)
 				place(self, bw, bh)
 			end,
 			SeraBannerSizedMessageCommand = function(self, params)

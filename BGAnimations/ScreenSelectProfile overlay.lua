@@ -28,7 +28,7 @@ local function GetLocalProfiles()
 					local bg = self:GetChild("BG")
 					self:xy(38 / 2, -12)
 					txt:settextf("%s: %.2f", profile:GetDisplayName(), profile:GetPlayerRating())
-					txt:zoom(0.4):ztest(true):maxwidth((260 - 40 - 4) / 0.4)
+					txt:zoom(0.4):ztest(true):maxwidth((260 - 40 - 4) / 0.4):diffuse(color("#f4ecee"))
 					bg:y(-3.25):align(0.5,0.5):zoomto(260, 39.5):zoomto(260, 39.5)
 					self:z((PROFILEMAN:GetNumLocalProfiles() - p))
 				end,
@@ -52,11 +52,16 @@ local function GetLocalProfiles()
 			LoadFont("Common Normal") ..  {
 				Name = "SongsPlayed",
 				InitCommand = function(self)
-					self:xy(38 / 2, 8):zoom(0.5):vertspacing(-8):ztest(true):maxwidth((260 - 40 - 4 - 60) / 0.5)
+					self:xy(38 / 2, 8):zoom(0.45):vertspacing(-8):ztest(true):maxwidth((260 - 40 - 4 - 60) / 0.45):diffuse(color("#bdb3b6"))
 				end,
 				BeginCommand = function(self)
 					local numSongsPlayed = profile:GetNumTotalSongsPlayed()
 					self:settextf("%i %s", numSongsPlayed, translated_info["SongPlayed"])
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(0):xy(-128, -3):zoomto(38, 38):diffuse(color("#e2e2e2")):diffusealpha(0.55):ztest(true)
 				end
 			},
 			Def.Sprite {
@@ -79,26 +84,10 @@ local function GetLocalProfiles()
 	return t
 end
 
-local function LoadCard(cColor)
-	local t = Def.ActorFrame {
-		Def.Quad {
-			InitCommand = function(self)
-				self:zoomto(260 + 4, 230 + 4)
-			end,
-			OnCommand = function(self)
-				self:diffuse(color("1,1,1,1"))
-			end
-		},
-		Def.Quad {
-			InitCommand = function(self)
-				self:zoomto(260, 230)
-			end,
-			OnCommand = function(self)
-				self:diffusealpha(0.5):diffuse(cColor)
-			end
-		}
+local function LoadCard()
+	return Def.ActorFrame {
+		seraphicPanel(-130, -115, 260, 230, false, 0.88)
 	}
-	return t
 end
 local function LoadPlayerStuff(Player)
 	local t = {}
@@ -107,7 +96,7 @@ local function LoadPlayerStuff(Player)
 
 	t[#t + 1] = Def.ActorFrame {
 		Name = "JoinFrame",
-		LoadCard(Color("Purple")),
+		LoadCard(),
 		LoadFont("Common Normal") .. {
 			Text = translated_info["PressStart"],
 			InitCommand = function(self)
@@ -121,7 +110,7 @@ local function LoadPlayerStuff(Player)
 
 	t[#t + 1] = Def.ActorFrame {
 		Name = "BigFrame",
-		LoadCard(Brightness(getMainColor("positive"), 0.3)),
+		LoadCard(),
 	}
 	t[#t + 1] = Def.ActorFrame {
 		Name = "SmallFrame",
@@ -130,10 +119,17 @@ local function LoadPlayerStuff(Player)
 		end,
 		Def.Quad {
 			InitCommand = function(self)
-				self:zoomto(260, 40 + 2)
-			end,
-			OnCommand = function(self)
-				self:diffusealpha(0.3)
+				self:zoomto(256, 42):diffuse(color("#9c1428")):diffusealpha(0.55):fadeleft(0.3):faderight(0.3)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:y(-21):zoomto(240, 1):diffuse(color("#f0dada")):diffusealpha(0.7):fadeleft(0.5):faderight(0.5)
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:y(21):zoomto(240, 1):diffuse(color("#f0dada")):diffusealpha(0.7):fadeleft(0.5):faderight(0.5)
 			end
 		}
 	}
@@ -300,19 +296,37 @@ t[#t + 1] = Def.ActorFrame {
 		}
 	}
 }
-t[#t + 1] = LoadActor("_frame")
-t[#t + 1] = LoadFont("Common Large") .. {
+t[#t + 1] = LoadActor("_corners")
+t[#t + 1] = Def.Sprite {
+	Texture = THEME:GetPathG("", "seraphic_filigree"),
 	InitCommand = function(self)
-		self:xy(5, 32):halign(0):valign(1):zoom(0.55):diffuse(getMainColor("positive"))
-		self:settextf("%s:", translated_info["Title"])
+		self:xy(SCREEN_CENTER_X, 30):zoomto(300, 46):diffusealpha(0.6)
 	end
 }
-t[#t+1] = LoadFont("Common Large") .. {
+t[#t + 1] = LoadFont("Common Large") .. {
 	InitCommand = function(self)
-		self:xy(5, SCREEN_HEIGHT-21)
-		self:halign(0):valign(0):zoom(0.35):diffuse(getMainColor("positive"))
+		self:xy(SCREEN_CENTER_X, 66):valign(1):zoom(0.6):settext(translated_info["Title"])
+		self:diffusetopedge(color("#e04a5a")):diffusebottomedge(color("#9a1020"))
+	end
+}
+for _, dir in ipairs({-1, 1}) do
+	t[#t + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:xy(SCREEN_CENTER_X + dir * 10, 76):halign(dir == 1 and 0 or 1):zoomto(120, 1):diffuse(color("#e2e2e2")):diffusealpha(0.7)
+			if dir == 1 then self:faderight(1) else self:fadeleft(1) end
+		end
+	}
+end
+t[#t + 1] = Def.Quad {
+	InitCommand = function(self)
+		self:xy(SCREEN_CENTER_X, 76):rotationz(45):zoomto(5, 5):diffuse(color("#ffffff"))
+	end
+}
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(SCREEN_CENTER_X, SCREEN_HEIGHT - 22):zoom(0.36):diffuse(color("#c9b8bc")):diffusealpha(0.6)
 		self:settextf("%s: %s", translated_info["Gamemode"], GAMESTATE:GetCurrentGame():GetName())
-	end,
+	end
 }
 
 t[#t + 1] = LoadActor("_cursor")

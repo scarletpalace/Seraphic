@@ -14,7 +14,7 @@ local displayindexoffset = 0
 local sd = Def.ActorFrame {
 	Name = "StepsDisplay",
 	InitCommand = function(self)
-		self:xy(stepsdisplayx, 103):valign(0)
+		self:xy(stepsdisplayx, 129):valign(0) -- first row just under the tab header band (y 96-116)
 	end,
 	OffCommand = function(self)
 		self:visible(false)

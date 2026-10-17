@@ -37,8 +37,9 @@ local function getColorForDensity(density, nColumns)
 	-- The value var describes the level of density.
     -- Beginning at lowVal for 0, to highVal for nColumns.
     local interval = 1 / nColumns
-	local value = 1 - density * interval
-	return color(tostring(value)..","..tostring(value)..","..tostring(value))
+	-- Seraphic: dark graph, denser rows brighter silver
+	local value = 0.22 + 0.78 * density * interval
+	return color(tostring(value * 0.96)..","..tostring(value * 0.92)..","..tostring(value * 0.94))
 end
 
 local function getColorForMine()
@@ -143,7 +144,7 @@ local t = Def.ActorFrame {
 	Def.Quad {
         Name = "cdbg",
         InitCommand = function(self)
-            self:zoomto(wodth, hidth + 2):valign(1):diffuse(color("1,1,1,1")):halign(0)
+            self:zoomto(wodth, hidth + 2):valign(1):diffuse(color("0,0,0,0.6")):halign(0)
         end
     }
 }
@@ -176,7 +177,7 @@ t[#t+1] = Def.ActorMultiVertex {
 t[#t + 1] = Def.Quad {
     Name = "npsline",
     InitCommand = function(self)
-        self:zoomto(wodth, 2):diffusealpha(1):valign(1):diffuse(color(".75,0,0,0.75")):halign(0)
+        self:zoomto(wodth, 1):diffusealpha(1):valign(1):diffuse(color("#c4243aCC")):halign(0)
     end,
 
 }
@@ -186,7 +187,7 @@ t[#t + 1] = LoadFont("Common Normal") .. {
     InitCommand = function(self)
         self:halign(0)
         self:zoom(0.4)
-        self:settext(""):diffuse(color("1,0,0"))
+        self:settext(""):diffuse(color("#e0435a"))
     end
 }
 

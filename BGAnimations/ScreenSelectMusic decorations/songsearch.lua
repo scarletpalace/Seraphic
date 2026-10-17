@@ -1,6 +1,14 @@
 local searchstring = ""
 local frameX = 10
-local frameY = 300
+local frameY = 96
+local frameWidth = SCREEN_WIDTH * 0.56
+local frameHeight = 288 -- y 96..384, under the top bar
+local offsetX = 10
+local offsetY = 20 -- header band height
+local innerWidth = frameWidth - offsetX * 2
+local stateY = frameY + offsetY + 70 -- "Search Active" heading
+local boxY = stateY + 14 -- query box top
+local boxHeight = 30
 local active = false
 local whee
 local lastsearchstring = ""
@@ -98,93 +106,119 @@ local t = Def.ActorFrame {
 	end,
 	TabChangedMessageCommand = function(self)
 		self:queuecommand("Set")
-	end,
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 250 - capWideScale(get43size(95), 10), frameY - 93):zoom(0.7):halign(0.5):maxwidth(470)
-		end,
-		SetCommand = function(self)
-			if active then
-				self:settextf("%s:", translated_info["Active"])
-				self:diffuse(getGradeColor("Grade_Tier10"))
-			elseif not active and searchstring ~= "" then
-				self:settext(translated_info["Complete"])
-				self:diffuse(getGradeColor("Grade_Tier04"))
-			else
-				self:settext("")
+	end
+}
+
+-- window
+t[#t + 1] = Def.Quad {
+	InitCommand = function(self)
+		self:xy(frameX, frameY):zoomto(frameWidth, frameHeight):halign(0):valign(0):diffuse(getMainColor("tabs")):diffusetopedge(panelTopColor())
+	end
+}
+t[#t + 1] = seraphicPanel(frameX, frameY, frameWidth, frameHeight, true)
+t[#t + 1] = seraphicHeaderBand(frameX, frameY, frameWidth, offsetY)
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX, frameY + offsetY / 2):zoom(0.45):halign(0)
+		self:settext(seraphicHeading("Search"))
+		self:diffuse(color(seraphicLabelColor))
+	end
+}
+
+-- instructions (Start / Escape / Delete)
+local function explainLine(i, key)
+	local y = frameY + offsetY + 14 + (i - 1) * 15
+	return Def.ActorFrame {
+		seraphicBullet(frameX + offsetX + 4, y),
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(frameX + offsetX + 12, y):zoom(0.42):halign(0)
+				self:maxwidth((innerWidth - 12) / 0.42)
+				self:settext(translated_info[key])
+				self:diffuse(color(seraphicLabelColor))
 			end
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		SetSearchStringMessageCommand = function(self, params)
-			if params.searchstring then
-				searchstring = params.searchstring
-				lastsearchstring = searchstring --i dont like this
-				MESSAGEMAN:Broadcast("UpdateString")
-			end
-		end
-	},
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(frameX - capWideScale(3.5,-3.5), frameY - 46):zoomto(capWideScale(362.5,472), 44):align(0,0.5):diffuse(getMainColor("tabs")):diffusetopedge(panelTopColor())
-		end,
-	},
-	seraphicPanel(frameX - capWideScale(3.5,-3.5), frameY - 68, capWideScale(362.5,472), 44, true),
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 250 - capWideScale(get43size(95), 10), frameY - 50):zoom(0.7)
-			self:halign(0.5):maxwidth(capWideScale(500,650))
-		end,
-		SetCommand = function(self)
-			self:settext(searchstring)
-		end,
-		UpdateStringMessageCommand = function(self)
-			self:queuecommand("Set")
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY - 200):zoom(0.4):halign(0)
-			self:settext(translated_info["ExplainStart"])
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY - 175):zoom(0.4):halign(0)
-			self:settext(translated_info["ExplainBack"])
-		end
-	},
-	LoadFont("Common Large") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY - 150):zoom(0.4):halign(0)
-			self:settext(translated_info["ExplainDel"])
-		end
-	},
-	LoadFont("Common Normal") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY):zoom(0.5):halign(0)
-			local framexoffset = 20 - capWideScale(3.5,-3.5)
-			self:maxwidth((capWideScale(362.5,472) - framexoffset) / 0.5)
-			self:settext(translated_info["ExplainLimit"])
-		end
-	},
-	LoadFont("Common Normal") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY + 15):zoom(0.5):align(0,0)
-			local framexoffset = 20 - capWideScale(3.5,-3.5)
-			self:maxwidth((capWideScale(362.5,472) - framexoffset) / 0.5)
-			self:settext(translated_info["ExplainNumInput"])
-		end
-	},
-	LoadFont("Common Normal") .. {
-		InitCommand = function(self)
-			self:xy(frameX + 20, frameY + 50):zoom(0.5):align(0,0)
-			local framexoffset = 20 - capWideScale(3.5,-3.5)
-			self:maxwidth((capWideScale(362.5,472) - framexoffset) / 0.5)
-			self:settext(translated_info["ExplainSuperSearch"])
-		end
+		}
 	}
+end
+t[#t + 1] = explainLine(1, "ExplainStart")
+t[#t + 1] = explainLine(2, "ExplainBack")
+t[#t + 1] = explainLine(3, "ExplainDel")
+
+-- search state heading
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX, stateY):zoom(0.55):halign(0):maxwidth(innerWidth / 0.55)
+	end,
+	SetCommand = function(self)
+		if active then
+			self:settextf("%s:", translated_info["Active"]:upper())
+			self:diffuse(getGradeColor("Grade_Tier10"))
+		elseif not active and searchstring ~= "" then
+			self:settext(translated_info["Complete"]:upper())
+			self:diffuse(getGradeColor("Grade_Tier04"))
+		else
+			self:settext("")
+		end
+	end,
+	UpdateStringMessageCommand = function(self)
+		self:queuecommand("Set")
+	end,
+	SetSearchStringMessageCommand = function(self, params)
+		if params.searchstring then
+			searchstring = params.searchstring
+			lastsearchstring = searchstring --i dont like this
+			MESSAGEMAN:Broadcast("UpdateString")
+		end
+	end
+}
+
+-- query box: dark band with a faint edge
+t[#t + 1] = Def.Quad {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX, boxY):zoomto(innerWidth, boxHeight):halign(0):valign(0)
+		self:diffuse(color("#000000")):diffusealpha(0.6)
+	end
+}
+t[#t + 1] = seraphicSoftEdge(frameX + offsetX, boxY, innerWidth, boxHeight, 0.15)
+t[#t + 1] = LoadFont("Common Large") .. {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX + 8, boxY + boxHeight / 2):zoom(0.34):halign(0)
+		self:maxwidth((innerWidth - 16) / 0.34)
+		self:diffuse(color(seraphicValueColor))
+	end,
+	SetCommand = function(self)
+		self:settext(searchstring)
+	end,
+	UpdateStringMessageCommand = function(self)
+		self:queuecommand("Set")
+	end
+}
+
+-- help notes
+local notesY = boxY + boxHeight + 16
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX, notesY):zoom(0.38):align(0, 0)
+		self:maxwidth(innerWidth / 0.38)
+		self:settext(translated_info["ExplainLimit"])
+		self:diffuse(color(seraphicLabelColor))
+	end
+}
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX, notesY + 16):zoom(0.38):align(0, 0)
+		self:maxwidth(innerWidth / 0.38)
+		self:settext(translated_info["ExplainNumInput"])
+		self:diffuse(color(seraphicLabelColor))
+	end
+}
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + offsetX, notesY + 46):zoom(0.38):align(0, 0)
+		self:maxwidth(innerWidth / 0.38)
+		self:settext(translated_info["ExplainSuperSearch"])
+		self:diffuse(color(seraphicLabelColor))
+	end
 }
 
 return t

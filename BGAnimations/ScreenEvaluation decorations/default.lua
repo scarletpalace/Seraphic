@@ -63,21 +63,24 @@ local judges = {
 	"TapNoteScore_Miss"
 }
 
--- Seraphic: soft dark strip so the song text stays readable over busy backgrounds
+-- Seraphic: soft dark pool behind the song text (rate, title, artist, pack) so it stays readable over busy
+-- backgrounds; it covers all four lines and fades out on every side instead of ending in hard edges
 t[#t + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(SCREEN_CENTER_X, 388)
+		self:xy(SCREEN_CENTER_X, 397)
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(1):valign(0):zoomto(200, 40):diffuse(color("#000000"))
-			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000A0"))
+			self:halign(1):zoomto(150, 70)
+			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000C0"))
+			self:fadetop(0.3):fadebottom(0.3)
 		end
 	},
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(0):valign(0):zoomto(200, 40):diffuse(color("#000000"))
-			self:diffuseleftedge(color("#000000A0")):diffuserightedge(color("#00000000"))
+			self:halign(0):zoomto(150, 70)
+			self:diffuseleftedge(color("#000000C0")):diffuserightedge(color("#00000000"))
+			self:fadetop(0.3):fadebottom(0.3)
 		end
 	}
 }
@@ -111,6 +114,23 @@ t[#t+1] = Def.ActorFrame {
 		end,
 		SetCommand = function(self)
 			self:settext(GAMESTATE:GetCurrentSong():GetDisplayArtist())
+		end,
+	},
+	-- Seraphic: pack the song comes from, in the pack-name font, under the artist
+	LoadFont("Seraphic Title") .. {
+		Name = "SongPack",
+		InitCommand = function(self)
+			self:xy(SCREEN_CENTER_X, 419)
+			self:zoom(0.36)
+			self:maxwidth(228 / 0.36)
+			self:diffuse(color("#bdb3b6"))
+		end,
+		BeginCommand = function(self)
+			self:queuecommand("Set")
+		end,
+		SetCommand = function(self)
+			local song = GAMESTATE:GetCurrentSong()
+			self:settext(song and song:GetGroupName() or "")
 		end,
 	},
 	LoadFont("Seraphic Artist") .. {
@@ -673,13 +693,25 @@ local function scoreBoard(pn, position)
 				end,
 			},
 		},
+		-- LR2 banded row: MODS label + right-aligned value
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(frameX, frameY + 63):halign(0):zoomto(frameWidth, 12):diffuse(color("#000000")):diffusealpha(0.4)
+			end
+		},
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(frameX + 4, frameY + 63):halign(0):zoom(0.36):diffuse(color(seraphicLabelColor)):settext("MODS")
+			end
+		},
 		LoadFont("Common Normal") .. {
 			Name = "ModString",
 			InitCommand = function(self)
-				self:xy(frameX + 2.4, frameY + 63)
-				self:zoom(0.40)
-				self:halign(0)
-				self:maxwidth(frameWidth / 0.41)
+				self:xy(frameX + frameWidth - 4, frameY + 63)
+				self:zoom(0.36)
+				self:halign(1)
+				self:maxwidth((frameWidth - 44) / 0.36)
+				self:diffuse(color(seraphicValueColor))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -700,11 +732,12 @@ local function scoreBoard(pn, position)
 		LoadFont("Common Large") .. {
 			Name = "ChordCohesionIndicator",
 			InitCommand = function(self)
-				self:xy(frameX + 3, frameY + 210)
-				self:zoom(0.25)
+				self:xy(frameX + 4, frameY + 210)
+				self:zoom(0.22)
 				self:halign(0)
-				self:maxwidth(capWideScale(get43size(100), 160)/0.25)
-				self:settext(translated_info["CCOn"])
+				self:maxwidth(capWideScale(get43size(100), 160)/0.22)
+				self:settext(tostring(translated_info["CCOn"]):upper())
+				self:diffuse(color(seraphicLabelColor))
 				self:visible(false)
 			end,
 			BeginCommand = function(self)
@@ -816,9 +849,9 @@ Def.Quad {
 				end,
 				SetCommand = function(self)
 					if usingCustomWindows then
-						self:settext(getCustomWindowConfigJudgmentName(judgmentName))
+						self:settext(tostring(getCustomWindowConfigJudgmentName(judgmentName)):upper())
 					else
-						self:settext(getJudgeStrings(judgmentName))
+						self:settext(tostring(getJudgeStrings(judgmentName)):upper())
 					end
 				end,
 			},
@@ -964,6 +997,12 @@ Def.Quad {
 			end)
 		end,
 
+		-- LR2 banded row behind the ratio line
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(frameX, frameY + 210):halign(0):zoomto(frameWidth, 13):diffuse(color("#000000")):diffusealpha(0.4)
+			end
+		},
 		UIElements.QuadButton(1,1) .. {
 			Name = "MAPAHoverThing",
 			InitCommand = function(self)
@@ -984,8 +1023,8 @@ Def.Quad {
 			Name = "Text",
 			InitCommand = function(self)
 				ratioText = self
-				self:settextf("%s:", translated_info["MAPARatio"])
-				self:zoom(0.25):halign(1)
+				self:settextf("%s:", tostring(translated_info["MAPARatio"]):upper())
+				self:zoom(0.2):halign(1):diffuse(color(seraphicLabelColor))
 			end
 		},
 		LoadFont("Common Large") .. {
@@ -993,7 +1032,7 @@ Def.Quad {
 			InitCommand = function(self)
 				laRatio = self
 				self:settextf("%.2f:1", 0)
-				self:zoom(0.25):halign(1):rainbow() -- Rainbow cuz it's LA man come on
+				self:zoom(0.22):halign(1):rainbow() -- Rainbow cuz it's LA man come on
 				self:visible(false)
 			end
 		},
@@ -1002,7 +1041,7 @@ Def.Quad {
 			InitCommand = function(self)
 				raRatio = self
 				self:settextf("%.2f:1", 0)
-				self:zoom(0.25):halign(1)  -- No color, user can set whatever they want here. AAAAA is white so I left as white
+				self:zoom(0.22):halign(1)  -- No color, user can set whatever they want here. AAAAA is white so I left as white
 				self:visible(false)
 			end
 		},
@@ -1010,15 +1049,15 @@ Def.Quad {
 			Name = "MAText",
 			InitCommand = function(self)
 				maRatio = self
-				self:zoom(0.25):halign(1):diffuse(byJudgment(judges[1]))
+				self:zoom(0.22):halign(1):diffuse(byJudgment(judges[1]))
 			end
 		},
 		LoadFont("Common Large") .. {
 			Name = "PAText",
 			InitCommand = function(self)
 				paRatio = self
-				self:xy(frameWidth + frameX, frameY + 210)
-				self:zoom(0.25)
+				self:xy(frameWidth + frameX - 4, frameY + 210)
+				self:zoom(0.22)
 				self:halign(1)
 				self:diffuse(byJudgment(judges[2]))
 
@@ -1050,7 +1089,7 @@ Def.Quad {
 					local ratioTextX = laRatioX - laRatio:GetZoomedWidth() - 10
 					ratioText:xy(ratioTextX, raRatio:GetY())
 
-					ratioText:settextf("LA/RA ratio:")
+					ratioText:settextf("LA/RA RATIO:")
 				elseif shiftHeld or isOver(mapaHover) then
 					-- Show RA/MA ratios
 					raRatio:visible(true)
@@ -1064,7 +1103,7 @@ Def.Quad {
 					local ratioTextX = raRatio:GetX() - raRatio:GetZoomedWidth() - 10
 					ratioText:xy(ratioTextX, paRatio:GetY())
 
-					ratioText:settextf("RA/MA ratio:")
+					ratioText:settextf("RA/MA RATIO:")
 				else
 					-- Show MA/PA ratios
 					raRatio:visible(false)
@@ -1078,12 +1117,12 @@ Def.Quad {
 					local ratioTextX = maRatioX - maRatio:GetZoomedWidth() - 10
 					ratioText:xy(ratioTextX, paRatio:GetY())
 
-					ratioText:settextf("%s:", translated_info["MAPARatio"])
+					ratioText:settextf("%s:", tostring(translated_info["MAPARatio"]):upper())
 				end
 
 				if score:GetChordCohesion() == true then
-					maRatio:maxwidth(maRatio:GetZoomedWidth()/0.25)
-					self:maxwidth(self:GetZoomedWidth()/0.25)
+					maRatio:maxwidth(maRatio:GetZoomedWidth()/0.22)
+					self:maxwidth(self:GetZoomedWidth()/0.22)
 					ratioText:maxwidth(capWideScale(get43size(65), 85)/0.27)
 				end
 			end,
@@ -1143,19 +1182,28 @@ Def.Quad {
 		return Def.ActorFrame {
 			Name = "Radar"..radars[i],
 
+			-- LR2 banded row: uppercase silver label, light right-aligned value
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(frameX - 2, frameY + 226.35 + 9.8 * i):halign(0):zoomto(frameWidth / 2 - frameX + 2, 9.8)
+					self:diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+				end,
+			},
 			LoadFont("Common Normal") .. {
 				InitCommand = function(self)
-					self:xy(frameX + 3, frameY + 226.35 + 9.8 * i)
-					self:zoom(0.4)
+					self:xy(frameX + 2, frameY + 226.35 + 9.8 * i)
+					self:zoom(0.34)
 					self:halign(0)
-					self:settext(radars_translated[radars[i]])
+					self:diffuse(color(seraphicLabelColor))
+					self:settext(tostring(radars_translated[radars[i]]):upper())
 				end,
 			},
 			LoadFont("Common Normal") .. {
 				InitCommand = function(self)
 					self:xy(frameWidth / 2 - 2, frameY + 226.35 + 9.8 * i)
-					self:zoom(0.4)
+					self:zoom(0.36)
 					self:halign(1)
+					self:diffuse(color(seraphicValueColor))
 				end,
 				BeginCommand = function(self)
 					self:queuecommand("Set")
@@ -1311,18 +1359,27 @@ Def.Quad {
 		}
 		-- if theres a middle lane, display its cbs too
 		local lines = ((ncol+1) % 2 == 0) and #statNames-1  or #statNames
-		local tzoom = lines == 5 and 0.4 or 0.3
+		local tzoom = lines == 5 and 0.36 or 0.3
 		local ySpacing = lines == 5 and 9.8 or 8.5
 		local function statsLine(i)
 			return Def.ActorFrame {
 				Name = "StatLine"..statNames[i],
+				-- LR2 banded row
+				Def.Quad {
+					InitCommand = function(self)
+						self:xy(frameWidth / 2 + 18.5, frameY + 255.75 + ySpacing * (i - (lines + 1) / 2)):halign(0)
+						self:zoomto(frameWidth / 2 + 4, ySpacing)
+						self:diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.15)
+					end,
+				},
 				LoadFont("Common Normal") .. {
 					Name = "StatText",
 					InitCommand = function(self)
 						self:xy(frameWidth / 2 + 22.5, frameY + 255.75 + ySpacing * (i - (lines + 1) / 2))
-						self:zoom(tzoom)
+						self:zoom(tzoom * 0.95)
 						self:halign(0)
-						self:settext(statNames[i])
+						self:diffuse(color(seraphicLabelColor))
+						self:settext(tostring(statNames[i]):upper())
 					end,
 				},
 				LoadFont("Common Normal") .. {
@@ -1333,14 +1390,16 @@ Def.Quad {
 					SetCommand = function(self, params)
 						local statValues = scoreStatistics(params ~= nil and params.score or score)
 						if i < 4 then
-							self:xy(frameWidth + 20, frameY + 255.75 + ySpacing * (i - (lines + 1) / 2))
+							self:xy(frameWidth + 18, frameY + 255.75 + ySpacing * (i - (lines + 1) / 2))
 							self:zoom(tzoom)
 							self:halign(1)
+							self:diffuse(color(seraphicValueColor))
 							self:settextf("%5.2fms", statValues[i])
 						else
-							self:xy(frameWidth + 20, frameY + 255.75 + ySpacing * (i - (lines + 1) / 2))
+							self:xy(frameWidth + 18, frameY + 255.75 + ySpacing * (i - (lines + 1) / 2))
 							self:zoom(tzoom)
 							self:halign(1)
+							self:diffuse(color(seraphicValueColor))
 							self:settext(statValues[i])
 						end
 					end,
@@ -1474,18 +1533,14 @@ Def.Quad {
 end
 
 -- Seraphic: LR2 / beatoraja-style result layout (left: graphs + judgments, centre: stage image, right: song data / plot / scores)
+-- LR2 style: dark header band (16px, ending at y with a crimson rule) and a small "::HEADING"
 local function seraHeader(x, y, w, label)
 	return Def.ActorFrame {
-		InitCommand = function(self) self:xy(x, y) end,
+		seraphicHeaderBand(x, y - 16, w, 16),
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:halign(0):valign(1):zoom(0.54):settext(label):diffuse(color("#e6e6e6")):diffusealpha(0.95)
-			end
-		},
-		Def.Quad {
-			InitCommand = function(self)
-				self:y(1):halign(0):valign(0):zoomto(w, 1):diffuse(color("#ffffff"))
-				self:diffuseleftedge(color("#ffffffCC")):diffuserightedge(color("#ffffff10"))
+				self:xy(x + 4, y - 8):halign(0):valign(0.5):zoom(0.45):maxwidth((w - 8) / 0.45)
+				self:settext(seraphicHeading(label)):diffuse(color(seraphicLabelColor))
 			end
 		}
 	}
@@ -1497,7 +1552,7 @@ local function seraDivider(x, y, w)
 	return Def.Quad {
 		InitCommand = function(self)
 			self:xy(x, y):halign(0):valign(0):zoomto(w, 1):diffuse(color("#ffffff"))
-			self:diffuseleftedge(color("#ffffff66")):diffuserightedge(color("#ffffff10"))
+			self:diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff06"))
 		end
 	}
 end
@@ -1507,7 +1562,7 @@ t[#t + 1] = seraDivider(19.4, 391.6, 242.1)
 t[#t + 1] = Def.Quad {
 	InitCommand = function(self)
 		self:xy(131.7, 395.7):halign(0):valign(0):zoomto(1, 46.8):diffuse(color("#ffffff"))
-		self:diffusetopedge(color("#ffffff55")):diffusebottomedge(color("#ffffff08"))
+		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
 }
 
@@ -1555,14 +1610,18 @@ do
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
 	for i, st in ipairs(stats) do
 		local x0 = 590 + (i - 1) * 82
+		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				self:xy(x0, 172):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
+				labelW = self:GetZoomedWidth()
 			end
 		}
+		-- value follows its label instead of sitting at the far end of the slot
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0 + 78, 172):halign(1):valign(0.5):zoom(0.38):maxwidth(42 / 0.38):settext("")
+				local gap = 5
+				self:xy(x0 + labelW + gap, 172):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}
@@ -1574,5 +1633,75 @@ if GAMESTATE:IsPlayerEnabled() then
 end
 
 t[#t + 1] = LoadActor("../offsetplot")
+
+-- NEW RECORD ribbon across the top of the stage image: this play beat the previous best on this chart at this rate
+-- (only for scores set this session, so opening old results from the Scores tab doesn't show it)
+do
+	local gain
+	pcall(function()
+		local hs = score
+		if not hs then return end
+		local started = SeraphicSession and SeraphicSession.started or ""
+		if started ~= "" and hs:GetDate() < started then return end
+		local byRate = SCOREMAN:GetScoresByKey(hs:GetChartKey())
+		local list = byRate and byRate[getRate(hs)]
+		local scores = list and list:GetScores()
+		if not scores or #scores < 2 or getHighScoreIndex(scores, hs) ~= 1 then return end
+		local diff = (hs:GetWifeScore() - scores[2]:GetWifeScore()) * 100
+		if diff > 0 then gain = diff end
+	end)
+	if gain then
+		local rx, ry, rw = SCREEN_CENTER_X, 66, 230
+		t[#t + 1] = Def.ActorFrame {
+			Name = "NewRecord",
+			InitCommand = function(self)
+				self:xy(rx, ry):diffusealpha(0)
+			end,
+			OnCommand = function(self)
+				self:sleep(0.9):decelerate(0.4):diffusealpha(1)
+			end,
+			-- crimson band fading out to both ends
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(1):zoomto(rw / 2, 26)
+					self:diffuseleftedge(color("#9c142800")):diffuserightedge(color("#9c1428E0"))
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(0):zoomto(rw / 2, 26)
+					self:diffuseleftedge(color("#9c1428E0")):diffuserightedge(color("#9c142800"))
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:y(-13):zoomto(rw, 1):diffuse(color("#ffffff")):diffusealpha(0.35)
+					self:diffuseleftedge(color("#ffffff00")):diffuserightedge(color("#ffffff00"))
+				end
+			},
+			LoadFont("Seraphic Title") .. {
+				InitCommand = function(self)
+					self:y(-1):zoom(0.5):maxwidth((rw - 20) / 0.5):diffuse(color("#f4ecee"))
+					self:settext(string.format("New Record  +%.2f%%", gain))
+				end,
+				OnCommand = function(self)
+					self:sleep(1.3):diffuseshift():effectcolor1(color("#ffffff")):effectcolor2(color("#e8b8c2")):effectperiod(2)
+				end
+			}
+		}
+	end
+end
+
+-- session chronicle: record this play once per results screen (Scripts/05 SeraphicSession.lua)
+t[#t + 1] = Def.Actor {
+	OnCommand = function(self)
+		if self.recorded or not SeraphicSessionRecordScore then return end
+		self.recorded = true
+		pcall(function()
+			local pss = STATSMAN:GetCurStageStats():GetPlayerStageStats()
+			SeraphicSessionRecordScore(pss and pss:GetHighScore())
+		end)
+	end
+}
 
 return t

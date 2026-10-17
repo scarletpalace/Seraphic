@@ -1,3 +1,4 @@
+if SeraphicStamp then SeraphicStamp("overlay start") end
 local showVisualizer = themeConfig:get_data().global.ShowVisualizer
 
 local function input(event)
@@ -30,6 +31,7 @@ local t = Def.ActorFrame {
 	end
 }
 
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built start") end end}
 t[#t + 1] = Def.Actor {
 	CodeMessageCommand = function(self, params)
 		if params.Name == "AvatarShow" and getTabIndex() == 0 and not SCREENMAN:get_input_redirected(PLAYER_1) then
@@ -45,10 +47,14 @@ t[#t + 1] = Def.Actor {
 }
 
 t[#t + 1] = LoadActor("../_frame")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built ../_frame") end end}
 t[#t + 1] = LoadActor("../_PlayerInfo")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built ../_PlayerInfo") end end}
 t[#t + 1] = LoadActor("../_scorepanel")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built ../_scorepanel") end end}
 -- feather tabs must be drawn above the bottom bar, so they live in the overlay
 t[#t + 1] = LoadActor("../ScreenSelectMusic decorations/tabs")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built ../ScreenSelectMusic decorations/tabs") end end}
 
 if false and showVisualizer then -- (hidden on the select screen: its bar showed up in the top bar)
 	local vis = audioVisualizer:new {
@@ -75,6 +81,7 @@ end
 
 
 t[#t + 1] = LoadActor("currentsort")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built currentsort") end end}
 t[#t + 1] = Def.Sprite {
 	Texture = THEME:GetPathG("", "seraphic_title"),
 	InitCommand = function(self)
@@ -137,8 +144,11 @@ t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 }
 
 t[#t + 1] = LoadActor("../_cursor")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built ../_cursor") end end}
 t[#t + 1] = LoadActor("../_halppls")
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay built ../_halppls") end end}
 
 updateNowPlaying()
 
+t[#t + 1] = Def.Actor {InitCommand = function() if SeraphicStamp then SeraphicStamp("overlay init done") end end}
 return t

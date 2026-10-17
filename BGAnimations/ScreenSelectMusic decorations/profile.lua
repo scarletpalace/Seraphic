@@ -2,6 +2,7 @@ local update = false
 local showOnline = false
 local recentactive = false
 local percentactive = false
+local sessionactive = false -- ::SESSION list: scores set since the game started
 local function BroadcastIfActive(msg)
 	if update then
 		MESSAGEMAN:Broadcast(msg)
@@ -70,23 +71,44 @@ local t = Def.ActorFrame {
 }
 
 local frameX = 10
-local frameY = 45
+local frameY = 96 -- window spans y 96..384, under the top bar
 local frameWidth = capWideScale(360, 400)
-local frameHeight = 350
-local fontScale = 0.25
-local scoresperpage = 20
-local scoreYspacing = 12.5
+local frameHeight = 288
+local fontScale = 0.24
+local scoresperpage = 16 -- rows per page that fit inside the window
+local scoreYspacing = 13.5 -- score list row pitch
 local distY = 15
 local offsetX = -10
 local offsetY = 20
 local txtDist = 33
 local rankingSkillset = 1
 local rankingPage = 1
-local numrankingpages = 10
+local numrankingpages = math.ceil(200 / scoresperpage) -- ~200 scores, as with 20 x 10
 local rankingWidth = frameWidth - capWideScale(10, 25)
 local rankingX = capWideScale(25, 35)
 local rankingY = capWideScale(40, 40)
 local rankingTitleSpacing = (rankingWidth / (#ms.SkillSets))
+-- LR2-style layout (panel-local coords)
+local tabW = (frameWidth - 24) / #ms.SkillSets -- skillset selector tabs
+local tabY = offsetY + 11 -- centre of the skillset tab row, under the header band
+local listY = offsetY + 22 -- top of the first score row
+local bandX = 6 -- score/rating row bands
+local bandW = frameWidth - 12
+local toggleW = 52 -- header toggles (Percent/Recent, Local/Online)
+local labelZoom = 0.42 -- Common Normal, uppercase silver labels
+local tabZoom = 0.36 -- Common Normal, skillset tabs
+local crimson = "#9c1428"
+-- header toggle / tab look: selected = crimson tint + light text, otherwise faint dark + silver text
+local function styleToggleQuad(self, selected)
+	if selected then
+		self:diffuse(color(crimson)):diffusealpha(0.4)
+	else
+		self:diffuse(color("#000000")):diffusealpha(0.25)
+	end
+end
+local function styleToggleText(self, selected)
+	self:diffuse(color(selected and seraphicValueColor or seraphicLabelColor))
+end
 local buttondiffuse = 0
 local whee
 local profile
@@ -101,6 +123,14 @@ t[#t + 1] = Def.Quad {
 	end
 }
 t[#t + 1] = seraphicPanel(frameX, frameY, frameWidth, frameHeight, true)
+-- header band holding the Percent/Recent and Local/Online toggles
+t[#t + 1] = seraphicHeaderBand(frameX, frameY, frameWidth, offsetY)
+t[#t + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameX + 10, frameY + offsetY / 2):zoom(0.45):halign(0):maxwidth((frameWidth - 300) / 0.45)
+		self:settext(seraphicHeading("Profile")):diffuse(color(seraphicLabelColor))
+	end
+}
 
 
 local hoverAlpha = 0.6
@@ -136,12 +166,12 @@ local function rankingLabel(i)
 
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + offsetX + 7, rankingY + offsetY + 10 + (i - 1) * scoreYspacing)
+			self:xy(rankingX + offsetX + 7, listY + (i - 0.5) * scoreYspacing)
 			-- self:RunCommandsOnChildren(cmd(halign,0;zoom,fontScale))
 			self:visible(false)
 		end,
 		UpdateRankingMessageCommand = function(self)
-			if rankingSkillset > 1 and update and not recentactive then
+			if rankingSkillset > 1 and update and not recentactive and not sessionactive then
 				if not showOnline then
 					ths = SCOREMAN:GetTopSSRHighScoreForGame(i + (scoresperpage * (rankingPage - 1)), ms.SkillSets[rankingSkillset])
 					if ths then
@@ -167,6 +197,7 @@ local function rankingLabel(i)
 				self:visible(false)
 			end
 		end,
+		seraphicRowBand(bandX - (rankingX + offsetX + 7), -scoreYspacing / 2, bandW, scoreYspacing - 1, i),
 		LoadFont("Common Large") .. {
 			Name = "text1",
 			InitCommand = function(self)
@@ -329,7 +360,7 @@ local function rankingLabel(i)
 			end,
 			DisplayProfileRankingLabelsMessageCommand = function(self) -- hacky
 				self:visible(true)
-				self:zoomto(frameWidth - capWideScale(38,78), scoreYspacing * .995)
+				self:zoomto(frameWidth - capWideScale(38,78), scoreYspacing - 1)
 			end,
 			MouseDownCommand = function(self, params)
 				if rankingSkillset > 1 and params.event == "DeviceButton_left mouse button" and update then
@@ -373,22 +404,20 @@ end
 local function rankingButton(i)
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + (i - 1) * rankingTitleSpacing, rankingY * 1.15)
+			self:xy(12 + (i - 0.5) * tabW, tabY)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffuse(getMainColor("frames")):diffusealpha(0.2)
+				self:zoomto(tabW - 2, 16)
+				styleToggleQuad(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			SetCommand = function(self)
-				if i == rankingSkillset and not recentactive then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
 					recentactive = false
+					sessionactive = false
 					rankingSkillset = i
 					rankingPage = 1
 					if not percentactive then
@@ -414,10 +443,14 @@ local function rankingButton(i)
 		LoadFont("Common Large") .. {
 			Name = "RankButtonTxt",
 			InitCommand = function(self)
-				self:addy(-1):diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing / 0.40 - 10):zoom(0.40)
+				self:zoom(tabZoom):maxwidth((tabW - 5) / tabZoom)
+				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(ms.SkillSetsTranslated[i])
+				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end
 		}
 	}
@@ -435,12 +468,17 @@ local function recentLabel(i)
 
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX - 22 , rankingY + offsetY + 10 + (i - 1) * scoreYspacing)
+			self:xy(rankingX - 22 , listY + (i - 0.5) * scoreYspacing)
 			self:visible(false)
 		end,
 		UpdateRankingMessageCommand = function(self)
-			if recentactive and update then
-					ths = SCOREMAN:GetRecentScoreForGame(i + (scoresperpage * (rankingPage - 1)))
+			if (recentactive or sessionactive) and update then
+					local idx = i + (scoresperpage * (rankingPage - 1))
+					if sessionactive then
+						ths = SeraphicSessionScore and SeraphicSessionScore(idx)
+					else
+						ths = SCOREMAN:GetRecentScoreForGame(idx)
+					end
 					if ths then
 						self:visible(true)
 						ck = ths:GetChartKey()
@@ -455,6 +493,7 @@ local function recentLabel(i)
 				self:visible(false)
 			end
 		end,
+		seraphicRowBand(bandX - (rankingX - 22), -scoreYspacing / 2, bandW, scoreYspacing - 1, i),
 		LoadFont("Common Large") .. {
 			Name = "rectext1",
 			InitCommand = function(self)
@@ -568,7 +607,7 @@ local function recentLabel(i)
 					if not IsUsingWideScreen() then
 						self:settext(getScoreDate(ths):sub(1,10)):x(318)
 					else
-						self:settext(getScoreDate(ths))
+						self:settext(getScoreDate(ths)):maxwidth((frameWidth - 8 - (rankingX - 22) - 312) / (fontScale + 0.05))
 					end
 				else
 					self:settext("")
@@ -581,10 +620,10 @@ local function recentLabel(i)
 			end,
 			DisplayProfileRankingLabelsMessageCommand = function(self) -- hacky
 				self:visible(true)
-				self:zoomto(frameWidth - capWideScale(14,10), scoreYspacing * .995)
+				self:zoomto(frameWidth - capWideScale(14,10), scoreYspacing - 1)
 			end,
 			MouseDownCommand = function(self, params)
-				if recentactive and params.event == "DeviceButton_left mouse button" and update then
+				if (recentactive or sessionactive) and params.event == "DeviceButton_left mouse button" and update then
 					if ths then
 						whee:SelectSong(thssong)
 					end
@@ -620,22 +659,20 @@ end
 local function recentButton()
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + (3.5) * rankingTitleSpacing, 24 * 0.75):valign(1)
+			self:xy(frameWidth - 154, offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffuse(getMainColor("frames")):diffusealpha(0.2)
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, recentactive)
 			end,
 			SetCommand = function(self)
-				if recentactive then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, recentactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
 					recentactive = true
+					sessionactive = false
 					percentactive = false
 					rankingPage = 1
 					SCOREMAN:SortRecentScoresForGame()
@@ -657,10 +694,14 @@ local function recentButton()
 		LoadFont("Common Large") .. {
 			Name = "RecentButtonTxt",
 			InitCommand = function(self)
-				self:addy(-1):diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing * 2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, recentactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Recent"])
+				self:settext(tostring(translated_info["Recent"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, recentactive)
 			end
 		}
 	}
@@ -670,24 +711,22 @@ end
 local function percentButton()
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + (2.5) * rankingTitleSpacing, 24 * 0.75):valign(1)
+			self:xy(frameWidth - 208, offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffuse(getMainColor("frames")):diffusealpha(0.2)
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, percentactive)
 			end,
 			SetCommand = function(self)
-				if percentactive then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, percentactive)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
 					percentactive = not percentactive
 					showOnline = false
 					recentactive = false
+					sessionactive = false
 					rankingPage = 1
 					if rankingSkillset == 1 then
 						rankingSkillset = 2
@@ -716,10 +755,14 @@ local function percentButton()
 		LoadFont("Common Large") .. {
 			Name = "PercentButtonTxt",
 			InitCommand = function(self)
-				self:addy(-1):diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing * 2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, percentactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Percent"])
+				self:settext(tostring(translated_info["Percent"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, percentactive)
 			end
 		}
 	}
@@ -729,7 +772,6 @@ end
 -- Online and Local buttons
 t[#t + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:x(8)
 		if DLMAN:IsLoggedIn() then
 			self:visible(true)
 		else
@@ -748,18 +790,15 @@ t[#t + 1] = Def.ActorFrame {
 	end,
 	Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + frameWidth * 6 / 8 - rankingTitleSpacing, rankingY + offsetY + 2)
+			self:xy(frameX + frameWidth - 92, frameY + offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffusealpha(0.2):diffuse(getMainColor("frames"))
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, not showOnline)
 			end,
 			SetCommand = function(self)
-				if not showOnline then
-					self:diffusealpha(1)
-				else
-					self:diffusealpha(0.2)
-				end
+				styleToggleQuad(self, not showOnline)
 			end,
 			MouseDownCommand = function(self, params)
 				if params.event == "DeviceButton_left mouse button" and update then
@@ -782,39 +821,33 @@ t[#t + 1] = Def.ActorFrame {
 		LoadFont("Common Large") ..{
 			Name = "LocalTxt",
 			InitCommand = function(self)
-				self:diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing*2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, not showOnline)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Local"])
+				self:settext(tostring(translated_info["Local"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, not showOnline)
 			end
 		}
 	},
 	Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(rankingX + frameWidth * 7 / 8 - rankingTitleSpacing, rankingY + offsetY + 2)
+			self:xy(frameX + frameWidth - 38, frameY + offsetY / 2)
 		end,
 		UIElements.QuadButton(1, 1) .. {
 			InitCommand = function(self)
-				self:zoomto(rankingTitleSpacing, 26):diffusealpha(0.2)
+				self:zoomto(toggleW - 2, 15)
 				if DLMAN:IsLoggedIn() then
-					self:diffuse(getMainColor("frames"))
-					if showOnline then
-						self:diffusealpha(1)
-					else
-						self:diffusealpha(0.2)
-					end
+					styleToggleQuad(self, showOnline)
 				else
 					self:diffuse(getMainColor("disabled")):diffusealpha(0.1)
 				end
 			end,
 			SetCommand = function(self)
 				if DLMAN:IsLoggedIn() then
-					self:diffuse(getMainColor("frames"))
-					if showOnline then
-						self:diffusealpha(1)
-					else
-						self:diffusealpha(0.2)
-					end
+					styleToggleQuad(self, showOnline)
 				else
 					self:diffuse(getMainColor("disabled")):diffusealpha(0.1)
 				end
@@ -840,22 +873,34 @@ t[#t + 1] = Def.ActorFrame {
 		LoadFont("Common Large") .. {
 			Name = "OnlineTxt",
 			InitCommand = function(self)
-				self:diffuse(getMainColor("positive")):maxwidth(rankingTitleSpacing*2):zoom(0.42)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, showOnline)
 			end,
 			BeginCommand = function(self)
-				self:settext(translated_info["Online"])
+				self:settext(tostring(translated_info["Online"]):upper())
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, showOnline)
 			end
 		}
 	},
 
 }
+-- pages in the current list (the session list only has as many pages as it needs)
+local function pageCount()
+	if sessionactive then
+		local n = (SeraphicSession and SeraphicSession.scores) and #SeraphicSession.scores or 0
+		return math.max(1, math.ceil(n / scoresperpage))
+	end
+	return numrankingpages
+end
 -- prev/next page
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
-		self:xy(10, frameHeight - offsetY):visible(false)
+		self:xy(10, frameHeight - 12):visible(false)
 	end,
 	UpdateRankingMessageCommand = function(self)
-		if (rankingSkillset > 1 or recentactive ) and not showOnline then
+		if (rankingSkillset > 1 or recentactive or sessionactive) and not showOnline then
 			self:visible(true)
 			if not self and self.GetChildren then
 				for child in self:GetChildren() do
@@ -868,11 +913,11 @@ r[#r + 1] = Def.ActorFrame {
 	end,
 	UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
-			self:xy(capWideScale(300,336.25), -8.5):zoomto(40, 20):halign(0):valign(0):diffuse(getMainColor("frames")):diffusealpha(0.2)
+			self:xy(frameWidth - 20, 0):zoomto(56, 15):halign(1):diffuse(color("#000000")):diffusealpha(0.5)
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
-				if rankingPage < numrankingpages then
+				if rankingPage < pageCount() then
 					rankingPage = rankingPage + 1
 				else
 					rankingPage = 1
@@ -893,19 +938,21 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "NextP",
 		InitCommand = function(self)
-			self:x(capWideScale(304.25,340)):halign(0):zoom(0.3):diffuse(getMainColor("positive")):settext(translated_info["NextPage"])
+			self:x(frameWidth - 48):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:settext(tostring(translated_info["NextPage"]):upper())
 		end,
 	},
+	seraphicSoftEdge(frameWidth - 76, -7.5, 56, 15, 0.14),
 	UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
-			self:xy(-2,-8.5):zoomto(65, 20):halign(0):valign(0):diffuse(getMainColor("frames")):diffusealpha(0.2)
+			self:xy(-2, 0):zoomto(56, 15):halign(0):diffuse(color("#000000")):diffusealpha(0.5)
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
 				if rankingPage > 1 then
 					rankingPage = rankingPage - 1
 				else
-					rankingPage = numrankingpages
+					rankingPage = pageCount()
 				end
 				BroadcastIfActive("UpdateRanking")
 			end
@@ -922,9 +969,11 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "PrevP",
 		InitCommand = function(self)
-			self:halign(0):zoom(0.3):diffuse(getMainColor("positive")):settext(translated_info["PrevPage"])
+			self:x(26):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:settext(tostring(translated_info["PrevPage"]):upper())
 		end,
 	},
+	seraphicSoftEdge(-2, -7.5, 56, 15, 0.14),
 }
 
 for i = 1, scoresperpage do
@@ -941,46 +990,121 @@ for i = 1, #ms.SkillSets do
 	r[#r + 1] = rankingButton(i)
 end
 
+local function sessionButton()
+	return Def.ActorFrame {
+		InitCommand = function(self)
+			self:xy(frameWidth - 262, offsetY / 2)
+		end,
+		UIElements.QuadButton(1, 1) .. {
+			InitCommand = function(self)
+				self:zoomto(toggleW - 2, 15)
+				styleToggleQuad(self, sessionactive)
+			end,
+			SetCommand = function(self)
+				styleToggleQuad(self, sessionactive)
+			end,
+			MouseDownCommand = function(self, params)
+				if params.event == "DeviceButton_left mouse button" and update then
+					sessionactive = true
+					recentactive = false
+					percentactive = false
+					rankingPage = 1
+					BroadcastIfActive("UpdateRanking")
+				end
+			end,
+			UpdateRankingMessageCommand = function(self)
+				self:queuecommand("Set")
+			end,
+			MouseOverCommand = function(self)
+				self:GetParent():GetChild("SessionButtonTxt"):diffusealpha(0.7)
+			end,
+			MouseOutCommand = function(self)
+				self:GetParent():GetChild("SessionButtonTxt"):diffusealpha(1)
+			end,
+		},
+		LoadFont("Common Large") .. {
+			Name = "SessionButtonTxt",
+			InitCommand = function(self)
+				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				styleToggleText(self, sessionactive)
+				self:settext("SESSION")
+			end,
+			UpdateRankingMessageCommand = function(self)
+				styleToggleText(self, sessionactive)
+			end
+		}
+	}
+end
+
+r[#r + 1] = sessionButton()
+-- shown in place of the list while no score has been set this session
+r[#r + 1] = LoadFont("Common Normal") .. {
+	InitCommand = function(self)
+		self:xy(frameWidth / 2, listY + 40):zoom(0.45):diffuse(color(seraphicLabelColor)):visible(false)
+		self:settext("No scores set this session yet")
+	end,
+	UpdateRankingMessageCommand = function(self)
+		local n = (SeraphicSession and SeraphicSession.scores) and #SeraphicSession.scores or 0
+		self:visible(sessionactive and update and n == 0)
+	end
+}
 r[#r + 1] = recentButton()
 r[#r + 1] = percentButton()
 
+-- overview layout: compact skillset rows + ::TODAY chronicle on the left, skill sigil on the right,
+-- one row of buttons along the bottom (all panel-local; the window is 288 tall)
+local ovLeftX = 8
+local ovLeftW = math.floor(frameWidth * 0.44)
+local ratingPitch = 19
+local ratingH = 17
+local ratingY = listY + 2 -- top of the first rating row
+local todayY = ratingY + 7 * ratingPitch + 5 -- top of the ::TODAY panel
+local todayH = 72
+local ovBottom = todayY + todayH -- bottom of the overview content (buttons go under it)
+
+local function overviewVisible(self)
+	self:visible(rankingSkillset == 1 and update and not recentactive and not sessionactive)
+end
+
+-- the rating a skillset row / sigil vertex shows (local or online)
+local function skillsetRating(i)
+	if showOnline then
+		return DLMAN:GetSkillsetRating(ms.SkillSets[i]) or 0
+	end
+	if not profile then return 0 end
+	return profile:GetPlayerSkillsetRating(ms.SkillSets[i]) or 0
+end
+
+-- skillset ratings: compact banded "LABEL ..... value" rows
 local function littlebits(i)
+	local rowY = ratingY + (i - 2) * ratingPitch + ratingH / 2
 	local t = Def.ActorFrame {
 		InitCommand = function(self)
-			self:xy(frameX + capWideScale(28,45), frameY - 30)
+			self:xy(0, rowY)
 		end,
 		UpdateRankingMessageCommand = function(self)
-			if rankingSkillset == 1 and update and not recentactive then
-				self:visible(true)
-			else
-				self:visible(false)
-			end
+			overviewVisible(self)
 		end,
-		LoadFont("Common Large") .. {
+		seraphicRowBand(ovLeftX, -ratingH / 2, ovLeftW, ratingH, i - 1),
+		seraphicBullet(ovLeftX + 7, 0),
+		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:y(txtDist * i):maxwidth(170 * 2):halign(0):zoom(0.575)
+				self:x(ovLeftX + 15):maxwidth((ovLeftW * 0.5 - 15) / 0.4):halign(0):zoom(0.4):diffuse(color(seraphicLabelColor))
 			end,
 			SetCommand = function(self)
-				self:settext(ms.SkillSetsTranslated[i] .. ":")
+				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
 			end,
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(210, txtDist * i):halign(0):zoom(0.575)
+				self:x(ovLeftX + ovLeftW - 6):halign(1):zoom(0.26):maxwidth((ovLeftW * 0.5 - 8) / 0.26)
 			end,
 			SetCommand = function(self)
-				local rating = 0
+				local rating = skillsetRating(i)
 				if not showOnline then
-					rating = profile:GetPlayerSkillsetRating(ms.SkillSets[i])
 					self:settextf("%05.2f", rating)
-					self:GetParent():x(frameX + capWideScale(28,45))
-					self:x(210)
 				else
-					rating = DLMAN:GetSkillsetRating(ms.SkillSets[i])
 					self:settextf("%05.2f (#%i)", rating, DLMAN:GetSkillsetRank(ms.SkillSets[i]))
-					self:GetParent():x(frameX)
-					self:x(capWideScale(184,198)):maxwidth(9999)
-					if not IsUsingWideScreen() then self:maxwidth(270) end
 				end
 				self:diffuse(byMSD(rating))
 			end,
@@ -999,8 +1123,240 @@ for i = 2, #ms.SkillSets do
 	r[#r + 1] = littlebits(i)
 end
 
+-- SKILL SIGIL: the 7 skillset ratings as a heptagram/radar inside a turning magic circle
+local sigilAbbr = {"STR", "JMP", "HND", "STA", "JCK", "CHJ", "TEC"} -- Stream .. Technical
+local sigilLeft = ovLeftX + ovLeftW + 8
+local sigilW = frameWidth - 8 - sigilLeft
+local sigilCX = sigilLeft + sigilW / 2
+local sigilCY = (listY + ovBottom) / 2
+local sigilR = math.min(sigilW / 2 - 20, (ovBottom - listY) / 2 - 14)
+local sigilN = #ms.SkillSets - 1
+local fillCol = color("#9c142866")
+local fillCenterCol = color("#9c142833")
+local lineCol = color("#e8b8c2E6")
+local faintCol = color("#bdb3b630")
+
+local function sigilAngle(k) -- k = 1..7, first vertex straight up
+	return -math.pi / 2 + (k - 1) * 2 * math.pi / sigilN
+end
+local function sigilPoint(k, rad)
+	local a = sigilAngle(k)
+	return math.cos(a) * rad, math.sin(a) * rad
+end
+-- vertex radii for the current ratings; cap = highest skillset * 1.1 (at least 10)
+local function sigilRadii()
+	local vals, hi = {}, 0
+	for k = 1, sigilN do
+		vals[k] = skillsetRating(k + 1)
+		if vals[k] > hi then hi = vals[k] end
+	end
+	local cap = math.max(hi * 1.1, 10)
+	local radii = {}
+	for k = 1, sigilN do
+		radii[k] = sigilR * math.max(0, math.min(vals[k] / cap, 1))
+	end
+	return radii
+end
+-- heptagon outline at a fixed radius (guide rings)
+local function ringVerts(rad)
+	local v = {}
+	for k = 1, sigilN + 1 do
+		local x, y = sigilPoint((k - 1) % sigilN + 1, rad)
+		v[#v + 1] = {{x, y, 0}, faintCol}
+	end
+	return v
+end
+
+local sigil = Def.ActorFrame {
+	InitCommand = function(self)
+		self:xy(sigilCX, sigilCY)
+	end,
+	UpdateRankingMessageCommand = function(self)
+		overviewVisible(self)
+		self:queuecommand("SigilSet")
+	end,
+	PlayerRatingUpdatedMessageCommand = function(self)
+		self:queuecommand("SigilSet")
+	end,
+	SetCommand = function(self)
+		self:queuecommand("SigilSet")
+	end,
+	-- faint, slowly turning magic circle
+	Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_circle"),
+		InitCommand = function(self)
+			self:zoomto(sigilR * 2.5, sigilR * 2.5):blend("BlendMode_Add"):diffusealpha(0.22)
+			self:spin():effectmagnitude(0, 0, 8)
+		end
+	},
+	-- guide rings at 50% / 100% and faint spokes
+	Def.ActorMultiVertex {
+		InitCommand = function(self)
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1)
+			self:SetVertices(ringVerts(sigilR))
+		end
+	},
+	Def.ActorMultiVertex {
+		InitCommand = function(self)
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1)
+			self:SetVertices(ringVerts(sigilR * 0.5))
+		end
+	},
+	Def.ActorMultiVertex {
+		InitCommand = function(self)
+			local v = {}
+			for k = 1, sigilN do
+				local x, y = sigilPoint(k, sigilR)
+				v[#v + 1] = {{0, 0, 0}, faintCol}
+				v[#v + 1] = {{x, y, 0}, faintCol}
+			end
+			v[#v + 1] = {{0, 0, 0}, faintCol}
+			-- spokes as one line strip that runs out to each point and back (there is no DrawMode_Lines)
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1)
+			self:SetVertices(v)
+		end
+	},
+	-- translucent crimson fill
+	Def.ActorMultiVertex {
+		SigilSetCommand = function(self)
+			local radii = sigilRadii()
+			local v = {{{0, 0, 0}, fillCenterCol}}
+			for k = 1, sigilN + 1 do
+				local kk = (k - 1) % sigilN + 1
+				local x, y = sigilPoint(kk, radii[kk])
+				v[#v + 1] = {{x, y, 0}, fillCol}
+			end
+			self:SetDrawState({Mode = "DrawMode_Fan"})
+			self:SetVertices(v)
+		end
+	},
+	-- brighter outline
+	Def.ActorMultiVertex {
+		SigilSetCommand = function(self)
+			local radii = sigilRadii()
+			local v = {}
+			for k = 1, sigilN + 1 do
+				local kk = (k - 1) % sigilN + 1
+				local x, y = sigilPoint(kk, radii[kk])
+				v[#v + 1] = {{x, y, 0}, lineCol}
+			end
+			self:SetDrawState({Mode = "DrawMode_LineStrip"})
+			self:SetLineWidth(1.5)
+			self:SetVertices(v)
+		end
+	}
+}
+-- vertex diamonds and tip labels
+for k = 1, sigilN do
+	sigil[#sigil + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:rotationz(45):zoomto(4, 4):diffuse(color("#f4ecee"))
+		end,
+		SigilSetCommand = function(self)
+			local x, y = sigilPoint(k, sigilRadii()[k])
+			self:xy(x, y)
+		end
+	}
+	sigil[#sigil + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			local x, y = sigilPoint(k, sigilR + 10)
+			self:xy(x, y):zoom(0.3):diffuse(color(seraphicLabelColor)):settext(sigilAbbr[k] or "")
+		end
+	}
+end
+r[#r + 1] = sigil
+
+-- ::SESSION chronicle (data from Scripts/05 SeraphicSession.lua)
+local todayRows = {"Plays", "Avg Wife", "Best MSD", "Rating"}
+local function todayValue(n)
+	local s = SeraphicSession or {}
+	local plays = s.plays or 0
+	if n == 1 then
+		return tostring(plays)
+	elseif n == 2 then
+		if plays > 0 then return string.format("%.2f%%", (s.wifeSum or 0) / plays * 100) end
+		return "--"
+	elseif n == 3 then
+		if (s.bestSSR or 0) > 0 then return string.format("%.2f", s.bestSSR) end
+		return "--"
+	else
+		local start = SeraphicSessionStartRating and SeraphicSessionStartRating()
+		local now = SeraphicSessionCurrentRating and SeraphicSessionCurrentRating()
+		if not now then return "--" end
+		if not start then return string.format("%.2f", now) end
+		return string.format("%.2f (%+.2f)", now, now - start)
+	end
+end
+local today = Def.ActorFrame {
+	UpdateRankingMessageCommand = function(self)
+		overviewVisible(self)
+	end,
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(ovLeftX, todayY):halign(0):valign(0):zoomto(ovLeftW, todayH):diffuse(color("#000000")):diffusealpha(0.3)
+		end
+	},
+	seraphicSoftEdge(ovLeftX, todayY, ovLeftW, todayH, 0.12),
+	seraphicHeaderBand(ovLeftX, todayY, ovLeftW, 14),
+	LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(ovLeftX + 6, todayY + 7):halign(0):zoom(0.38):diffuse(color(seraphicLabelColor))
+			self:settext(seraphicHeading("Session"))
+		end
+	}
+}
+for n = 1, #todayRows do
+	local y = todayY + 16 + (n - 1) * 14
+	today[#today + 1] = seraphicRowBand(ovLeftX + 2, y, ovLeftW - 4, 13, n)
+	today[#today + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(ovLeftX + 8, y + 6.5):halign(0):zoom(0.36):maxwidth((ovLeftW * 0.45) / 0.36)
+			self:diffuse(color(seraphicLabelColor)):settext(todayRows[n]:upper())
+		end
+	}
+	today[#today + 1] = LoadFont("Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(ovLeftX + ovLeftW - 6, y + 6.5):halign(1):zoom(0.38):maxwidth((ovLeftW * 0.5) / 0.38)
+			self:diffuse(color(seraphicValueColor))
+		end,
+		SetCommand = function(self)
+			self:settext(todayValue(n))
+		end,
+		UpdateRankingMessageCommand = function(self)
+			self:queuecommand("Set")
+		end,
+		PlayerRatingUpdatedMessageCommand = function(self)
+			self:queuecommand("Set")
+		end
+	}
+end
+r[#r + 1] = today
+
 local user
 local pass
+-- bottom buttons: one compact row along the bottom of the window
+local pbCount = 5
+local pbW = (frameWidth - 16 - (pbCount - 1) * 5) / pbCount
+local pbH = 15
+local function pbX(col) return frameX + 8 + pbW / 2 + (col - 1) * (pbW + 5) end
+local function pbY(row) return frameY + frameHeight - 14 end
+local function pbFrame(col, row)
+	return Def.ActorFrame {
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(pbX(col), pbY(row)):zoomto(pbW, pbH):diffuse(color("#000000")):diffusealpha(0.5)
+			end
+		},
+		seraphicSoftEdge(pbX(col) - pbW / 2, pbY(row) - pbH / 2, pbW, pbH, 0.14)
+	}
+end
+local function pbText(self, col, row, text)
+	self:xy(pbX(col), pbY(row)):halign(0.5):diffuse(color(seraphicValueColor)):zoom(0.19):maxwidth((pbW - 6) / 0.19)
+	self:settext(tostring(text):upper())
+end
 local profilebuttons = Def.ActorFrame {
 	InitCommand = function(self)
 	end,
@@ -1017,16 +1373,16 @@ local profilebuttons = Def.ActorFrame {
 		end
 	end,
 	UpdateRankingMessageCommand = function(self)
-		if rankingSkillset == 1 and update and not recentactive then
+		if rankingSkillset == 1 and update and not recentactive and not sessionactive then
 			self:visible(true)
 		else
 			self:visible(false)
 		end
 	end,
+	pbFrame(1, 1), pbFrame(2, 1), pbFrame(3, 1), pbFrame(4, 1), pbFrame(5, 1),
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 1/7, frameHeight + 04):halign(0.5):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["Save"])
+			pbText(self, 1, 1, translated_info["Save"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1035,7 +1391,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive then
 				if PROFILEMAN:SaveProfile(PLAYER_1) then
 					ms.ok(translated_info["Success"])
 					STATSMAN:UpdatePlayerRating()
@@ -1047,8 +1403,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 3/7, frameHeight + 04):halign(0.5):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["AssetSettings"])
+			pbText(self, 2, 1, translated_info["AssetSettings"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1057,15 +1412,14 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive then
 				SCREENMAN:SetNewScreen("ScreenAssetSettings")
 			end
 		end,
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 1/7, frameHeight + 26):halign(0.5):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["ValidateAll"])
+			pbText(self, 3, 1, translated_info["ValidateAll"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1074,7 +1428,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive then
 				profile:UnInvalidateAllScores()
 				STATSMAN:UpdatePlayerRating()
 			end
@@ -1082,8 +1436,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 3/7, frameHeight + 26):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["ForceRecalc"])
+			pbText(self, 4, 1, translated_info["ForceRecalc"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1092,7 +1445,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive  then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive  then
 				ms.ok("Recalculating Scores... this might be slow and may or may not crash")
 				profile:ForceRecalcScores()
 				STATSMAN:UpdatePlayerRating()
@@ -1101,8 +1454,7 @@ local profilebuttons = Def.ActorFrame {
 	},
 	UIElements.TextToolTip(1, 1, "Common Large") .. {
 		InitCommand = function(self)
-			self:xy(frameX + frameWidth * 5.3/7, frameHeight + 26):diffuse(getMainColor("positive")):zoom(0.3)
-			self:settext(translated_info["UploadAllScore"])
+			pbText(self, 5, 1, translated_info["UploadAllScore"])
 		end,
 		MouseOverCommand = function(self)
 			self:diffusealpha(hoverAlpha)
@@ -1111,7 +1463,7 @@ local profilebuttons = Def.ActorFrame {
 			self:diffusealpha(1)
 		end,
 		MouseDownCommand = function(self, params)
-			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive  then
+			if params.event == "DeviceButton_left mouse button" and update and rankingSkillset == 1 and not recentactive and not sessionactive  then
 				if DLMAN:IsLoggedIn() then
 					DLMAN:UploadAllScores()
 				else

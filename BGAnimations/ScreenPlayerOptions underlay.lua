@@ -1,12 +1,8 @@
-t = Def.ActorFrame { }
+-- Seraphic: player options over the sanctuary, rows in an LR2 window right of the noteskin sidebar
+-- (the shared options window, placed past the sidebar; the explanation sits at ExplanationP1Y)
+local t = Def.ActorFrame {}
 
-t[#t + 1] =
-	LoadActor(THEME:GetPathG("", "_OptionsScreen")) ..
-	{
-		OnCommand = function(self)
-			self:zoomto(SCREEN_WIDTH, SCREEN_HEIGHT):Center():zoom(1):diffusealpha(1)
-		end
-	}
+t[#t + 1] = LoadActor("ScreenOptions underlay", {x = 156, w = 566, explMetric = "ExplanationP1Y", noHeader = true})
 
 if SameColor(getMainColor("positive"),color("#9654FD")) then
 	t[#t + 1] =
@@ -35,6 +31,5 @@ else
 			end
 		}
 end
-
 
 return t

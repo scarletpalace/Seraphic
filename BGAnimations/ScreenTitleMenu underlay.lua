@@ -4,116 +4,46 @@ end
 
 local t = Def.ActorFrame {}
 
-local frameX = THEME:GetMetric("ScreenTitleMenu", "ScrollerX") - 10
-local frameY = THEME:GetMetric("ScreenTitleMenu", "ScrollerY")
 
---Fractal backdrop
-t[#t + 1] = LoadActor(THEME:GetPathG("", "_OptionsScreen")) .. {
-	InitCommand = function(self)
-		self:FullScreen():diffusealpha(1)
-	end
-}
+-- Seraphic: a candle-lit sanctuary. Everything sits on the centre line: the shared rose-window
+-- backdrop, the title under the chain garland, and the menu inside the window.
+local cx = SCREEN_CENTER_X
+t[#t + 1] = LoadActor("_sanctuary")
 
---Left panel (vertical gradient)
-t[#t + 1] = Def.Quad {
-	InitCommand = function(self)
-		self:xy(0, 0):halign(0):valign(0):zoomto(250, 900):diffuse(getTitleColor('BG_Left')):diffusealpha(1)
-		self:diffusetopedge(color("#1f1f1fF2"))
-		self:diffusebottomedge(color("#03050aF2"))
-	end
-}
-
---Right panel (soft gradient fading darker to the right)
-t[#t + 1] =	Def.Quad {
-	InitCommand = function(self)
-		self:xy(250, 0):halign(0):valign(0):zoomto(1000, 900):diffuse(getTitleColor('BG_Right')):diffusealpha(1)
-		self:diffuseleftedge(color("#0d1019D8"))
-		self:diffuserightedge(color("#05070c55"))
-	end
-}
-
--- slowly turning magic circles behind the menu (art from the LR2 skin)
+-- filigree above and below the title block, with a diamond on the centre line
 t[#t + 1] = Def.Sprite {
-	Texture = THEME:GetPathG("", "seraphic_circle"),
+	Texture = THEME:GetPathG("", "seraphic_filigree"),
 	InitCommand = function(self)
-		self:xy(600, SCREEN_CENTER_Y):zoom(1.05):diffusealpha(0.30):blend("BlendMode_Add")
-		self:spin():effectmagnitude(0, 0, 3)
+		self:xy(cx, 52):zoomto(330, 52):diffusealpha(0.7)
 	end
 }
 t[#t + 1] = Def.Sprite {
-	Texture = THEME:GetPathG("", "seraphic_circle"),
+	Texture = THEME:GetPathG("", "seraphic_filigree"),
 	InitCommand = function(self)
-		self:xy(600, SCREEN_CENTER_Y):zoom(0.6):diffusealpha(0.22):blend("BlendMode_Add")
-		self:spin():effectmagnitude(0, 0, -5)
+		self:xy(cx, 176):zoomto(250, 40):rotationx(180):diffusealpha(0.55)
 	end
 }
-
--- twinkling sparkles
-do
-	local sparks = {
-		{330, 70, 0.9, 0.0}, {760, 110, 0.7, 1.2}, {470, 400, 0.8, 2.1}, {690, 330, 1.0, 0.6},
-		{820, 420, 0.6, 1.7}, {400, 170, 0.7, 2.6}, {620, 60, 0.6, 0.9}, {300, 330, 0.6, 1.4}, {560, 250, 0.5, 3.0}
+t[#t + 1] = Def.Sprite {
+	Texture = THEME:GetPathG("", "seraphic_crystal"),
+	InitCommand = function(self)
+		self:xy(cx, 141):zoom(0.3)
+		self:glowshift():effectcolor1(color("1,1,1,0")):effectcolor2(color("1,0.85,0.85,0.5")):effectperiod(2.4)
+	end
+}
+for _, dir in ipairs({-1, 1}) do
+	t[#t + 1] = Def.Quad {
+		InitCommand = function(self)
+			self:xy(cx + dir * 12, 141):halign(dir == 1 and 0 or 1):zoomto(110, 1):diffuse(color("#e2e2e2")):diffusealpha(0.7)
+			if dir == 1 then self:faderight(1) else self:fadeleft(1) end
+		end
 	}
-	for _, sp in ipairs(sparks) do
-		t[#t + 1] = Def.Sprite {
-			Texture = THEME:GetPathG("", "seraphic_sparkle"),
-			InitCommand = function(self)
-				self:xy(sp[1], sp[2]):zoom(sp[3] * 0.55):blend("BlendMode_Add")
-				self:diffuseshift():effectcolor1(color("1,1,1,0")):effectcolor2(color("1,1,1,0.95"))
-				self:effectperiod(2.6 + (sp[4] % 1.5)):effectoffset(sp[4])
-			end
-		}
-	end
 end
 
---Glow spilling from the divider into the right panel
-t[#t + 1] = Def.Quad {
+-- motto along the foot of the window
+t[#t + 1] = LoadFont("Common Normal") .. {
 	InitCommand = function(self)
-		self:xy(270, 0):halign(0):valign(0):zoomto(160, 900):diffuse(getTitleColor('Line_Right'))
-		self:diffuseleftedge(color("#68686855")):diffuserightedge(color("#68686800"))
-	end
-}
-
---Light purple line (fades from bright at the top to deep at the bottom)
-t[#t + 1] = Def.Quad {
-	InitCommand = function(self)
-		self:xy(250, 0):halign(0):valign(0):zoomto(10, 900):diffuse(getTitleColor('Line_Left')):diffusealpha(1)
-		self:diffusetopedge(getTitleColor('Line_Left')):diffusebottomedge(getTitleColor('Line_Right'))
-	end
-}
-
---Dark purple line
-t[#t + 1] = Def.Quad {
-	InitCommand = function(self)
-		self:xy(260, 0):halign(0):valign(0):zoomto(10, 900):diffuse(getTitleColor('Line_Right')):diffusealpha(1)
-		self:diffusetopedge(getTitleColor('Line_Right')):diffusebottomedge(color("#272727"))
-	end
-}
-
---Thin divider under the logo block (fades out to the right)
-t[#t + 1] = Def.Quad {
-	InitCommand = function(self)
-		self:xy(50, frameY - 18):halign(0):zoomto(150, 1):diffuse(getTitleColor('Line_Left'))
-		self:diffuseleftedge(color("#e2e2e2FF")):diffuserightedge(color("#e2e2e200"))
-	end
-}
-
--- ornaments around the logo block
-t[#t + 1] = Def.Sprite {
-	Texture = THEME:GetPathG("", "seraphic_filigree"),
-	InitCommand = function(self)
-		self:xy(125, frameY - 135):zoomto(232, 36):diffusealpha(0.55)
-	end
-}
-t[#t + 1] = Def.Sprite {
-	Texture = THEME:GetPathG("", "seraphic_filigree"),
-	InitCommand = function(self)
-		self:xy(125, frameY + 6):zoomto(232, 36):rotationx(180):diffusealpha(0.45)
-	end
-}
-t[#t + 1] = Def.Quad {
-	InitCommand = function(self)
-		self:xy(125, frameY - 18):rotationz(45):zoomto(6, 6):diffuse(color("#ffffff"))
+		self:xy(cx, SCREEN_HEIGHT - 22):zoom(0.36):settext("in tenebris lux")
+		self:diffuse(color("#c9b8bc")):diffusealpha(0.45)
 	end
 }
 
@@ -122,7 +52,7 @@ local playingMusicCounter = 1
 --Title text
 t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 	InitCommand=function(self)
-		self:xy(125,frameY-84):zoom(0.85):maxwidth(226 / 0.85):align(0.5,1)
+		self:xy(cx, 112):zoom(0.95):maxwidth(320 / 0.95):align(0.5,1)
 		self:diffusetopedge(Saturation(getMainColor("highlight"), 0.5))
 		self:diffusebottomedge(Saturation(getMainColor("positive"), 0.8))
 		self:diffusealpha(0)
@@ -204,7 +134,7 @@ t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 --Theme text
 t[#t + 1] = LoadFont("Common Large") .. {
 	InitCommand=function(self)
-		self:xy(125,frameY-52):zoom(0.42):align(0.5,1)
+		self:xy(cx, 129):zoom(0.36):align(0.5,1):diffusealpha(0.9)
 		self:diffusetopedge(Saturation(getMainColor("highlight"), 0.5))
 		self:diffusebottomedge(Saturation(getMainColor("positive"), 0.8))
 	end,
@@ -217,7 +147,7 @@ t[#t + 1] = LoadFont("Common Large") .. {
 t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 	Name = "Version",
 	InitCommand=function(self)
-		self:xy(125,frameY-35):zoom(0.25):align(0.5,1)
+		self:xy(cx, 158):zoom(0.22):align(0.5,1)
 		self:diffusetopedge(Saturation(getMainColor("highlight"), 0.5))
 		self:diffusebottomedge(Saturation(getMainColor("positive"), 0.8))
 	end,
@@ -298,10 +228,9 @@ local i
 for i = 1, choiceCount do
 	t[#t + 1] = UIElements.QuadButton(1, 1) .. {
 		OnCommand = function(self)
-			self:xy(scrollerX, scrollerY):zoomto(260, 16)
-			transformF(self, 0, i, choiceCount)
-			self:addx(SCREEN_CENTER_X - 20)
-			self:addy(SCREEN_CENTER_Y - 20)
+			self:x(scrollerX):zoomto(240, 20)
+			transformF(self, 0, i - 1, choiceCount)
+			self:addy(scrollerY)
 			self:diffusealpha(0)
 		end,
 		MouseDownCommand = function(self, params)
