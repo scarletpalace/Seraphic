@@ -88,6 +88,11 @@ local rankingWidth = frameWidth - capWideScale(10, 25)
 local rankingX = capWideScale(25, 35)
 local rankingY = capWideScale(40, 40)
 local rankingTitleSpacing = (rankingWidth / (#ms.SkillSets))
+-- short skillset names used across the profile tab (Overall .. Technical)
+local skillShort = {"OVERALL", "STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
+local function skillName(i)
+	return skillShort[i] or tostring(ms.SkillSetsTranslated[i]):upper()
+end
 -- LR2-style layout (panel-local coords)
 local tabW = (frameWidth - 24) / #ms.SkillSets -- skillset selector tabs
 local tabY = offsetY + 11 -- centre of the skillset tab row, under the header band
@@ -447,7 +452,7 @@ local function rankingButton(i)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
+				self:settext(skillName(i))
 			end,
 			UpdateRankingMessageCommand = function(self)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
@@ -1092,7 +1097,7 @@ local function littlebits(i)
 				self:x(ovLeftX + 15):maxwidth((ovLeftW * 0.5 - 15) / 0.4):halign(0):zoom(0.4):diffuse(color(seraphicLabelColor))
 			end,
 			SetCommand = function(self)
-				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
+				self:settext(skillName(i))
 			end,
 		},
 		LoadFont("Common Large") .. {
@@ -1123,8 +1128,7 @@ for i = 2, #ms.SkillSets do
 	r[#r + 1] = littlebits(i)
 end
 
--- SKILL SIGIL: the 7 skillset ratings as a heptagram/radar inside a turning magic circle
-local sigilAbbr = {"STR", "JMP", "HND", "STA", "JCK", "CHJ", "TEC"} -- Stream .. Technical
+-- SKILL SIGIL: the 7 skillset ratings as a heptagram/radar
 local sigilLeft = ovLeftX + ovLeftW + 8
 local sigilW = frameWidth - 8 - sigilLeft
 local sigilCX = sigilLeft + sigilW / 2
@@ -1143,19 +1147,25 @@ local function sigilPoint(k, rad)
 	local a = sigilAngle(k)
 	return math.cos(a) * rad, math.sin(a) * rad
 end
--- vertex radii for the current ratings; cap = highest skillset * 1.1 (at least 10)
+-- vertex radii for the current ratings, scaled to the player's own min..max range
+-- (weakest skillset sits at sigilFloor, strongest on the outer ring) so differences stand out
+local sigilFloor = 0.2
 local function sigilRadii()
-	local vals, hi = {}, 0
+	local vals, lo, hi, best = {}, math.huge, -math.huge, 1
 	for k = 1, sigilN do
 		vals[k] = skillsetRating(k + 1)
-		if vals[k] > hi then hi = vals[k] end
+		if vals[k] < lo then lo = vals[k] end
+		if vals[k] > hi then hi = vals[k]; best = k end
 	end
-	local cap = math.max(hi * 1.1, 10)
 	local radii = {}
 	for k = 1, sigilN do
-		radii[k] = sigilR * math.max(0, math.min(vals[k] / cap, 1))
+		local f = 1
+		if hi - lo > 0.005 then
+			f = sigilFloor + (1 - sigilFloor) * (vals[k] - lo) / (hi - lo)
+		end
+		radii[k] = sigilR * f
 	end
-	return radii
+	return radii, best
 end
 -- heptagon outline at a fixed radius (guide rings)
 local function ringVerts(rad)
@@ -1181,14 +1191,6 @@ local sigil = Def.ActorFrame {
 	SetCommand = function(self)
 		self:queuecommand("SigilSet")
 	end,
-	-- faint, slowly turning magic circle
-	Def.Sprite {
-		Texture = THEME:GetPathG("", "seraphic_circle"),
-		InitCommand = function(self)
-			self:zoomto(sigilR * 2.5, sigilR * 2.5):blend("BlendMode_Add"):diffusealpha(0.22)
-			self:spin():effectmagnitude(0, 0, 8)
-		end
-	},
 	-- guide rings at 50% / 100% and faint spokes
 	Def.ActorMultiVertex {
 		InitCommand = function(self)
@@ -1249,21 +1251,35 @@ local sigil = Def.ActorFrame {
 		end
 	}
 }
--- vertex diamonds and tip labels
+-- vertex diamonds and tip labels; the strongest skillset is picked out in crimson
 for k = 1, sigilN do
 	sigil[#sigil + 1] = Def.Quad {
 		InitCommand = function(self)
-			self:rotationz(45):zoomto(4, 4):diffuse(color("#f4ecee"))
+			self:rotationz(45)
 		end,
 		SigilSetCommand = function(self)
-			local x, y = sigilPoint(k, sigilRadii()[k])
+			local radii, best = sigilRadii()
+			local x, y = sigilPoint(k, radii[k])
 			self:xy(x, y)
+			if k == best then
+				self:zoomto(7, 7):diffuse(color("#ff3355"))
+			else
+				self:zoomto(4, 4):diffuse(color("#f4ecee"))
+			end
 		end
 	}
 	sigil[#sigil + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			local x, y = sigilPoint(k, sigilR + 10)
-			self:xy(x, y):zoom(0.3):diffuse(color(seraphicLabelColor)):settext(sigilAbbr[k] or "")
+			local x, y = sigilPoint(k, sigilR + 12)
+			self:xy(x, y):settext(skillName(k + 1))
+		end,
+		SigilSetCommand = function(self)
+			local _, best = sigilRadii()
+			if k == best then
+				self:zoom(0.36):diffuse(color("#ff3355"))
+			else
+				self:zoom(0.3):diffuse(color(seraphicLabelColor))
+			end
 		end
 	}
 end
