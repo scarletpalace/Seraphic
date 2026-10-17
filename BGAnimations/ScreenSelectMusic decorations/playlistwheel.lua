@@ -376,7 +376,12 @@ local t = Def.ActorFrame {
 		top:AddInputCallback(input)
 		self:SetUpdateFunction(function(self, dt)
 			syncRedirect()
-			if active then place(dt) end
+			if active then
+				-- other parts of the screen show the song wheel again (chart preview / calc info closing on a
+				-- tab or song change), so keep it hidden for as long as this list is up
+				whee:visible(false)
+				place(dt)
+			end
 		end)
 	end,
 	OffCommand = function(self)
