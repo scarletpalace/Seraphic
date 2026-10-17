@@ -93,7 +93,7 @@ local function updateLeaderBoardForCurrentChart()
 				if leaderboardAttempt ~= nil and #leaderboardAttempt > 0 then
 					moped:playcommand("SetFromLeaderboard", leaderboardAttempt)
 				elseif leaderboardAttempt ~= nil and #leaderboardAttempt == 0 then
-					DLMAN:RequestChartLeaderBoardFromOnline(
+					seraphicRequestLeaderboard(
 						steps:GetChartKey(),
 						function(leaderboard)
 							moped:queuecommand("SetFromLeaderboard", leaderboard)
@@ -214,14 +214,14 @@ local ret = Def.ActorFrame {
 		if GAMESTATE:GetCurrentSteps() then
 			local chartkey = GAMESTATE:GetCurrentSteps():GetChartKey()
 			if leaderboardEnabled then
-			DLMAN:RequestChartLeaderBoardFromOnline(
+			seraphicRequestLeaderboard(
 				chartkey,
 				function(leaderboard)
 					moped:playcommand("SetFromLeaderboard", leaderboard)
 				end
 			)	-- this is also intentionally super bad so we actually do something about it -mina
 			elseif (SCREENMAN:GetTopScreen():GetName() == "ScreenSelectMusic" or SCREENMAN:GetTopScreen():GetName() == "ScreenNetSelectMusic") and ((getTabIndex() == 2 and nestedTab == 2) or collapsed) then
-				DLMAN:RequestChartLeaderBoardFromOnline(
+				seraphicRequestLeaderboard(
 				chartkey,
 				function(leaderboard)
 					moped:playcommand("SetFromLeaderboard", leaderboard)
