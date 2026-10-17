@@ -52,11 +52,12 @@ local frameWidth = 256
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
-local optionY = 38
-local rowY = {clear = 54, level = 70, score = 88, scoreSub = 103, miss = 116, rating = 132}
-local judgeHeadY, judgeY0, judgeStep = 148, 160, 14
-local comboY, ratioY = 246, 257
-local statsY0, statsStep = 271, 9
+-- (the column sits at the bottom of the screen, under the song data window)
+local optionY = 176
+local rowY = {clear = 192, level = 208, score = 226, scoreSub = 241, miss = 254, rating = 270}
+local judgeHeadY, judgeY0, judgeStep = 286, 298, 14
+local comboY, ratioY = 384, 395
+local statsY0, statsStep = 409, 9
 local fastColor, slowColor = color("#7cc4ff"), color("#ffa060")
 
 -- dont default to using custom windows and dont persist that state
@@ -1863,19 +1864,19 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = seraDivider(19.4, 44, 242.1)
-t[#t + 1] = seraDivider(19.4, 265, 242.1)
+t[#t + 1] = seraDivider(19.4, 182, 242.1)
+t[#t + 1] = seraDivider(19.4, 403, 242.1)
 t[#t + 1] = Def.Quad {
 	InitCommand = function(self)
-		self:xy(131.4, 266.5):halign(0):valign(0):zoomto(1, 45):diffuse(color("#ffffff"))
+		self:xy(131.4, 404.5):halign(0):valign(0):zoomto(1, 45):diffuse(color("#ffffff"))
 		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
 }
 
 -- right column headers + panel behind the offset plot
-t[#t + 1] = seraHeader(590, 46, 246, "SONG DATA")
--- judge details sit in their own window at the bottom of the middle, next to the left column
-t[#t + 1] = seraHeader(282, 330, 246, "JUDGE DETAILS")
+t[#t + 1] = seraHeader(18.4, 94, 246, "SONG DATA")
+-- judge details fill the bottom of the middle, between the left and right columns
+t[#t + 1] = seraHeader(284, 330, 286, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
 
 do
@@ -1901,26 +1902,26 @@ do
 		end)
 		return out
 	end
-	-- Seraphic: info block at the top of the right column (the banner moved to the top of the middle): title, artist, then BPM / DURATION / NOTES
+	-- Seraphic: song data window above the left column: title, artist, then BPM / DURATION / NOTES
 	t[#t + 1] = LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(590, 62):halign(0):valign(0.5):zoom(0.55):maxwidth(246 / 0.55):settext("")
+			self:xy(18.4, 110):halign(0):valign(0.5):zoom(0.55):maxwidth(246 / 0.55):settext("")
 		end,
 		OnCommand = function(self) self:settext(getVals()[1]) end
 	}
 	t[#t + 1] = LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(590, 78):halign(0):valign(0.5):zoom(0.44):maxwidth(246 / 0.44):diffuse(color("#bdbdbd")):settext("")
+			self:xy(18.4, 126):halign(0):valign(0.5):zoom(0.44):maxwidth(246 / 0.44):diffuse(color("#bdbdbd")):settext("")
 		end,
 		OnCommand = function(self) self:settext(getVals()[2]) end
 	}
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
 	for i, st in ipairs(stats) do
-		local x0 = 590 + (i - 1) * 82
+		local x0 = 18.4 + (i - 1) * 82
 		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 95):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 143):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
 		}
@@ -1928,7 +1929,7 @@ do
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 95):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
+				self:xy(x0 + labelW + gap, 143):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}

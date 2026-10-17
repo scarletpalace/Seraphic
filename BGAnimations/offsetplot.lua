@@ -5,8 +5,8 @@ local tst = ms.JudgeScalers
 local judge = GetTimingDifficulty()
 local tso = tst[judge]
 
-local plotWidth, plotHeight = 242, 110
-local plotX, plotY = 405, 392 -- results: bottom of the middle, next to the left column
+local plotWidth, plotHeight = 286, 110
+local plotX, plotY = 427, 392 -- results: bottom of the middle, filling the space between the side columns
 local dotDims, plotMargin = 2, 4
 local maxOffset = math.max(180, 180 * tso)
 local baralpha = 0.2

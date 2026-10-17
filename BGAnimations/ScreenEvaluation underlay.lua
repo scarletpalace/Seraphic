@@ -56,11 +56,11 @@ local function seraWindow(x, y, w, h)
 	t[#t + 1] = seraphicSoftEdge(x, y, w, h)
 end
 -- each window is only as tall as what it holds
-seraWindow(10, 24, 262, 294) -- options, compare rows, judgments, stats
-seraWindow(582, 24, 262, 84) -- song data
+seraWindow(10, 162, 262, 294) -- options, compare rows, judgments, stats (bottom left)
+seraWindow(10, 72, 262, 84) -- song data, right above it
 seraWindow(582, 314, 262, 142) -- score history
--- judge details window at the bottom of the middle, next to the left column
-seraWindow(278, 310, 254, 146)
+-- judge details window filling the bottom of the middle, between the side columns
+seraWindow(278, 310, 298, 146)
 
 -- banner at the top of the middle, under the RESULT title:
 -- same 3.2:1 shape as the song select banner
