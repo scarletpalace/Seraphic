@@ -1,11 +1,18 @@
 local lines = 32 -- number of scores to display
 -- Seraphic: the players' scores go in the ::SCORE HISTORY window (right column, under the judge details),
--- three rows at a time; the mouse wheel over the window scrolls through the rest
+-- as many rows as the window fits; the mouse wheel over the window scrolls through the rest.
+-- Like the single player list (scoreboard.lua) it moves and grows with the window when the right column folds.
 local framex = 600
-local framey = 349
+local framey = 314 -- first row with the window in its "mid" place
+local baseTop = 282 -- top of the score history window in the "mid" layout (see seraResultPanels)
 local frameWidth = 236
 local spacing = 34
-local shownRows = 3
+-- how many rows fit in the window for a fold state of the right column
+local function fits(state)
+	local g = seraResultPanels(state)
+	return math.max(0, math.floor((g.shH - 34) / spacing))
+end
+local shownRows = fits(seraResultPanelState)
 local scrollOffset = 0
 local multiscores = {}
 local selectedplayer = -1
@@ -95,6 +102,17 @@ local t = Def.ActorFrame {
 	Name = "scoreBoard",
 	InitCommand = function(self)
 		self:SetUpdateFunction(Update)
+		self:y(seraResultPanels(seraResultPanelState).shTop - baseTop)
+	end,
+	-- the window grew or folded: slide along with it and show as many rows as now fit
+	SeraRightPanelMessageCommand = function(self, params)
+		self:stoptweening():decelerate(0.2):y(seraResultPanels(params.state).shTop - baseTop)
+		shownRows = fits(params.state)
+		scrollOffset = math.max(0, math.min(scrollOffset, #multiscores - shownRows))
+		for i = 1, lines do
+			self:GetChild(tostring(i)):playcommand("UpdateNetScore")
+		end
+		self:GetChild("ScrollArea"):playcommand("Size")
 	end,
 	BeginCommand = function(self)
 		SCREENMAN:GetTopScreen():AddInputCallback(MPinput)
@@ -295,7 +313,10 @@ end
 t[#t + 1] = Def.Quad {
 	Name = "ScrollArea",
 	InitCommand = function(self)
-		self:xy(framex - 20, framey - 10):halign(0):valign(0):zoomto(frameWidth + 20, spacing * shownRows + 6):diffusealpha(0)
+		self:xy(framex - 20, framey - 10):halign(0):valign(0):diffusealpha(0):playcommand("Size")
+	end,
+	SizeCommand = function(self)
+		self:zoomto(frameWidth + 20, spacing * shownRows + 6)
 	end,
 	WheelUpSlowMessageCommand = function(self)
 		if isOver(self) then scroll(self, -1) end
