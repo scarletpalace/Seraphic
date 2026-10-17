@@ -57,11 +57,14 @@ local function seraWindow(x, y, w, h)
 end
 seraWindow(10, 24, 262, 432)
 seraWindow(582, 24, 262, 432)
+-- judge details window in the middle, next to the left column
+seraWindow(278, 124, 254, 146)
 
--- small banner next to the song data block (right column):
+-- banner at the top of the middle, under the RESULT title:
 -- same 3.2:1 shape as the song select banner
 if BannersEnabled() then
-	local bx, by, bw = 590, 54, 246
+	local bw = 280
+	local bx, by = SCREEN_CENTER_X - bw / 2, 30
 	local bh = bw / 3.2
 	t[#t + 1] = Def.Sprite {
 		Name = "Banner",

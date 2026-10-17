@@ -6,7 +6,7 @@ local judge = GetTimingDifficulty()
 local tso = tst[judge]
 
 local plotWidth, plotHeight = 242, 110
-local plotX, plotY = 713, 260
+local plotX, plotY = 405, 206 -- results: middle window, next to the left column
 local dotDims, plotMargin = 2, 4
 local maxOffset = math.max(180, 180 * tso)
 local baralpha = 0.2

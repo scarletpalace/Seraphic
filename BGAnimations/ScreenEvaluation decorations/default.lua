@@ -74,107 +74,6 @@ local judges = {
 	"TapNoteScore_Miss"
 }
 
--- Seraphic: soft dark pool behind the song text at the bottom of the open centre (rate, title, artist, pack),
--- so it stays readable over busy backgrounds; it fades out on every side instead of ending in hard edges
-t[#t + 1] = Def.ActorFrame {
-	InitCommand = function(self)
-		self:xy(SCREEN_CENTER_X, 414)
-	end,
-	Def.Quad {
-		InitCommand = function(self)
-			self:halign(1):zoomto(160, 66)
-			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000C0"))
-			self:fadetop(0.3):fadebottom(0.3)
-		end
-	},
-	Def.Quad {
-		InitCommand = function(self)
-			self:halign(0):zoomto(160, 66)
-			self:diffuseleftedge(color("#000000C0")):diffuserightedge(color("#00000000"))
-			self:fadetop(0.3):fadebottom(0.3)
-		end
-	}
-}
-
-t[#t+1] = Def.ActorFrame {
-	Name = "SongInfo",
-
-	LoadFont("Seraphic Artist") .. {
-		Name = "SongTitle",
-		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 404)
-			self:zoom(0.7)
-			self:maxwidth(290 / 0.7)
-		end,
-		BeginCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		SetCommand = function(self)
-			self:settext(GAMESTATE:GetCurrentSong():GetDisplayMainTitle())
-		end,
-	},
-	LoadFont("Seraphic Artist") .. {
-		Name = "SongArtist",
-		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 420)
-			self:zoom(0.5)
-			self:maxwidth(260 / 0.5)
-		end,
-		BeginCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		SetCommand = function(self)
-			self:settext(GAMESTATE:GetCurrentSong():GetDisplayArtist())
-		end,
-	},
-	-- Seraphic: pack the song comes from, in the pack-name font, under the artist
-	LoadFont("Seraphic Title") .. {
-		Name = "SongPack",
-		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 434)
-			self:zoom(0.36)
-			self:maxwidth(260 / 0.36)
-			self:diffuse(color("#bdb3b6"))
-		end,
-		BeginCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		SetCommand = function(self)
-			local song = GAMESTATE:GetCurrentSong()
-			self:settext(song and song:GetGroupName() or "")
-		end,
-	},
-	LoadFont("Seraphic Artist") .. {
-		Name = "RateString",
-		InitCommand = function(self)
-			self:xy(SCREEN_CENTER_X, 389)
-			self:zoom(0.5)
-			self:halign(0.5)
-			self:queuecommand("Set")
-		end,
-		ScoreChangedMessageCommand = function(self)
-			self:queuecommand("Set")
-		end,
-		SetCommand = function(self)
-			local top = SCREENMAN:GetTopScreen()
-			local rate
-			if top:GetName() == "ScreenNetEvaluation" then
-				rate = score:GetMusicRate()
-			else
-				rate = top:GetReplayRate()
-				if not rate then rate = getCurRateValue() end
-			end
-			rate = notShit.round(rate,3)
-			local ratestr = getRateString(rate)
-			if ratestr == "1x" then
-				self:settext("")
-			else
-				self:settext(ratestr)
-			end
-		end,
-	},
-}
-
 -- Seraphic: IIDX-style "R E S U L T" title at the top of the open centre, over a small crimson point
 t[#t + 1] = Def.ActorFrame {
 	Name = "ResultTitle",
@@ -205,66 +104,6 @@ t[#t + 1] = Def.ActorFrame {
 	LoadFont("Common Normal") .. {
 		InitCommand = function(self)
 			self:zoom(0.6):diffuse(color(seraphicValueColor)):settext("R E S U L T")
-		end
-	}
-}
-
--- Seraphic: IIDX-style "4K | 1800 NOTES" plate under the song text
-t[#t + 1] = Def.ActorFrame {
-	Name = "NotesPlate",
-	InitCommand = function(self)
-		self:xy(SCREEN_CENTER_X, 457)
-	end,
-	OnCommand = function(self)
-		local steps = GAMESTATE:GetCurrentSteps()
-		local keys, notes = "", ""
-		pcall(function()
-			keys = steps:GetNumColumns() .. "K"
-			notes = tostring(steps:GetRadarValues(PLAYER_1):GetValue("RadarCategory_Notes"))
-		end)
-		local keyText = self:GetChild("Keys")
-		local notesText = self:GetChild("Notes")
-		keyText:settext(keys)
-		notesText:settext(notes .. " NOTES")
-		-- size the plate to the text: key box on the left, note count on the right
-		local kw = math.max(22, keyText:GetZoomedWidth() + 12)
-		local nw = notesText:GetZoomedWidth() + 16
-		local w = kw + nw
-		self:GetChild("Plate"):zoomto(w + 2, 15)
-		self:GetChild("Edge"):zoomto(w + 4, 17)
-		self:GetChild("KeyBox"):x(-w / 2):zoomto(kw, 13)
-		keyText:x(-w / 2 + kw / 2)
-		notesText:x(-w / 2 + kw + nw / 2)
-		self:diffusealpha(0):sleep(0.2):decelerate(0.4):diffusealpha(1)
-	end,
-	Def.Quad {
-		Name = "Edge",
-		InitCommand = function(self)
-			self:diffuse(color("#ffffff")):diffusealpha(0.35)
-		end
-	},
-	Def.Quad {
-		Name = "Plate",
-		InitCommand = function(self)
-			self:diffuse(color("#0c0a0b")):diffusealpha(0.92)
-		end
-	},
-	Def.Quad {
-		Name = "KeyBox",
-		InitCommand = function(self)
-			self:halign(0):diffuse(color("#d8d0d2"))
-		end
-	},
-	LoadFont("Common Normal") .. {
-		Name = "Keys",
-		InitCommand = function(self)
-			self:zoom(0.4):diffuse(color("#141113"))
-		end
-	},
-	LoadFont("Common Normal") .. {
-		Name = "Notes",
-		InitCommand = function(self)
-			self:zoom(0.4):diffuse(color(seraphicValueColor))
 		end
 	}
 }
@@ -2069,7 +1908,6 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = seraHeader(19.4, 46, 243.3, "LIFE / COMBO")
 t[#t + 1] = seraDivider(19.4, 186, 242.1)
 t[#t + 1] = seraDivider(19.4, 407, 242.1)
 t[#t + 1] = Def.Quad {
@@ -2081,7 +1919,8 @@ t[#t + 1] = Def.Quad {
 
 -- right column headers + panel behind the offset plot
 t[#t + 1] = seraHeader(590, 46, 246, "SONG DATA")
-t[#t + 1] = seraHeader(590, 198, 246, "JUDGE DETAILS")
+-- judge details sit in their own window in the middle, next to the left column
+t[#t + 1] = seraHeader(282, 144, 246, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
 
 do
@@ -2107,16 +1946,16 @@ do
 		end)
 		return out
 	end
-	-- Seraphic: info block under the full-width banner: title, artist, then BPM / DURATION / NOTES
+	-- Seraphic: info block at the top of the right column (the banner moved to the top of the middle): title, artist, then BPM / DURATION / NOTES
 	t[#t + 1] = LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(590, 141):halign(0):valign(0.5):zoom(0.55):maxwidth(246 / 0.55):settext("")
+			self:xy(590, 62):halign(0):valign(0.5):zoom(0.55):maxwidth(246 / 0.55):settext("")
 		end,
 		OnCommand = function(self) self:settext(getVals()[1]) end
 	}
 	t[#t + 1] = LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(590, 156):halign(0):valign(0.5):zoom(0.44):maxwidth(246 / 0.44):diffuse(color("#bdbdbd")):settext("")
+			self:xy(590, 78):halign(0):valign(0.5):zoom(0.44):maxwidth(246 / 0.44):diffuse(color("#bdbdbd")):settext("")
 		end,
 		OnCommand = function(self) self:settext(getVals()[2]) end
 	}
@@ -2126,7 +1965,7 @@ do
 		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 172):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 95):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
 		}
@@ -2134,7 +1973,7 @@ do
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 172):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
+				self:xy(x0 + labelW + gap, 95):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}
@@ -2164,7 +2003,7 @@ do
 		if diff > 0 then gain = diff end
 	end)
 	if gain then
-		local rx, ry, rw = SCREEN_CENTER_X, 220, 290
+		local rx, ry, rw = SCREEN_CENTER_X, 300, 290
 		t[#t + 1] = Def.ActorFrame {
 			Name = "NewRecord",
 			InitCommand = function(self)
