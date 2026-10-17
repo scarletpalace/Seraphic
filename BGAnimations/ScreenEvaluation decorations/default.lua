@@ -2624,7 +2624,7 @@ do
 		if diff > 0 then gain = diff end
 	end)
 	if gain then
-		local rx, ry, rw = SCREEN_CENTER_X, 215, 290
+		local rx, ry, rw = SCREEN_CENTER_X, 296, 290 -- under the grade and clear type
 		t[#t + 1] = Def.ActorFrame {
 			Name = "NewRecord",
 			InitCommand = function(self)
@@ -2664,6 +2664,53 @@ do
 		}
 	end
 end
+
+-- Seraphic: this play's grade emblem in the middle under the song title, its clear type under it
+-- (the grade follows the judge shown, through the compare rows' SeraCompareUpdated)
+t[#t + 1] = Def.ActorFrame {
+	Name = "CentreGrade",
+	InitCommand = function(self)
+		self:xy(SCREEN_CENTER_X, 0)
+	end,
+	-- soft dark pool behind both
+	Def.Quad {
+		InitCommand = function(self)
+			self:y(236):zoomto(240, 104):diffuse(color("#000000")):diffusealpha(0.35)
+			self:fadeleft(0.4):faderight(0.4):fadetop(0.25):fadebottom(0.25)
+		end
+	},
+	Def.Sprite {
+		Name = "Grade",
+		InitCommand = function(self)
+			self:y(218):visible(false)
+		end,
+		SeraCompareUpdatedMessageCommand = function(self, params)
+			local k = params.grade and seraphicGradeIndex(params.grade)
+			self:visible(k ~= nil)
+			if not k then return end
+			local first = not self.seraShown
+			self.seraShown = true
+			seraphicGradeFit(self, k, 1.9, 190)
+			if first then
+				local z = self:GetZoom()
+				self:diffusealpha(0):zoom(z * 1.35):sleep(0.3):decelerate(0.35):diffusealpha(1):zoom(z)
+			end
+		end
+	},
+	LoadFont("Seraphic Title") .. {
+		Name = "Clear",
+		InitCommand = function(self)
+			self:y(268):zoom(0.5):maxwidth(260 / 0.5)
+		end,
+		OnCommand = function(self)
+			local ok, ct = pcall(getClearTypeFromScore, PLAYER_1, score, 0)
+			local okc, cc = pcall(getClearTypeFromScore, PLAYER_1, score, 2)
+			self:settext(ok and ct and tostring(ct):upper() or "")
+			if okc and cc then self:diffuse(cc) end
+			self:diffusealpha(0):sleep(0.55):decelerate(0.3):diffusealpha(1)
+		end
+	}
+}
 
 -- session chronicle: record this play once per results screen (Scripts/05 SeraphicSession.lua)
 t[#t + 1] = Def.Actor {
