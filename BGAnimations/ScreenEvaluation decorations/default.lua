@@ -52,9 +52,9 @@ local frameWidth = 256
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
-local rowY = {clear = 196, level = 213, score = 232, scoreSub = 248, miss = 263, missSub = 276, rating = 291}
-local judgeHeadY, judgeY0, judgeStep = 306, 317, 12
-local comboY, ratioY = 389, 400
+local rowY = {clear = 196, level = 212, score = 230, scoreSub = 245, miss = 258, rating = 274}
+local judgeHeadY, judgeY0, judgeStep = 290, 302, 14
+local comboY, ratioY = 388, 399
 local statsY0, statsStep = 413, 9
 -- the graphs keep their original size: scaled from the old 0.9126 frame zoom at (5.67, 52.89)
 local GZ, GOX, GOY = 0.9126, 5.67, 52.89
@@ -422,7 +422,7 @@ local function scoreBoard(pn, position)
 		Def.ActorFrame {
 			Name = "CustomScoringDisplay",
 			InitCommand = function(self)
-				self:xy(LX + 10, rowY.score + 10)
+				self:xy(LX + 10, rowY.score + 9)
 				self:visible(usingCustomWindows)
 			end,
 			ToggleCustomWindowsMessageCommand = function(self)
@@ -475,7 +475,7 @@ local function scoreBoard(pn, position)
 			UIElements.QuadButton(1, 1) .. {
 				Name = "BG",
 				InitCommand = function(self)
-					self:zoomto(LW - 20, 20)
+					self:zoomto(LW - 20, 18)
 					self:halign(0):valign(1)
 					self:diffuse(getMainColor("tabs")):diffusetopedge(panelTopColor())
 				end,
@@ -507,7 +507,7 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Large") .. {
 				Name = "CustomPercent",
 				InitCommand = function(self)
-					self:xy(LW - 22, -10)
+					self:xy(LW - 22, -9)
 					self:zoom(0.36)
 					self:halign(1):valign(0.5)
 					self:maxwidth((LW - 30) / 0.36)
@@ -1002,10 +1002,10 @@ local function scoreBoard(pn, position)
 				Name = "Fill",
 				InitCommand = function(self)
 					self:xy(LX, judgeY0 + (judgmentIndex - 1) * judgeStep + judgeStep / 2 - 2)
-					self:zoomto(0, 1.5)
+					self:zoomto(0, 1)
 					self:halign(0)
 					self:diffuse(byJudgment(judgmentName))
-					self:diffusealpha(0.75)
+					self:diffusealpha(0.45)
 				end,
 				BeginCommand = function(self)
 					if aboutToForceWindowSettings then return end
@@ -1024,7 +1024,7 @@ local function scoreBoard(pn, position)
 				Name = "Name",
 				InitCommand = function(self)
 					self:xy(LX + 6, judgeY0 + (judgmentIndex - 1) * judgeStep)
-					self:zoom(0.21)
+					self:zoom(0.2)
 					self:halign(0)
 					self:maxwidth(70 / 0.21)
 					self:diffuse(byJudgment(judgmentName))
@@ -1061,9 +1061,9 @@ local function scoreBoard(pn, position)
 				Name = "Percentage",
 				InitCommand = function(self)
 					self:xy(LX + 115, judgeY0 + (judgmentIndex - 1) * judgeStep + 0.5)
-					self:zoom(0.26)
+					self:zoom(0.24)
 					self:halign(0)
-					self:diffuse(color(seraphicLabelColor))
+					self:diffuse(color("#8f8588"))
 				end,
 				BeginCommand = function(self)
 					if aboutToForceWindowSettings then return end
@@ -1115,47 +1115,23 @@ local function scoreBoard(pn, position)
 	end
 	t[#t+1] = jc
 
-	-- Seraphic: IIDX-style compare rows (pointed bands): label, best other score | this play
-	local function chevron(y, h)
-		local a = Def.ActorFrame {}
-		local x0, x1 = LX, LX + LW
-		local fill = color("#141113")
-		-- body and the two pointed ends (squares turned 45 degrees, half outside the body)
-		a[#a + 1] = Def.Quad {
-			InitCommand = function(self)
-				self:xy(x0 + h / 2, y):halign(0):zoomto(LW - h, h):diffuse(fill)
-			end
-		}
-		for _, px in ipairs({x0 + h / 2, x1 - h / 2}) do
-			a[#a + 1] = Def.Quad {
+	-- Seraphic: compare rows in the theme's own row style (dark band, crimson bullet, fading hairline under it):
+	-- label, best other score | this play
+	local function band(y, h)
+		return Def.ActorFrame {
+			Def.Quad {
 				InitCommand = function(self)
-					self:xy(px, y):rotationz(45):zoomto(h / math.sqrt(2), h / math.sqrt(2)):diffuse(fill)
+					self:xy(LX, y):halign(0):zoomto(LW, h):diffuse(color("#000000")):diffusealpha(0.4)
 				end
-			}
-		end
-		-- soft sheen on the upper half
-		a[#a + 1] = Def.Quad {
-			InitCommand = function(self)
-				self:xy(x0 + h / 2, y - h / 2):halign(0):valign(0):zoomto(LW - h, h / 2)
-				self:diffusetopedge(color("#ffffff14")):diffusebottomedge(color("#ffffff00"))
-			end
-		}
-		-- silver outline following the pointed shape
-		local function line(x, yy, w, rot, alpha)
-			a[#a + 1] = Def.Quad {
+			},
+			Def.Quad {
 				InitCommand = function(self)
-					self:xy(x, yy):zoomto(w, 1):rotationz(rot):diffuse(color("#ffffff")):diffusealpha(alpha)
+					self:xy(LX, y + h / 2):halign(0):valign(0):zoomto(LW, 1)
+					self:diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff06"))
 				end
-			}
-		end
-		local d = h / 2 * math.sqrt(2)
-		line((x0 + x1) / 2, y - h / 2, LW - h, 0, 0.4)
-		line((x0 + x1) / 2, y + h / 2, LW - h, 0, 0.2)
-		line(x0 + h / 4, y - h / 4, d, -45, 0.4)
-		line(x0 + h / 4, y + h / 4, d, 45, 0.2)
-		line(x1 - h / 4, y - h / 4, d, 45, 0.4)
-		line(x1 - h / 4, y + h / 4, d, -45, 0.2)
-		return a
+			},
+			seraphicBullet(LX + 5, y)
+		}
 	end
 	local function rowLabel(y, text)
 		return LoadFont("Common Normal") .. {
@@ -1218,11 +1194,11 @@ local function scoreBoard(pn, position)
 			self:queuecommand("Refresh")
 		end,
 
-		chevron(rowY.clear, 14),
-		chevron(rowY.level, 14),
-		chevron(rowY.score, 20),
-		chevron(rowY.miss, 14),
-		chevron(rowY.rating, 14),
+		band(rowY.clear, 14),
+		band(rowY.level, 14),
+		band(rowY.score, 18),
+		band(rowY.miss, 14),
+		band(rowY.rating, 14),
 		rowLabel(rowY.clear, "CLEAR TYPE"),
 		rowLabel(rowY.level, "DJ LEVEL"),
 		rowLabel(rowY.score, "SCORE"),
@@ -1316,7 +1292,7 @@ local function scoreBoard(pn, position)
 			end
 		},
 
-		-- MISS COUNT: best | this play, difference underneath
+		-- MISS COUNT: best | this play, difference at the right end
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
 				self:xy(PREVX, rowY.miss):zoom(0.22):diffuse(dimColor)
@@ -1327,7 +1303,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(NOWX, rowY.miss):zoom(0.22):diffuse(color(seraphicValueColor))
+				self:xy(NOWX - 8, rowY.miss):zoom(0.22):diffuse(color(seraphicValueColor))
 			end,
 			SetCommand = function(self)
 				self:settext(tostring(cmp.miss))
@@ -1335,7 +1311,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 12, rowY.missSub):halign(1):zoom(0.32)
+				self:xy(LX + LW - 6, rowY.miss):halign(1):zoom(0.3)
 			end,
 			SetCommand = function(self)
 				if cmp.prevMiss then
