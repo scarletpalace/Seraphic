@@ -90,19 +90,20 @@ seraWindow(10, 24, 262, 432)
 seraWindow(582, 24, 262, 432)
 
 -- small banner next to the song data block (right column):
--- same 3.2:1 shape as the song select banner, cropped to fit the same way (scaletoclipped)
+-- same 3.2:1 shape as the song select banner
 if BannersEnabled() then
 	local bx, by, bw = 590, 54, 246
 	local bh = bw / 3.2
 	t[#t + 1] = Def.Sprite {
 		Name = "Banner",
 		OnCommand = function(self)
+			-- sized like Til Death: scaletoclipped first, then load
 			self:xy(bx, by):halign(0):valign(0)
+			self:scaletoclipped(bw, bh)
 			local song = GAMESTATE:GetCurrentSong()
 			local bnpath = song and song:GetBannerPath()
 			if not bnpath then bnpath = THEME:GetPathG("Common", "fallback banner") end
 			self:LoadBackground(bnpath)
-			seraphicFitBanner(self, bnpath, bw, bh)
 			MESSAGEMAN:Broadcast("SeraBannerSized", {w = bw, h = bh})
 		end
 	}
