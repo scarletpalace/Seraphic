@@ -193,6 +193,11 @@ if onSelect then
 			self:SetUpdateFunction(function(f)
 				local top = SCREENMAN:GetTopScreen()
 				if not top or (top:GetName() ~= "ScreenSelectMusic" and top:GetName() ~= "ScreenNetSelectMusic") then return end
+				-- Playlists tab: follow the playlist wheel that stands in for the song wheel
+				if SeraphicPlaylistWheel and SeraphicPlaylistWheel.active then
+					f:y(140 + 200 * SeraphicPlaylistWheel.fraction)
+					return
+				end
 				local w = top:GetMusicWheel()
 				if not w then return end
 				local n = w:GetNumItems()
