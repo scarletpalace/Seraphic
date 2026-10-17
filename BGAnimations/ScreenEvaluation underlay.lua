@@ -1,5 +1,21 @@
+-- the fold layout of the right column normally comes from Scripts/02 SeraphicPanel.lua; Scripts only load when
+-- the game starts, so keep a copy here for a theme updated while the game is running
+if not seraResultPanels then
+	seraResultPanelState = seraResultPanelState or "mid"
+	function seraResultPanels(state)
+		local top, bottom, gap, folded = 60, 456, 6, 24
+		local lbH = 216
+		if state == "lb" then
+			lbH = bottom - top - gap - folded
+		elseif state == "sh" then
+			lbH = folded
+		end
+		return {lbTop = top, lbH = lbH, shTop = top + lbH + gap, shH = bottom - top - lbH - gap}
+	end
+end
+
 local enabled = PREFSMAN:GetPreference("ShowBackgrounds")
-local brightness = 0.28
+local brightness = 0.36 -- the centre is open now (no stage image), so the background shows a little more
 local t = Def.ActorFrame {}
 
 if enabled then
@@ -36,37 +52,6 @@ end
 t[#t + 1] = vig(0, 0, true)
 t[#t + 1] = vig(SCREEN_WIDTH, 1, false)
 
--- Seraphic: tall framed stage image in the centre (LR2 / beatoraja result style)
-local cx, cy, cw, ch = SCREEN_CENTER_X, 46, 230, 318
-t[#t + 1] = Def.Sprite {
-	Name = "StageImage",
-	OnCommand = function(self)
-		self:xy(cx, cy):valign(0)
-		local song = GAMESTATE:GetCurrentSong()
-		local path = song and (song:GetBackgroundPath() or song:GetBannerPath())
-		if not path then path = THEME:GetPathG("Common", "fallback banner") end
-		self:LoadBackground(path)
-		self:scaletoclipped(cw, ch)
-		self:diffusealpha(0):sleep(0.2):smooth(0.6):diffusealpha(1)
-	end
-}
--- LR2 style: faint edge instead of the bright silver frame (crystals below stay)
-t[#t + 1] = seraphicSoftEdge(cx - cw / 2, cy, cw, ch, 0.3)
-do
-	local function gem(x, y, zx, zy)
-		return Def.Sprite {
-			Texture = THEME:GetPathG("", "seraphic_corner"),
-			InitCommand = function(self)
-				self:xy(x, y):halign(0):valign(0):zoomx(0.34 * zx):zoomy(0.34 * zy):diffuse(color("#ffffff")):diffusealpha(0.95)
-			end
-		}
-	end
-	t[#t + 1] = gem(cx - cw / 2 - 4, cy - 4, 1, 1)
-	t[#t + 1] = gem(cx + cw / 2 + 4, cy - 4, -1, 1)
-	t[#t + 1] = gem(cx - cw / 2 - 4, cy + ch + 4, 1, -1)
-	t[#t + 1] = gem(cx + cw / 2 + 4, cy + ch + 4, -1, -1)
-end
-
 -- Seraphic: one window per column (drawn here so the banner stays on top of the body)
 -- LR2 window: translucent dark body, faint filigree footer and a soft 1px edge (no silver frame / diamonds)
 local function seraWindow(x, y, w, h)
@@ -86,13 +71,64 @@ local function seraWindow(x, y, w, h)
 	}
 	t[#t + 1] = seraphicSoftEdge(x, y, w, h)
 end
-seraWindow(10, 24, 262, 432)
-seraWindow(582, 24, 262, 432)
+-- each window is only as tall as what it holds
+seraWindow(10, 24, 262, 432) -- song data, options, compare rows, judgments, stats (full height)
+seraWindow(582, 24, 262, 32) -- online leaderboard rank at the played rate
+-- leaderboard and score history: they grow and fold when clicked (sizes from seraResultPanels)
+local function foldWindow(x, w, part)
+	local function geom(state)
+		local g = seraResultPanels(state)
+		if part == "lb" then return g.lbTop, g.lbH end
+		return g.shTop, g.shH
+	end
+	-- every piece places itself from the window's top / height; animated unless it is the first placement
+	local function piece(actor, place)
+		actor.InitCommand = function(self)
+			local y, h = geom(seraResultPanelState)
+			place(self, y, h, true)
+		end
+		actor.SeraRightPanelMessageCommand = function(self, params)
+			local y, h = geom(params.state)
+			self:stoptweening():decelerate(0.2)
+			place(self, y, h, false)
+		end
+		return actor
+	end
+	local function edge(place)
+		return piece(Def.Quad {}, function(self, y, h, first)
+			if first then self:halign(0):valign(0):diffuse(color("#ffffff")):diffusealpha(0.1) end
+			place(self, y, h)
+		end)
+	end
+	t[#t + 1] = piece(Def.Quad {}, function(self, y, h, first)
+		if first then
+			self:x(x):halign(0):valign(0)
+			self:diffuseupperleft(color("#262626E6")):diffuseupperright(color("#1a1a1aE6"))
+			self:diffuselowerleft(color("#0a0a0aF0")):diffuselowerright(color("#060606F0"))
+			self:diffusealpha(0.62)
+		end
+		self:y(y):zoomto(w, h)
+	end)
+	t[#t + 1] = piece(Def.Sprite {Texture = THEME:GetPathG("", "seraphic_filigree")}, function(self, y, h, first)
+		if first then self:x(x + 4):halign(0):valign(1):zoomto(w - 8, 30) end
+		-- no filigree on a folded window (it would stick out of it)
+		self:y(y + h - 3):diffusealpha(h > 60 and 0.16 or 0)
+	end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x, y):zoomto(w, 1) end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x, y + h - 1):zoomto(w, 1) end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x, y + 1):zoomto(1, h - 2) end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x + w - 1, y + 1):zoomto(1, h - 2) end)
+end
+foldWindow(582, 262, "lb") -- leaderboard around your score (scrollable)
+foldWindow(582, 262, "sh") -- score history
+-- judge details window joined to both side windows along the bottom of the middle
+seraWindow(272, 314, 310, 142)
 
--- small banner next to the song data block (right column):
+-- banner at the top of the middle, under the RESULT title:
 -- same 3.2:1 shape as the song select banner
 if BannersEnabled() then
-	local bx, by, bw = 590, 54, 246
+	local bw = 310 -- the full width of the middle
+	local bx, by = SCREEN_CENTER_X - bw / 2, 30
 	local bh = bw / 3.2
 	t[#t + 1] = Def.Sprite {
 		Name = "Banner",

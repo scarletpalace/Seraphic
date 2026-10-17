@@ -97,6 +97,18 @@ local bandW = frameWidth - 12
 local toggleW = 52 -- header toggles (Percent/Recent, Local/Online)
 local labelZoom = 0.42 -- Common Normal, uppercase silver labels
 local tabZoom = 0.36 -- Common Normal, skillset tabs
+-- short skillset tab names (Overall .. Technical); all tabs share one zoom that fits the widest name
+local tabNames = {"OVERALL", "STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
+local tabTextW = {}
+-- header toggles (Session/Percent/Recent/Local/Online) share one zoom that fits the widest label
+local hdrTextW = {}
+local function hdrFit(self)
+	local widest = 1
+	for _, w in pairs(hdrTextW) do
+		if w > widest then widest = w end
+	end
+	self:zoom(math.min(labelZoom, (toggleW - 8) / widest))
+end
 local crimson = "#9c1428"
 -- header toggle / tab look: selected = crimson tint + light text, otherwise faint dark + silver text
 local function styleToggleQuad(self, selected)
@@ -443,11 +455,19 @@ local function rankingButton(i)
 		LoadFont("Common Large") .. {
 			Name = "RankButtonTxt",
 			InitCommand = function(self)
-				self:zoom(tabZoom):maxwidth((tabW - 5) / tabZoom)
+				self:zoom(tabZoom)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
+				self:settext(tabNames[i] or tostring(ms.SkillSetsTranslated[i]):upper())
+				tabTextW[i] = self:GetWidth()
+			end,
+			OnCommand = function(self)
+				local widest = 1
+				for _, w in pairs(tabTextW) do
+					if w > widest then widest = w end
+				end
+				self:zoom(math.min(tabZoom, (tabW - 10) / widest))
 			end,
 			UpdateRankingMessageCommand = function(self)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
@@ -693,8 +713,13 @@ local function recentButton()
 		},
 		LoadFont("Common Large") .. {
 			Name = "RecentButtonTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, recentactive)
 			end,
 			BeginCommand = function(self)
@@ -754,8 +779,13 @@ local function percentButton()
 		},
 		LoadFont("Common Large") .. {
 			Name = "PercentButtonTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, percentactive)
 			end,
 			BeginCommand = function(self)
@@ -820,8 +850,13 @@ t[#t + 1] = Def.ActorFrame {
 		},
 		LoadFont("Common Large") ..{
 			Name = "LocalTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, not showOnline)
 			end,
 			BeginCommand = function(self)
@@ -872,8 +907,13 @@ t[#t + 1] = Def.ActorFrame {
 		},
 		LoadFont("Common Large") .. {
 			Name = "OnlineTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, showOnline)
 			end,
 			BeginCommand = function(self)
@@ -894,7 +934,8 @@ local function pageCount()
 	end
 	return numrankingpages
 end
--- prev/next page
+-- prev/next page; text matches the bottom profile buttons (Common Large at 0.19)
+local pageZoom = 0.19
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
 		self:xy(10, frameHeight - 12):visible(false)
@@ -938,7 +979,7 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "NextP",
 		InitCommand = function(self)
-			self:x(frameWidth - 48):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:x(frameWidth - 48):zoom(pageZoom):maxwidth(50 / pageZoom):diffuse(color(seraphicValueColor))
 			self:settext(tostring(translated_info["NextPage"]):upper())
 		end,
 	},
@@ -969,7 +1010,7 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "PrevP",
 		InitCommand = function(self)
-			self:x(26):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:x(26):zoom(pageZoom):maxwidth(50 / pageZoom):diffuse(color(seraphicValueColor))
 			self:settext(tostring(translated_info["PrevPage"]):upper())
 		end,
 	},
@@ -1024,8 +1065,13 @@ local function sessionButton()
 		},
 		LoadFont("Common Large") .. {
 			Name = "SessionButtonTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, sessionactive)
 				self:settext("SESSION")
 			end,
@@ -1123,8 +1169,7 @@ for i = 2, #ms.SkillSets do
 	r[#r + 1] = littlebits(i)
 end
 
--- SKILL SIGIL: the 7 skillset ratings as a heptagram/radar inside a turning magic circle
-local sigilAbbr = {"STR", "JMP", "HND", "STA", "JCK", "CHJ", "TEC"} -- Stream .. Technical
+-- SKILL SIGIL: the 7 skillset ratings as a heptagram/radar
 local sigilLeft = ovLeftX + ovLeftW + 8
 local sigilW = frameWidth - 8 - sigilLeft
 local sigilCX = sigilLeft + sigilW / 2
@@ -1143,19 +1188,27 @@ local function sigilPoint(k, rad)
 	local a = sigilAngle(k)
 	return math.cos(a) * rad, math.sin(a) * rad
 end
--- vertex radii for the current ratings; cap = highest skillset * 1.1 (at least 10)
+-- short labels around the radar (Stream .. Technical)
+local sigilAbbr = {"STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
+-- vertex radii for the current ratings, scaled to the player's own min..max range
+-- (weakest skillset sits at sigilFloor, strongest on the outer ring) so differences stand out
+local sigilFloor = 0.6
 local function sigilRadii()
-	local vals, hi = {}, 0
+	local vals, lo, hi, best = {}, math.huge, -math.huge, 1
 	for k = 1, sigilN do
 		vals[k] = skillsetRating(k + 1)
-		if vals[k] > hi then hi = vals[k] end
+		if vals[k] < lo then lo = vals[k] end
+		if vals[k] > hi then hi = vals[k]; best = k end
 	end
-	local cap = math.max(hi * 1.1, 10)
 	local radii = {}
 	for k = 1, sigilN do
-		radii[k] = sigilR * math.max(0, math.min(vals[k] / cap, 1))
+		local f = 1
+		if hi - lo > 0.005 then
+			f = sigilFloor + (1 - sigilFloor) * (vals[k] - lo) / (hi - lo)
+		end
+		radii[k] = sigilR * f
 	end
-	return radii
+	return radii, best
 end
 -- heptagon outline at a fixed radius (guide rings)
 local function ringVerts(rad)
@@ -1181,14 +1234,6 @@ local sigil = Def.ActorFrame {
 	SetCommand = function(self)
 		self:queuecommand("SigilSet")
 	end,
-	-- faint, slowly turning magic circle
-	Def.Sprite {
-		Texture = THEME:GetPathG("", "seraphic_circle"),
-		InitCommand = function(self)
-			self:zoomto(sigilR * 2.5, sigilR * 2.5):blend("BlendMode_Add"):diffusealpha(0.22)
-			self:spin():effectmagnitude(0, 0, 8)
-		end
-	},
 	-- guide rings at 50% / 100% and faint spokes
 	Def.ActorMultiVertex {
 		InitCommand = function(self)
@@ -1249,21 +1294,35 @@ local sigil = Def.ActorFrame {
 		end
 	}
 }
--- vertex diamonds and tip labels
+-- vertex diamonds and tip labels; the strongest skillset is picked out in crimson
 for k = 1, sigilN do
 	sigil[#sigil + 1] = Def.Quad {
 		InitCommand = function(self)
-			self:rotationz(45):zoomto(4, 4):diffuse(color("#f4ecee"))
+			self:rotationz(45)
 		end,
 		SigilSetCommand = function(self)
-			local x, y = sigilPoint(k, sigilRadii()[k])
+			local radii, best = sigilRadii()
+			local x, y = sigilPoint(k, radii[k])
 			self:xy(x, y)
+			if k == best then
+				self:zoomto(7, 7):diffuse(color("#ff3355"))
+			else
+				self:zoomto(4, 4):diffuse(color("#f4ecee"))
+			end
 		end
 	}
 	sigil[#sigil + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			local x, y = sigilPoint(k, sigilR + 10)
-			self:xy(x, y):zoom(0.3):diffuse(color(seraphicLabelColor)):settext(sigilAbbr[k] or "")
+			local x, y = sigilPoint(k, sigilR + 12)
+			self:xy(x, y):settext(sigilAbbr[k] or "")
+		end,
+		SigilSetCommand = function(self)
+			local _, best = sigilRadii()
+			if k == best then
+				self:zoom(0.36):diffuse(color("#ff3355"))
+			else
+				self:zoom(0.3):diffuse(color(seraphicLabelColor))
+			end
 		end
 	}
 end

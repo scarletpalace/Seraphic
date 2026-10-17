@@ -167,3 +167,18 @@ function seraphicCenteredBorder(getSize)
 		diamond(-1, -1), diamond(1, -1), diamond(-1, 1), diamond(1, 1)
 	}
 end
+
+-- results screen, right column: the leaderboard and the score history share the space under the rank window.
+-- Clicking one of them grows it and folds the other down to its header; clicking it again evens them out.
+-- states: "mid" (both open), "lb" (leaderboard grown), "sh" (score history grown); kept for the session
+seraResultPanelState = "mid"
+function seraResultPanels(state)
+	local top, bottom, gap, folded = 60, 456, 6, 24
+	local lbH = 216
+	if state == "lb" then
+		lbH = bottom - top - gap - folded
+	elseif state == "sh" then
+		lbH = folded
+	end
+	return {lbTop = top, lbH = lbH, shTop = top + lbH + gap, shH = bottom - top - lbH - gap}
+end

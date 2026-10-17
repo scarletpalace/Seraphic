@@ -1,7 +1,8 @@
-local lines = 3 -- number of scores to display (3 fit under the full-width banner)
+local maxLines = 9 -- the most scores the window shows (when it is unfolded)
 local S = 1.1667 -- the right column was enlarged by this factor
 local framex = 600
-local framey = 349
+local framey = 314 -- first row with the window in its "mid" place; the whole list moves with the window
+local baseTop = 282 -- top of the score history window in the "mid" layout (see seraResultPanels)
 local frameWidth = 236
 local spacing = 30 * S
 
@@ -21,16 +22,31 @@ if rtTable == nil then
 end
 
 
-local curPage = 1
-local maxPages = math.ceil(#hsTable/lines)
+-- how many rows fit in the window for a fold state of the right column
+local function fits(state)
+	local g = seraResultPanels(state)
+	return math.max(0, math.min(maxLines, math.floor((g.shH - 34) / spacing)))
+end
+local lines = fits(seraResultPanelState)
+local pendingLines = lines -- row count to switch to once the window has moved
+local offset = 0 -- scores scrolled past at the top of the list
+local function clampOffset()
+	offset = math.max(0, math.min(offset, #hsTable - lines))
+end
+-- the list opens with the score that was just played in view
+local function centre()
+	offset = (tonumber(scoreIndex) or 1) - math.ceil(lines / 2)
+	clampOffset()
+end
+centre()
 
-local function movePage(n)
-	if n > 0 then
-		curPage = ((curPage+n-1) % maxPages + 1)
-	else
-		curPage = ((curPage+n+maxPages-1) % maxPages+1)
+local function scroll(n)
+	local old = offset
+	offset = offset + n
+	clampOffset()
+	if offset ~= old then
+		MESSAGEMAN:Broadcast("SeraScoreHistoryPage")
 	end
-	MESSAGEMAN:Broadcast("UpdatePage")
 end
 
 --Input event for mouse clicks
@@ -39,11 +55,11 @@ local function input(event)
 
 	if event.type == "InputEventType_FirstPress" and scoreBoard then
 		if event.button == "MenuLeft" then
-			movePage(-1)
+			scroll(-math.max(1, lines))
 		end
 
 		if event.button == "MenuRight" then
-			movePage(1)
+			scroll(math.max(1, lines))
 		end
 
 		if event.DeviceInput.button == "DeviceButton_mousewheel up" then
@@ -58,16 +74,33 @@ end
 
 local t = Def.ActorFrame {
 	Name = "scoreBoard",
+	InitCommand = function(self)
+		self:y(seraResultPanels(seraResultPanelState).shTop - baseTop)
+	end,
 	OnCommand = function(self)
 		SCREENMAN:GetTopScreen():AddInputCallback(input)
+	end,
+	-- the window grew or folded: slide along with it, then show as many rows as now fit
+	-- (rows are added once the window has opened, removed right away when it folds)
+	SeraRightPanelMessageCommand = function(self, params)
+		local n = fits(params.state)
+		self:stoptweening():decelerate(0.2):y(seraResultPanels(params.state).shTop - baseTop)
+		pendingLines = n
+		if n > lines then
+			self:queuecommand("Fold")
+		else
+			self:playcommand("Fold")
+		end
+	end,
+	FoldCommand = function(self)
+		lines = pendingLines
+		centre()
+		MESSAGEMAN:Broadcast("SeraScoreHistoryPage")
 	end
 }
 
-local function scoreitem(pn, index, scoreIndex, drawindex)
-	-- first box always displays the number 1 score
-	if drawindex == 0 then
-		index = 1
-	end
+local function scoreitem(pn, drawindex)
+	local index = offset + drawindex + 1
 
 	--Whether the score at index is the score that was just played.
 	local equals = (index == scoreIndex)
@@ -91,13 +124,10 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 			self:diffusealpha(0)
 			self:x(SCREEN_WIDTH*10)
 		end,
-		UpdatePageMessageCommand = function(self)
-			if index == 1 then return end
-			-- this weird math sets the index for every element but the top one
-			-- so basically the order for 5 lines on the 2nd page is 1,6,7,8,9 and so on
-			index = (curPage - 1) * lines + drawindex+1 + (curPage > 1 and (-1 - (curPage > 2 and curPage-2 or 0)) or 0)
+		SeraScoreHistoryPageMessageCommand = function(self)
+			index = offset + drawindex + 1
 			equals = (index == scoreIndex)
-			if hsTable[index] ~= nil then
+			if drawindex < lines and hsTable[index] ~= nil then
 				self:playcommand("Show")
 			else
 				self:playcommand("Hide")
@@ -107,7 +137,7 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 			self:GetParent():GetParent():playcommand("HahaThisCodeINeedHelp", {doot = nil})
 		end,
 		BeginCommand = function(self)
-			if hsTable[index] == nil then
+			if drawindex >= lines or hsTable[index] == nil then
 				self:playcommand("Hide")
 			end
 		end,
@@ -340,35 +370,8 @@ local function scoreitem(pn, index, scoreIndex, drawindex)
 	return t
 end
 
-curPage = 1
---can't have more lines than the # of scores huehuehu
-if lines > #hsTable then
-	lines = #hsTable
-else
-	-- linear search for the score index to set the proper curPage
-	if scoreIndex > lines then
-		curPage = curPage + 1
-		local j = 0
-		for i = lines+1, #hsTable do
-			j = j + 1
-			if j == lines - 1 then
-				j = 0
-				curPage = curPage + 1
-			end
-			if i == scoreIndex then
-				break
-			end
-		end
-	end
-end
-
--- weird math explanation can be found above somewhere
-local drawindex = 0
-local startind = (curPage-1) * lines + 1 + (curPage > 1 and (-1 - (curPage > 2 and curPage-2 or 0)) or 0)
-while drawindex < lines do
-	t[#t+1] = scoreitem(player,startind,scoreIndex,drawindex)
-	startind = startind+1
-	drawindex  = drawindex+1
+for drawindex = 0, maxLines - 1 do
+	t[#t+1] = scoreitem(player, drawindex)
 end
 
 t[#t+1] = Def.Quad {
@@ -376,16 +379,19 @@ t[#t+1] = Def.Quad {
 		self:xy(framex - 20,framey - 20)
 		self:valign(0):halign(0)
 		self:diffusealpha(0)
-		self:zoomto(20 + frameWidth, 20 + (30 * S) * lines + lines * (5))
+		self:zoomto(20 + frameWidth, 20 + spacing * lines)
+	end,
+	SeraScoreHistoryPageMessageCommand = function(self)
+		self:zoomto(20 + frameWidth, 20 + spacing * lines)
 	end,
 	WheelUpSlowMessageCommand = function(self)
 		if isOver(self) then
-			movePage(-1)
+			scroll(-1)
 		end
 	end,
 	WheelDownSlowMessageCommand = function(self)
 		if isOver(self) then
-			movePage(1)
+			scroll(1)
 		end
 	end,
 }
@@ -397,7 +403,7 @@ t[#t+1] = Def.ActorFrame {
 	OnCommand = function(self)
 		local root = self:GetParent()
 		local function each(fn)
-			for i = 0, lines - 1 do
+			for i = 0, maxLines - 1 do
 				local item = root:GetChild("scoreItem" .. i)
 				local b = item and item:GetChild("mouseOver")
 				if b then fn(b) end
