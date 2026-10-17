@@ -50,8 +50,7 @@ function seraphicPackProgressBar()
 		SetCommand = function(self, params)
 			local isPack = params and params.Song == nil and type(params.Text) == "string" and params.Text ~= ""
 				and (params.Type == nil or tostring(params.Type):find("Section") ~= nil)
-			-- params.Progress: counts handed in directly (playlist rows of the playlist wheel)
-			local prog = params and params.Progress or (isPack and SeraphicPackProgress and SeraphicPackProgress(params.Text))
+			local prog = isPack and SeraphicPackProgress and SeraphicPackProgress(params.Text)
 			if not prog then
 				self:visible(false)
 				return

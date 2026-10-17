@@ -4,10 +4,6 @@ local pressingtab = false
 local top
 
 local function scrollInput(event)
-	-- the playlist wheel (Playlists tab) scrolls itself
-	if SeraphicPlaylistWheel and SeraphicPlaylistWheel.active then
-		return false
-	end
 	if top:GetName() == "ScreenSelectmusic" then
 		if top:GetSelectionState() == 2 then
 			return

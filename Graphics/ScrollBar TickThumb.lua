@@ -46,7 +46,6 @@ t[#t + 1] = Def.ActorFrame {
 			end
 		end,
 		ClickingMusicWheelScrollerCommand = function(self)
-			if SeraphicPlaylistWheel and SeraphicPlaylistWheel.active then return end
 			if whee then
 				local idx = whee:GetCurrentIndex()
 				local num = whee:GetNumItems()

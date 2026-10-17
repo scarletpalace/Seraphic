@@ -71,46 +71,8 @@ function SeraphicPackProgress(pack)
 	return out
 end
 
--- best grade of one chart (any score at 1.0x or faster)
-local function chartBest(key)
-	local bestWife, bestGrade = -1, nil
-	pcall(function()
-		local byRate = SCOREMAN:GetScoresByKey(key)
-		if not byRate then return end
-		for rate, list in pairs(byRate) do
-			local r = tonumber((tostring(rate):gsub("x", ""))) or 0
-			if r >= 0.999 then
-				local top = list:GetScores()[1]
-				if top and top:GetWifeScore() > bestWife then
-					bestWife, bestGrade = top:GetWifeScore(), top:GetWifeGrade()
-				end
-			end
-		end
-	end)
-	return bestGrade
-end
-
--- same counts for a playlist, one entry per chart in it; cached by name and size, dropped with the pack cache
-SeraphicPlaylistProgressCache = {}
-function SeraphicPlaylistProgress(pl)
-	if not pl then return nil end
-	local keys = pl:GetChartkeys() or {}
-	if #keys == 0 then return nil end
-	local id = pl:GetName() .. "\n" .. #keys
-	local cached = SeraphicPlaylistProgressCache[id]
-	if cached then return cached end
-	local out = {total = #keys, counts = {0, 0, 0, 0, 0}}
-	for _, key in ipairs(keys) do
-		local f = familyOf(chartBest(key))
-		if f then out.counts[f] = out.counts[f] + 1 end
-	end
-	SeraphicPlaylistProgressCache[id] = out
-	return out
-end
-
 -- drop one pack's cached counts (a score was set in it), or all of them when no pack is given
 function SeraphicPackProgressReset(pack)
-	SeraphicPlaylistProgressCache = {}
 	if pack then
 		SeraphicPackProgressCache[pack] = nil
 	else
