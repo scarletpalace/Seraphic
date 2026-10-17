@@ -52,7 +52,7 @@ local frameWidth = 256
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
--- (the column sits at the bottom of the screen, under the song data block in the same window)
+-- (the column sits at the bottom of the screen, under the song data line in the same window)
 local optionY = 176
 local rowY = {clear = 192, level = 208, score = 226, scoreSub = 241, miss = 254, rating = 270}
 local judgeHeadY, judgeY0, judgeStep = 286, 298, 14
@@ -74,39 +74,180 @@ local judges = {
 	"TapNoteScore_Miss"
 }
 
--- Seraphic: IIDX-style "R E S U L T" title at the top of the open centre, over a small crimson point
+-- Seraphic: pack name at the top of the middle, under a small crimson point
 t[#t + 1] = Def.ActorFrame {
-	Name = "ResultTitle",
+	Name = "PackTitle",
 	InitCommand = function(self)
 		self:xy(SCREEN_CENTER_X, 13)
 	end,
 	OnCommand = function(self)
+		local song = GAMESTATE:GetCurrentSong()
+		local txt = self:GetChild("Text")
+		txt:settext(song and song:GetGroupName() or "")
+		-- the side rules start just outside the text
+		local half = txt:GetZoomedWidth() / 2 + 8
+		self:GetChild("LeftRule"):x(-half)
+		self:GetChild("RightRule"):x(half)
 		self:diffusealpha(0):decelerate(0.4):diffusealpha(1)
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			-- centred on the screen's top edge, so only its lower half shows as a small point above the letters
+			-- centred on the screen's top edge, so only its lower half shows as a small point above the text
 			self:y(-13):rotationz(45):zoomto(12, 12):diffuse(color("#9c1428")):diffusealpha(0.9)
 		end
 	},
 	Def.Quad {
+		Name = "LeftRule",
 		InitCommand = function(self)
-			self:x(-40):y(9):halign(1):zoomto(110, 1)
+			self:y(6):halign(1):zoomto(110, 1)
 			self:diffuseleftedge(color("#ffffff00")):diffuserightedge(color("#ffffff60"))
 		end
 	},
 	Def.Quad {
+		Name = "RightRule",
 		InitCommand = function(self)
-			self:x(40):y(9):halign(0):zoomto(110, 1)
+			self:y(6):halign(0):zoomto(110, 1)
 			self:diffuseleftedge(color("#ffffff60")):diffuserightedge(color("#ffffff00"))
 		end
 	},
-	LoadFont("Common Normal") .. {
+	LoadFont("Seraphic Title") .. {
+		Name = "Text",
 		InitCommand = function(self)
-			self:zoom(0.6):diffuse(color(seraphicValueColor)):settext("R E S U L T")
+			-- sits low enough that the crimson point never touches it
+			self:y(6):zoom(0.5):maxwidth(300 / 0.5):diffuse(color(seraphicValueColor))
 		end
 	}
 }
+
+-- Seraphic: song title (with the rate next to it) and artist under the banner, over a soft dark pool
+t[#t + 1] = Def.ActorFrame {
+	Name = "SongHead",
+	InitCommand = function(self)
+		self:xy(SCREEN_CENTER_X, 140)
+	end,
+	BeginCommand = function(self)
+		self:queuecommand("Set")
+	end,
+	ScoreChangedMessageCommand = function(self)
+		self:queuecommand("Set")
+	end,
+	SetCommand = function(self)
+		local song = GAMESTATE:GetCurrentSong()
+		local title, rateText = self:GetChild("Title"), self:GetChild("Rate")
+		title:settext(song and song:GetDisplayMainTitle() or "")
+		self:GetChild("Artist"):settext(song and song:GetDisplayArtist() or "")
+		local rate = 1
+		pcall(function()
+			local top = SCREENMAN:GetTopScreen()
+			if top:GetName() == "ScreenNetEvaluation" then
+				rate = score:GetMusicRate()
+			else
+				rate = top:GetReplayRate() or getCurRateValue()
+			end
+		end)
+		rateText:settext(getRateString(notShit.round(rate, 3)))
+		-- title and rate are centred together
+		local tw, rw, gap = title:GetZoomedWidth(), rateText:GetZoomedWidth(), 6
+		local left = -(tw + gap + rw) / 2
+		title:x(left + tw / 2)
+		rateText:x(left + tw + gap)
+	end,
+	Def.Quad {
+		InitCommand = function(self)
+			self:y(8):halign(1):zoomto(160, 42)
+			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000B0"))
+			self:fadetop(0.3):fadebottom(0.3)
+		end
+	},
+	Def.Quad {
+		InitCommand = function(self)
+			self:y(8):halign(0):zoomto(160, 42)
+			self:diffuseleftedge(color("#000000B0")):diffuserightedge(color("#00000000"))
+			self:fadetop(0.3):fadebottom(0.3)
+		end
+	},
+	LoadFont("Seraphic Artist") .. {
+		Name = "Title",
+		InitCommand = function(self)
+			self:zoom(0.62):maxwidth(260 / 0.62)
+		end
+	},
+	LoadFont("Seraphic Artist") .. {
+		Name = "Rate",
+		InitCommand = function(self)
+			self:halign(0):y(1):zoom(0.42):diffuse(color("#e8b8c2"))
+		end
+	},
+	LoadFont("Seraphic Artist") .. {
+		Name = "Artist",
+		InitCommand = function(self)
+			self:y(17):zoom(0.44):maxwidth(290 / 0.44):diffuse(color("#bdbdbd"))
+		end
+	}
+}
+
+-- Seraphic: this score's place on the online leaderboard, in a small window above score history
+do
+	local function rankText()
+		if not DLMAN:IsLoggedIn() then return "NOT LOGGED IN", nil end
+		local steps = GAMESTATE:GetCurrentSteps()
+		local lb = steps and DLMAN:GetChartLeaderBoard(steps:GetChartKey())
+		if not lb or #lb == 0 then return "-", nil end
+		local me = DLMAN:GetUsername()
+		for i, hs in ipairs(lb) do
+			if hs:GetDisplayName() == me then
+				return string.format("#%d", i), string.format("of %d", #lb)
+			end
+		end
+		return "UNRANKED", string.format("of %d", #lb)
+	end
+	t[#t + 1] = Def.ActorFrame {
+		Name = "OnlineRank",
+		InitCommand = function(self)
+			self:xy(590, 292)
+		end,
+		BeginCommand = function(self)
+			self:queuecommand("Set")
+			-- ask again a little later, so the score just uploaded is on the board
+			self:sleep(0.2):queuecommand("Request"):sleep(5):queuecommand("Request")
+		end,
+		RequestCommand = function(self)
+			pcall(function()
+				if not DLMAN:IsLoggedIn() then return end
+				DLMAN:RequestChartLeaderBoardFromOnline(GAMESTATE:GetCurrentSteps():GetChartKey(), function()
+					self:queuecommand("Set")
+				end)
+			end)
+		end,
+		SetCommand = function(self)
+			local ok, main, sub = pcall(rankText)
+			if not ok then main, sub = "-", nil end
+			self:GetChild("Value"):settext(main)
+			self:GetChild("Of"):settext(sub or "")
+		end,
+		LoginMessageCommand = function(self)
+			self:queuecommand("Request")
+		end,
+		seraphicBullet(-3, 0),
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:x(4):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor)):settext("ONLINE RANK")
+			end
+		},
+		LoadFont("Common Normal") .. {
+			Name = "Of",
+			InitCommand = function(self)
+				self:x(246):halign(1):zoom(0.32):diffuse(color("#8f8588"))
+			end
+		},
+		LoadFont("Common Large") .. {
+			Name = "Value",
+			InitCommand = function(self)
+				self:x(196):halign(1):zoom(0.3):maxwidth(110 / 0.3):diffuse(color(seraphicValueColor))
+			end
+		}
+	}
+end
 
 -- a helper to get the radar value for a score and fall back to playerstagestats if that fails
 local function gatherRadarValue(radar, score)
@@ -1874,7 +2015,7 @@ t[#t + 1] = Def.Quad {
 }
 
 -- right column headers + panel behind the offset plot
-t[#t + 1] = seraHeader(18.4, 136, 246, "SONG DATA")
+t[#t + 1] = seraHeader(18.4, 152, 246, "SONG DATA")
 -- judge details fill the bottom of the middle, joined to the left and right windows
 t[#t + 1] = seraHeader(280, 334, 294, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
@@ -1902,26 +2043,15 @@ do
 		end)
 		return out
 	end
-	-- Seraphic: compact song data block at the top of the left window: title, artist, then BPM / DURATION / NOTES
-	t[#t + 1] = LoadFont("Seraphic Artist") .. {
-		InitCommand = function(self)
-			self:xy(18.4, 146):halign(0):valign(0.5):zoom(0.46):maxwidth(246 / 0.46):settext("")
-		end,
-		OnCommand = function(self) self:settext(getVals()[1]) end
-	}
-	t[#t + 1] = LoadFont("Seraphic Artist") .. {
-		InitCommand = function(self)
-			self:xy(18.4, 158):halign(0):valign(0.5):zoom(0.36):maxwidth(246 / 0.36):diffuse(color("#bdbdbd")):settext("")
-		end,
-		OnCommand = function(self) self:settext(getVals()[2]) end
-	}
+	-- Seraphic: compact song data line at the top of the left window: BPM / DURATION / NOTES
+	-- (title and artist sit under the banner)
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
 	for i, st in ipairs(stats) do
 		local x0 = 18.4 + (i - 1) * 82
 		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 167):halign(0):valign(0.5):zoom(0.26):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 163):halign(0):valign(0.5):zoom(0.26):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
 		}
@@ -1929,7 +2059,7 @@ do
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 167):halign(0):valign(0.5):zoom(0.32):maxwidth(math.max(20, 78 - labelW - gap) / 0.32):settext("")
+				self:xy(x0 + labelW + gap, 163):halign(0):valign(0.5):zoom(0.32):maxwidth(math.max(20, 78 - labelW - gap) / 0.32):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}

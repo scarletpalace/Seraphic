@@ -56,7 +56,8 @@ local function seraWindow(x, y, w, h)
 	t[#t + 1] = seraphicSoftEdge(x, y, w, h)
 end
 -- each window is only as tall as what it holds
-seraWindow(10, 116, 262, 340) -- song data, options, compare rows, judgments, stats (bottom left)
+seraWindow(10, 132, 262, 324) -- song data, options, compare rows, judgments, stats (bottom left)
+seraWindow(582, 276, 262, 32) -- online leaderboard rank
 seraWindow(582, 314, 262, 142) -- score history
 -- judge details window joined to both side windows along the bottom of the middle
 seraWindow(272, 314, 310, 142)
