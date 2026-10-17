@@ -73,11 +73,11 @@ local FZ = 1.25
 local statY = 58 -- BPM / DURATION / NOTES cells
 local optionY = 79
 -- rating first, then the "best | this play" rows under their column heads
-local rowY = {rating = 96, head = 110, clear = 124, level = 144, score = 165, scoreBand = 171, scoreSub = 180, miss = 198}
+local rowY = {rating = 96, head = 110, score = 125, scoreBand = 131, scoreSub = 140, miss = 158}
 local rowH, scoreRowH, scoreBandH = 18, 24, 32
-local judgeHeadY, judgeY0, judgeStep = 219, 234, 20
-local comboY, ratioY = 352, 366
-local statsY0, statsStep = 388, 12
+local judgeHeadY, judgeY0, judgeStep = 180, 196, 24
+local comboY, ratioY = 338, 354
+local statsY0, statsStep = 382, 14
 local fastColor, slowColor = color("#7cc4ff"), color("#ffa060")
 
 -- the left window has two tabs (RESULT and CHART); actors of the RESULT tab hide while CHART is shown
@@ -142,7 +142,7 @@ t[#t + 1] = Def.ActorFrame {
 		Name = "Text",
 		InitCommand = function(self)
 			-- sits low enough that the crimson point never touches it
-			self:y(6):zoom(0.5):maxwidth(300 / 0.5):diffuse(color(seraphicValueColor))
+			self:y(4):zoom(0.46):maxwidth(440 / 0.46):diffuse(color(seraphicValueColor))
 		end
 	}
 }
@@ -1187,6 +1187,38 @@ local function scoreBoard(pn, position)
 		return best
 	end
 
+	-- the best score's replay data for rescoring it at the judge shown (false when it has no replay)
+	local prevCache = {}
+	local function prevRescore(prev)
+		local id = scoreId(prev)
+		if prevCache[id] ~= nil then return prevCache[id] end
+		local d = false
+		pcall(function()
+			if not prev:HasReplayData() then return end
+			local replay = prev:GetReplay()
+			replay:LoadAllData()
+			local offs, types = replay:GetOffsetVector(), replay:GetTapNoteTypeVector()
+			if not offs or #offs == 0 then return end
+			local v = {}
+			for i, o in ipairs(offs) do
+				local ty = types and types[i]
+				if not types or #types == 0 or ty == "TapNoteType_Tap" or ty == "TapNoteType_HoldHead" or ty == "TapNoteType_Lift" then
+					v[#v + 1] = o
+				end
+			end
+			local taps = 0
+			for _, j in ipairs(judges) do taps = taps + prev:GetTapNoteScore(j) end
+			local possible, actual = prev:GetRadarPossible(), prev:GetRadarValues()
+			local holds = possible:GetValue("RadarCategory_Holds") + possible:GetValue("RadarCategory_Rolls")
+			local held = actual:GetValue("RadarCategory_Holds") + actual:GetValue("RadarCategory_Rolls")
+			local mines = possible:GetValue("RadarCategory_Mines") - actual:GetValue("RadarCategory_Mines")
+			if holds < 0 or held < 0 or held > holds or mines < 0 then return end
+			d = {dvt = v, totalTaps = taps, totalHolds = holds, holdsHit = held, holdsMissed = holds - held, minesHit = mines}
+		end)
+		prevCache[id] = d
+		return d
+	end
+
 	local function judgmentBar(judgmentIndex, judgmentName)
 		local t = Def.ActorFrame {
 			Name = "JudgmentBar"..judgmentName,
@@ -1432,6 +1464,17 @@ local function scoreBoard(pn, position)
 				cmp.prevGrade = prev:GetWifeGrade()
 				cmp.prevMiss = prev:GetTapNoteScore("TapNoteScore_W4") + prev:GetTapNoteScore("TapNoteScore_W5")
 					+ prev:GetTapNoteScore("TapNoteScore_Miss")
+				-- at the judge shown, like this play (custom windows can't be applied to it: stored values)
+				local d = not usingCustomWindows and prevRescore(prev)
+				if d then
+					pcall(function()
+						local pctJ = getRescoredWife3Judge(3, judge, d)
+						local missJ = 0
+						for i = 4, 6 do missJ = missJ + getRescoredJudge(d.dvt, judge, i) end
+						cmp.prevPct, cmp.prevMiss = pctJ, missJ
+						cmp.prevGrade = GetGradeFromPercent(pctJ / 100)
+					end)
+				end
 			end
 			self:playcommand("Set")
 			MESSAGEMAN:Broadcast("SeraCompareUpdated", {grade = cmp.grade})
@@ -1450,18 +1493,12 @@ local function scoreBoard(pn, position)
 		end,
 
 		band(rowY.rating, rowH),
-		band(rowY.clear, rowH),
-		band(rowY.level, rowH),
 		band(rowY.scoreBand, scoreBandH),
 		band(rowY.miss, rowH),
 		rowLabel(rowY.rating, "MSD / SSR"),
-		rowLabel(rowY.clear, "CLEAR TYPE"),
-		rowLabel(rowY.level, "DJ LEVEL"),
 		rowLabel(rowY.score, "SCORE"),
 		rowLabel(rowY.miss, "MISS COUNT"),
 		rowSep(rowY.rating, rowH),
-		rowSep(rowY.clear, rowH),
-		rowSep(rowY.level, rowH),
 		rowSep(rowY.miss, rowH),
 
 		-- column heads over the compare rows
@@ -1479,62 +1516,6 @@ local function scoreBoard(pn, position)
 			InitCommand = function(self)
 				self:xy(PREVX - 38, rowY.head + 4):halign(0):zoomto(LX + LW - PREVX + 38, 1)
 				self:diffuseleftedge(color("#ffffff06")):diffuserightedge(color("#ffffff28"))
-			end
-		},
-
-		-- CLEAR TYPE: best | this play
-		LoadFont("Common Normal") .. {
-			InitCommand = function(self)
-				self:xy(PREVX, rowY.clear):zoom(0.32 * FZ):maxwidth(76 / (0.32 * FZ))
-			end,
-			SetCommand = function(self)
-				if cmp.prev then
-					self:settext(tostring(getClearTypeFromScore(PLAYER_1, cmp.prev, 0)):upper())
-					self:diffuse(getClearTypeFromScore(PLAYER_1, cmp.prev, 2)):diffusealpha(0.65)
-				else
-					self:settext("NO PLAY"):diffuse(dimColor)
-				end
-			end
-		},
-		LoadFont("Common Normal") .. {
-			InitCommand = function(self)
-				self:xy(NOWX, rowY.clear):zoom(0.34 * FZ):maxwidth(76 / (0.34 * FZ))
-			end,
-			SetCommand = function(self)
-				self:settext(tostring(getClearTypeFromScore(PLAYER_1, score, 0)):upper())
-				self:diffuse(getClearTypeFromScore(PLAYER_1, score, 2))
-			end
-		},
-
-		-- DJ LEVEL: rank emblems
-		Def.Sprite {
-			Name = "PrevGrade",
-			InitCommand = function(self)
-				self:xy(PREVX, rowY.level)
-			end,
-			SetCommand = function(self)
-				local k = cmp.prevGrade and seraphicGradeIndex(cmp.prevGrade)
-				self:visible(k ~= nil)
-				if k then seraphicGradeFit(self, k, 0.46, 75):diffusealpha(0.65) end
-			end
-		},
-		LoadFont("Common Normal") .. {
-			InitCommand = function(self)
-				self:xy(PREVX, rowY.level):zoom(0.32 * FZ):diffuse(dimColor)
-			end,
-			SetCommand = function(self)
-				self:settext((cmp.prevGrade and seraphicGradeIndex(cmp.prevGrade)) and "" or "-")
-			end
-		},
-		Def.Sprite {
-			Name = "NowGrade",
-			InitCommand = function(self)
-				self:xy(NOWX, rowY.level)
-			end,
-			SetCommand = function(self)
-				local k = seraphicGradeIndex(cmp.grade)
-				self:visible(k ~= nil)
-				if k then seraphicGradeFit(self, k, 0.49, 80) end
 			end
 		},
 
@@ -2298,10 +2279,10 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = onResultTab(seraDivider(19.4, 377, 242.1))
+t[#t + 1] = onResultTab(seraDivider(19.4, 369, 242.1))
 t[#t + 1] = onResultTab(Def.Quad {
 	InitCommand = function(self)
-		self:xy(131.4, 378.5):halign(0):valign(0):zoomto(1, 64):diffuse(color("#ffffff"))
+		self:xy(131.4, 370.5):halign(0):valign(0):zoomto(1, 76):diffuse(color("#ffffff"))
 		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
 })
