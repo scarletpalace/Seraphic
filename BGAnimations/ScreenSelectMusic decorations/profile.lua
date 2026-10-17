@@ -88,11 +88,6 @@ local rankingWidth = frameWidth - capWideScale(10, 25)
 local rankingX = capWideScale(25, 35)
 local rankingY = capWideScale(40, 40)
 local rankingTitleSpacing = (rankingWidth / (#ms.SkillSets))
--- short skillset names used across the profile tab (Overall .. Technical)
-local skillShort = {"OVERALL", "STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
-local function skillName(i)
-	return skillShort[i] or tostring(ms.SkillSetsTranslated[i]):upper()
-end
 -- LR2-style layout (panel-local coords)
 local tabW = (frameWidth - 24) / #ms.SkillSets -- skillset selector tabs
 local tabY = offsetY + 11 -- centre of the skillset tab row, under the header band
@@ -452,7 +447,7 @@ local function rankingButton(i)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
 			end,
 			BeginCommand = function(self)
-				self:settext(skillName(i))
+				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
 			end,
 			UpdateRankingMessageCommand = function(self)
 				styleToggleText(self, i == rankingSkillset and not recentactive and not sessionactive)
@@ -1097,7 +1092,7 @@ local function littlebits(i)
 				self:x(ovLeftX + 15):maxwidth((ovLeftW * 0.5 - 15) / 0.4):halign(0):zoom(0.4):diffuse(color(seraphicLabelColor))
 			end,
 			SetCommand = function(self)
-				self:settext(skillName(i))
+				self:settext(tostring(ms.SkillSetsTranslated[i]):upper())
 			end,
 		},
 		LoadFont("Common Large") .. {
@@ -1147,9 +1142,11 @@ local function sigilPoint(k, rad)
 	local a = sigilAngle(k)
 	return math.cos(a) * rad, math.sin(a) * rad
 end
+-- short labels around the radar (Stream .. Technical)
+local sigilAbbr = {"STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
 -- vertex radii for the current ratings, scaled to the player's own min..max range
 -- (weakest skillset sits at sigilFloor, strongest on the outer ring) so differences stand out
-local sigilFloor = 0.2
+local sigilFloor = 0.6
 local function sigilRadii()
 	local vals, lo, hi, best = {}, math.huge, -math.huge, 1
 	for k = 1, sigilN do
@@ -1271,7 +1268,7 @@ for k = 1, sigilN do
 	sigil[#sigil + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
 			local x, y = sigilPoint(k, sigilR + 12)
-			self:xy(x, y):settext(skillName(k + 1))
+			self:xy(x, y):settext(sigilAbbr[k] or "")
 		end,
 		SigilSetCommand = function(self)
 			local _, best = sigilRadii()
