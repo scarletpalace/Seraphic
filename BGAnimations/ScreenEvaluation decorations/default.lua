@@ -227,6 +227,7 @@ do
 	local lbPending = lbRows -- row count to switch to once the window has moved
 	local lbOffset = 0
 	local lbList = {}
+	local lbMine = nil -- row of your score in lbList
 	local lbScrolled = false -- the list centres on your score until you scroll it yourself
 	local playedRate = 1
 	pcall(function() playedRate = score:GetMusicRate() end)
@@ -246,6 +247,20 @@ do
 				list[#list + 1] = hs
 				if not mine and hs:GetDisplayName() == me then mine = #list end
 			end
+		end
+		-- not on the board at this rate (not uploaded yet, or your online best is at another rate):
+		-- put this play where its percent would land
+		if not mine and score then
+			local w = score:GetWifeScore()
+			local pos = #list + 1
+			for i, hs in ipairs(list) do
+				if hs:GetWifeScore() < w then
+					pos = i
+					break
+				end
+			end
+			table.insert(list, pos, score)
+			mine = pos
 		end
 		return list, mine
 	end
@@ -321,7 +336,7 @@ do
 				if allRates then
 					self:settext("ALL RATES")
 				else
-					self:settext("CURRENT RATE  " .. getRateString(notShit.round(playedRate, 3)))
+					self:settext("CURRENT RATE")
 				end
 			end,
 			SeraLeaderboardModeMessageCommand = function(self)
@@ -391,7 +406,8 @@ do
 		-- works out the visible slice, then the rows redraw themselves with Set
 		RefreshCommand = function(self)
 			local ok, list, mine = pcall(rateBoard)
-			if not ok then list = {} end
+			if not ok then list, mine = {}, nil end
+			lbMine = mine
 			list = list or {}
 			if not lbScrolled and mine then lbOffset = mine - math.ceil(lbRows / 2) end
 			lbOffset = math.max(0, math.min(lbOffset, #list - lbRows))
@@ -444,10 +460,10 @@ do
 				local hs = r <= lbRows and lbList[i] or nil
 				self:visible(hs ~= nil)
 				if not hs then return end
-				local mineRow = hs:GetDisplayName() == DLMAN:GetUsername()
+				local mineRow = i == lbMine
 				self:GetChild("Mine"):visible(mineRow)
 				self:GetChild("Rank"):settextf("%d", i)
-				self:GetChild("Name"):settext(hs:GetDisplayName()):diffuse(color(mineRow and "#ffffff" or seraphicValueColor))
+				self:GetChild("Name"):settext(hs == score and DLMAN:GetUsername() or hs:GetDisplayName()):diffuse(color(mineRow and "#ffffff" or seraphicValueColor))
 				self:GetChild("Name"):maxwidth((allRates and 82 or 108) / 0.42)
 				local okR, r = pcall(function() return hs:GetMusicRate() end)
 				self:GetChild("Rate"):settext(allRates and okR and getRateString(notShit.round(r, 3)) or "")
@@ -1193,12 +1209,18 @@ local function scoreBoard(pn, position)
 		local id = scoreId(prev)
 		if prevCache[id] ~= nil then return prevCache[id] end
 		local d = false
-		pcall(function()
-			if not prev:HasReplayData() then return end
+		local ok, err = pcall(function()
+			if not prev:HasReplayData() then
+				Trace("Seraphic: best score has no replay data, BEST is not rescored")
+				return
+			end
 			local replay = prev:GetReplay()
 			replay:LoadAllData()
 			local offs, types = replay:GetOffsetVector(), replay:GetTapNoteTypeVector()
-			if not offs or #offs == 0 then return end
+			if not offs or #offs == 0 then
+				Trace("Seraphic: best score replay has no offsets, BEST is not rescored")
+				return
+			end
 			local v = {}
 			for i, o in ipairs(offs) do
 				local ty = types and types[i]
@@ -1209,12 +1231,19 @@ local function scoreBoard(pn, position)
 			local taps = 0
 			for _, j in ipairs(judges) do taps = taps + prev:GetTapNoteScore(j) end
 			local possible, actual = prev:GetRadarPossible(), prev:GetRadarValues()
-			local holds = possible:GetValue("RadarCategory_Holds") + possible:GetValue("RadarCategory_Rolls")
-			local held = actual:GetValue("RadarCategory_Holds") + actual:GetValue("RadarCategory_Rolls")
-			local mines = possible:GetValue("RadarCategory_Mines") - actual:GetValue("RadarCategory_Mines")
-			if holds < 0 or held < 0 or held > holds or mines < 0 then return end
-			d = {dvt = v, totalTaps = taps, totalHolds = holds, holdsHit = held, holdsMissed = holds - held, minesHit = mines}
+			-- older scores may not store hold / mine values (-1): count those as none dropped / hit
+			local function rv(r, k)
+				local okv, n = pcall(function() return r:GetValue(k) end)
+				return (okv and n and n >= 0) and n or nil
+			end
+			local holdsP = (rv(possible, "RadarCategory_Holds") or 0) + (rv(possible, "RadarCategory_Rolls") or 0)
+			local heldA, heldB = rv(actual, "RadarCategory_Holds"), rv(actual, "RadarCategory_Rolls")
+			local held = (heldA and heldB) and (heldA + heldB) or holdsP
+			local minesP, minesA = rv(possible, "RadarCategory_Mines"), rv(actual, "RadarCategory_Mines")
+			local mines = (minesP and minesA) and math.max(0, minesP - minesA) or 0
+			d = {dvt = v, totalTaps = taps, totalHolds = holdsP, holdsHit = held, holdsMissed = math.max(0, holdsP - held), minesHit = mines}
 		end)
+		if not ok then Trace("Seraphic: rescoring the best score failed: " .. tostring(err)) end
 		prevCache[id] = d
 		return d
 	end
@@ -1467,13 +1496,14 @@ local function scoreBoard(pn, position)
 				-- at the judge shown, like this play (custom windows can't be applied to it: stored values)
 				local d = not usingCustomWindows and prevRescore(prev)
 				if d then
-					pcall(function()
+					local okJ, errJ = pcall(function()
 						local pctJ = getRescoredWife3Judge(3, judge, d)
 						local missJ = 0
 						for i = 4, 6 do missJ = missJ + getRescoredJudge(d.dvt, judge, i) end
 						cmp.prevPct, cmp.prevMiss = pctJ, missJ
 						cmp.prevGrade = GetGradeFromPercent(pctJ / 100)
 					end)
+					if not okJ then Trace("Seraphic: rescoring the best score failed: " .. tostring(errJ)) end
 				end
 			end
 			self:playcommand("Set")
@@ -2448,18 +2478,6 @@ do
 				InitCommand = function(self)
 					self:xy(x0, statY):halign(0):zoomto(cellW, 24)
 					self:diffusetopedge(color("#00000040")):diffusebottomedge(color("#000000A0"))
-				end
-			},
-			-- crimson rule along the top of the cell
-			Def.Quad {
-				InitCommand = function(self)
-					self:xy(cx, statY - 12):zoomto(cellW, 1)
-					self:diffuseleftedge(color("#9c142820")):diffuserightedge(color("#9c142820"))
-				end
-			},
-			Def.Quad {
-				InitCommand = function(self)
-					self:xy(cx, statY - 12):zoomto(cellW * 0.5, 1):diffuse(color("#c01c34")):diffusealpha(0.8)
 				end
 			},
 			LoadFont("Common Normal") .. {
