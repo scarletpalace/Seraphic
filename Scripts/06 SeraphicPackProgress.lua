@@ -1,6 +1,9 @@
 -- Pack progress for the song list: how many songs in a pack have their best score
--- (at 1.0x or faster, any difficulty) in each grade family. Cached per pack;
--- the cache is dropped whenever a new score is set (Scripts/05 SeraphicSession.lua).
+-- (at 1.0x or faster, any difficulty) in each grade family. Only the songs the music
+-- wheel currently shows for the pack are counted, so search and filters narrow both
+-- the lamps and the "x / y" count. Each song's grade family is cached per pack (song
+-- dir -> family, 0 when unplayed); the cache is dropped whenever a new score is set
+-- (Scripts/05 SeraphicSession.lua).
 SeraphicPackProgressCache = {}
 
 -- grade families, best first; colour comes from getGradeColor of the family's grade
@@ -51,21 +54,42 @@ local function songBest(song)
 	return bestGrade
 end
 
--- {total = songs, counts = {AAAA, AAA, AA, A, B-}} for a pack, or nil when it has no songs
+-- the songs the music wheel shows for a pack under the current search and filters;
+-- the whole pack when there is no wheel (e.g. while the screen is still being built)
+local function visibleSongs(pack)
+	-- only real packs get a bar (not the sections of other sort orders)
+	local ok, isPack = pcall(function() return SONGMAN:DoesSongGroupExist(pack) end)
+	if ok and not isPack then return nil end
+	local songs
+	pcall(function()
+		local wheel = SCREENMAN:GetTopScreen():GetMusicWheel()
+		if wheel then songs = wheel:GetSongsInGroup(pack) end
+	end)
+	if not songs then pcall(function() songs = SONGMAN:GetSongsInGroup(pack) end) end
+	return songs
+end
+
+-- {total = songs, counts = {AAAA, AAA, AA, A, B-}} for a pack, or nil when it has no visible songs
 function SeraphicPackProgress(pack)
 	if not pack or pack == "" then return nil end
-	local cached = SeraphicPackProgressCache[pack]
-	if cached then return cached end
-	local songs
-	pcall(function() songs = SONGMAN:GetSongsInGroup(pack) end)
+	local songs = visibleSongs(pack)
 	if not songs or #songs == 0 then return nil end
 	local c = os.clock()
+	local fams = SeraphicPackProgressCache[pack]
+	if not fams then
+		fams = {}
+		SeraphicPackProgressCache[pack] = fams
+	end
 	local out = {total = #songs, counts = {0, 0, 0, 0, 0}}
 	for _, song in ipairs(songs) do
-		local f = familyOf(songBest(song))
-		if f then out.counts[f] = out.counts[f] + 1 end
+		local dir = song:GetSongDir()
+		local f = fams[dir]
+		if f == nil then
+			f = familyOf(songBest(song)) or 0
+			fams[dir] = f
+		end
+		if f > 0 then out.counts[f] = out.counts[f] + 1 end
 	end
-	SeraphicPackProgressCache[pack] = out
 	local took = os.clock() - c
 	if took > 0.01 then Warn(string.format("[Seraphic] pack progress %s: %.3fs", pack, took)) end
 	return out
