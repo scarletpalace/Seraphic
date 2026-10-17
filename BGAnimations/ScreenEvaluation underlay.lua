@@ -1,3 +1,19 @@
+-- the fold layout of the right column normally comes from Scripts/02 SeraphicPanel.lua; Scripts only load when
+-- the game starts, so keep a copy here for a theme updated while the game is running
+if not seraResultPanels then
+	seraResultPanelState = seraResultPanelState or "mid"
+	function seraResultPanels(state)
+		local top, bottom, gap, folded = 60, 456, 6, 24
+		local lbH = 216
+		if state == "lb" then
+			lbH = bottom - top - gap - folded
+		elseif state == "sh" then
+			lbH = folded
+		end
+		return {lbTop = top, lbH = lbH, shTop = top + lbH + gap, shH = bottom - top - lbH - gap}
+	end
+end
+
 local enabled = PREFSMAN:GetPreference("ShowBackgrounds")
 local brightness = 0.36 -- the centre is open now (no stage image), so the background shows a little more
 local t = Def.ActorFrame {}
