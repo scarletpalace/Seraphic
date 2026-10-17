@@ -144,8 +144,90 @@ function seraphicPackProgressBar()
 	return f
 end
 
+-- selected row: red rim + faint red bloom drawn with the bar's own cap/middle geometry, inside the item itself so it
+-- always sits exactly on the bar (also while the wheel scrolls); shown only on the centre slot of the wheel
+local wheelCentre = math.ceil(15 / 2)
+function seraphicSelectedBar()
+	local zy = (barH + 6) / 31
+	local capW = 24 * zy
+	local x0 = barX - 2
+	local w = barW + 4
+	local function k(m) return {1 * m, 0.1 * m, 0.14 * m, 1} end
+	local strong, weak = 0.22, 0.07
+	-- one bar-shaped layer: left cap + tiled middle + mirrored right cap
+	local function layer(name, add, midfn, leftfn, rightfn)
+		local mid, cap = name .. "_mid", name .. "_cap"
+		return Def.ActorFrame {
+			Def.Sprite {
+				Texture = THEME:GetPathG("", "seraphic_" .. mid),
+				InitCommand = function(self)
+					if add then self:blend("BlendMode_Add") end
+					self:xy(x0 + capW, 0):halign(0):zoomto(w - capW * 2, barH + 6)
+					self:texturewrapping(true):customtexturerect(0, 0, (w - capW * 2) / (64 * zy), 1)
+					if midfn then midfn(self) end
+				end
+			},
+			Def.Sprite {
+				Texture = THEME:GetPathG("", "seraphic_" .. cap),
+				InitCommand = function(self)
+					if add then self:blend("BlendMode_Add") end
+					self:xy(x0, 0):halign(0):zoomto(capW, barH + 6)
+					if leftfn then leftfn(self) end
+				end
+			},
+			Def.Sprite {
+				Texture = THEME:GetPathG("", "seraphic_" .. cap),
+				InitCommand = function(self)
+					if add then self:blend("BlendMode_Add") end
+					self:xy(x0 + w, 0):halign(0):zoomto(-capW, barH + 6)
+					if rightfn then rightfn(self) end
+				end
+			},
+		}
+	end
+	local f = Def.ActorFrame {
+		InitCommand = function(self) self:y(-2):visible(false) end,
+		SetCommand = function(self, params)
+			self:visible(params ~= nil and params.DrawIndex == wheelCentre)
+		end,
+		-- faint red bloom inside the bar (masks from the bar art)
+		layer("barmask", true,
+			function(self) self:diffuseleftedge(k(strong)):diffuserightedge(k(weak)) end,
+			function(self) self:diffuse(k(strong)) end,
+			function(self) self:diffuse(k(weak)) end),
+		-- red rim traced over the bar's silver edge (seraphic_barsel_cap/mid are the bar's edge lines recoloured)
+		layer("barsel", false),
+	}
+	-- optional: silver light band sweeping across the selected bar once each time the selection changes
+	if SeraphicFx and SeraphicFx.sweep then
+		f[#f + 1] = Def.ActorFrame {
+			Name = "Sweep",
+			InitCommand = function(self)
+				self:x(barX + 12):diffusealpha(0)
+			end,
+			CurrentSongChangedMessageCommand = function(self)
+				self:stoptweening():x(barX + 12):diffusealpha(1):linear(0.55):x(barX + barW - 22):diffusealpha(0)
+			end,
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(1):zoomto(24, barH - 6):skewx(-0.35):blend("BlendMode_Add")
+					self:diffuseleftedge(color("#ffffff00")):diffuserightedge(color("#ffffff30"))
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:halign(0):zoomto(24, barH - 6):skewx(-0.35):blend("BlendMode_Add")
+					self:diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff00"))
+				end
+			}
+		}
+	end
+	return f
+end
+
 return Def.ActorFrame {
 	seraphicBar("bar", 31, 1, 0.78),
+	seraphicSelectedBar(),
 	-- silver sheen along the top, like the lit edge on the LR2 bars
 	Def.Quad {
 		InitCommand = function(self)
