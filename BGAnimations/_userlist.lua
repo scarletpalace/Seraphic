@@ -67,7 +67,15 @@ local r =
 	PlayerUnjoinedMessageCommand = function(self)
 		self:queuecommand("Set")
 	end,
-	seraphicPanel(boxX, boxY, boxW, boxH, false, 0.85),
+	-- panel body only, no border
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(boxX, boxY):halign(0):valign(0):zoomto(boxW, boxH)
+			self:diffuseupperleft(color("#262626E6")):diffuseupperright(color("#1a1a1aE6"))
+			self:diffuselowerleft(color("#0a0a0aF0")):diffuselowerright(color("#060606F0"))
+			self:diffusealpha(0.85)
+		end
+	},
 	seraphicHeaderBand(boxX + 4, boxY + 4, boxW - 8, headerH - 2),
 	LoadFont("Common Normal") .. {
 		InitCommand = function(self)
