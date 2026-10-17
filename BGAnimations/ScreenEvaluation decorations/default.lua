@@ -186,25 +186,44 @@ t[#t + 1] = Def.ActorFrame {
 	}
 }
 
--- Seraphic: this score's place on the online leaderboard, in a small window above score history
+-- Seraphic: online leaderboard at the rate that was played, top right: this score's place in a small window,
+-- and under it a scrollable list of the players around it
 do
-	local function rankText()
-		if not DLMAN:IsLoggedIn() then return "NOT LOGGED IN", nil end
+	local lbRows, lbStep, lbY0 = 15, 14, 90
+	local lbOffset = 0
+	local lbList = {}
+	local lbScrolled = false -- the list centres on your score until you scroll it yourself
+	local playedRate = 1
+	pcall(function() playedRate = score:GetMusicRate() end)
+
+	-- this chart's online scores at the played rate, best first, plus the index of your best one
+	local function rateBoard()
+		if not DLMAN:IsLoggedIn() then return nil end
 		local steps = GAMESTATE:GetCurrentSteps()
 		local lb = steps and DLMAN:GetChartLeaderBoard(steps:GetChartKey())
-		if not lb or #lb == 0 then return "-", nil end
+		if not lb then return {} end
+		local want = string.format("%.2f", playedRate)
+		local list, mine = {}, nil
 		local me = DLMAN:GetUsername()
-		for i, hs in ipairs(lb) do
-			if hs:GetDisplayName() == me then
-				return string.format("#%d", i), string.format("of %d", #lb)
+		for _, hs in ipairs(lb) do
+			if string.format("%.2f", hs:GetMusicRate()) == want then
+				list[#list + 1] = hs
+				if not mine and hs:GetDisplayName() == me then mine = #list end
 			end
 		end
-		return "UNRANKED", string.format("of %d", #lb)
+		return list, mine
 	end
+	local function rankText(list, mine)
+		if not list then return "NOT LOGGED IN", nil end
+		if #list == 0 then return "-", nil end
+		if mine then return string.format("#%d", mine), string.format("of %d", #list) end
+		return "UNRANKED", string.format("of %d", #list)
+	end
+
 	t[#t + 1] = Def.ActorFrame {
 		Name = "OnlineRank",
 		InitCommand = function(self)
-			self:xy(590, 292)
+			self:xy(590, 40)
 		end,
 		BeginCommand = function(self)
 			self:queuecommand("Set")
@@ -220,10 +239,12 @@ do
 			end)
 		end,
 		SetCommand = function(self)
-			local ok, main, sub = pcall(rankText)
-			if not ok then main, sub = "-", nil end
+			local ok, list, mine = pcall(rateBoard)
+			if not ok then list, mine = {}, nil end
+			local main, sub = rankText(list, mine)
 			self:GetChild("Value"):settext(main)
 			self:GetChild("Of"):settext(sub or "")
+			MESSAGEMAN:Broadcast("SeraLeaderboardData")
 		end,
 		LoginMessageCommand = function(self)
 			self:queuecommand("Request")
@@ -231,7 +252,8 @@ do
 		seraphicBullet(-3, 0),
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:x(4):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor)):settext("ONLINE RANK")
+				self:x(4):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor))
+				self:settext("ONLINE RANK  " .. getRateString(notShit.round(playedRate, 3)))
 			end
 		},
 		LoadFont("Common Normal") .. {
@@ -247,6 +269,142 @@ do
 			end
 		}
 	}
+
+	-- header in the same style as the other windows (seraHeader is defined further down)
+	t[#t + 1] = Def.ActorFrame {
+		seraphicHeaderBand(590, 64, 246, 16),
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(594, 72):halign(0):valign(0.5):zoom(0.45):maxwidth(238 / 0.45)
+				self:settext(seraphicHeading("LEADERBOARD")):diffuse(color(seraphicLabelColor))
+			end
+		}
+	}
+	local board = Def.ActorFrame {
+		Name = "RateLeaderboard",
+		BeginCommand = function(self)
+			-- mouse wheel over the list scrolls it
+			SCREENMAN:GetTopScreen():AddInputCallback(function(event)
+				if event.type ~= "InputEventType_FirstPress" then return false end
+				local b = event.DeviceInput.button
+				local dir = (b == "DeviceButton_mousewheel up" and -1) or (b == "DeviceButton_mousewheel down" and 1) or 0
+				if dir ~= 0 and isOver(self:GetChild("Hover")) then
+					lbScrolled = true
+					lbOffset = lbOffset + dir
+					self:playcommand("Refresh")
+				end
+				return false
+			end)
+		end,
+		SeraLeaderboardDataMessageCommand = function(self)
+			self:playcommand("Refresh")
+		end,
+		-- works out the visible slice, then the rows redraw themselves with Set
+		RefreshCommand = function(self)
+			local ok, list, mine = pcall(rateBoard)
+			if not ok then list = {} end
+			list = list or {}
+			if not lbScrolled and mine then lbOffset = mine - math.ceil(lbRows / 2) end
+			lbOffset = math.max(0, math.min(lbOffset, #list - lbRows))
+			lbList = list
+			local msg = self:GetChild("Empty")
+			if not DLMAN:IsLoggedIn() then
+				msg:settext("Log in to see the leaderboard")
+			elseif #list == 0 then
+				msg:settext("No online scores at this rate yet")
+			else
+				msg:settext("")
+			end
+			self:GetChild("Scroll"):visible(#list > lbRows)
+			if #list > lbRows then
+				local trackH = lbRows * lbStep
+				local h = math.max(8, trackH * lbRows / #list)
+				self:GetChild("Scroll"):zoomy(h):y(lbY0 - lbStep / 2 + (trackH - h) * lbOffset / (#list - lbRows))
+			end
+			self:playcommand("Set")
+		end,
+		-- hover area for the mouse wheel
+		Def.Quad {
+			Name = "Hover",
+			InitCommand = function(self)
+				self:xy(586, lbY0 - lbStep / 2):halign(0):valign(0):zoomto(254, lbRows * lbStep):diffusealpha(0)
+			end
+		},
+		LoadFont("Common Normal") .. {
+			Name = "Empty",
+			InitCommand = function(self)
+				self:xy(713, lbY0 + lbStep * 3):zoom(0.34):diffuse(color("#8f8588"))
+			end
+		},
+		-- thin scroll position bar on the right edge
+		Def.Quad {
+			Name = "Scroll",
+			InitCommand = function(self)
+				self:x(838):valign(0):zoomto(2, 10):diffuse(color("#ffffff")):diffusealpha(0.35):visible(false)
+			end
+		}
+	}
+	for r = 1, lbRows do
+		local y = lbY0 + (r - 1) * lbStep
+		board[#board + 1] = Def.ActorFrame {
+			Name = "Row" .. r,
+			SetCommand = function(self)
+				local i = lbOffset + r
+				local hs = lbList[i]
+				self:visible(hs ~= nil)
+				if not hs then return end
+				local mineRow = hs:GetDisplayName() == DLMAN:GetUsername()
+				self:GetChild("Mine"):visible(mineRow)
+				self:GetChild("Rank"):settextf("%d", i)
+				self:GetChild("Name"):settext(hs:GetDisplayName()):diffuse(color(mineRow and "#ffffff" or seraphicValueColor))
+				local okS, ssr = pcall(function() return hs:GetSkillsetSSR("Overall") end)
+				if okS and ssr then
+					self:GetChild("SSR"):settextf("%5.2f", ssr):diffuse(byMSD(ssr))
+				else
+					self:GetChild("SSR"):settext("")
+				end
+				self:GetChild("Pct"):settextf("%05.2f%%", notShit.floor(hs:GetWifeScore() * 100, 2)):diffuse(byGrade(hs:GetWifeGrade()))
+			end,
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(588, y):halign(0):zoomto(248, lbStep - 1):diffuse(color("#000000")):diffusealpha(r % 2 == 1 and 0.4 or 0.18)
+				end
+			},
+			-- your own score: crimson band
+			Def.Quad {
+				Name = "Mine",
+				InitCommand = function(self)
+					self:xy(588, y):halign(0):zoomto(248, lbStep - 1)
+					self:diffuseleftedge(color("#9c1428D0")):diffuserightedge(color("#9c142840")):visible(false)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				Name = "Rank",
+				InitCommand = function(self)
+					self:xy(616, y):halign(1):zoom(0.32):diffuse(color(seraphicLabelColor))
+				end
+			},
+			LoadFont("Common Normal") .. {
+				Name = "Name",
+				InitCommand = function(self)
+					self:xy(622, y):halign(0):zoom(0.34):maxwidth(110 / 0.34)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				Name = "SSR",
+				InitCommand = function(self)
+					self:xy(772, y):halign(1):zoom(0.32)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				Name = "Pct",
+				InitCommand = function(self)
+					self:xy(832, y):halign(1):zoom(0.34)
+				end
+			}
+		}
+	end
+	t[#t + 1] = board
 end
 
 -- a helper to get the radar value for a score and fall back to playerstagestats if that fails
