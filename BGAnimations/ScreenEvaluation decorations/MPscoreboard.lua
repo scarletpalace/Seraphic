@@ -86,8 +86,12 @@ local function updateScoreBoard(self)
 		SetActivePlayer(1)
 	end
 end
--- mouse wheel over the score window scrolls it (see ScrollArea below)
-local function MPinput(event)
+-- mouse wheel over the score window scrolls it (see ScrollArea below); everything is also passed on to the
+-- chat overlay's global MPinput, which is how chat gets keyboard input on this screen
+local function scoreInput(event)
+	if MPinput and MPinput(event) then
+		return true
+	end
 	if event.type == "InputEventType_FirstPress" then
 		if event.DeviceInput.button == "DeviceButton_mousewheel up" then
 			MESSAGEMAN:Broadcast("WheelUpSlow")
@@ -115,7 +119,7 @@ local t = Def.ActorFrame {
 		self:GetChild("ScrollArea"):playcommand("Size")
 	end,
 	BeginCommand = function(self)
-		SCREENMAN:GetTopScreen():AddInputCallback(MPinput)
+		SCREENMAN:GetTopScreen():AddInputCallback(scoreInput)
 		updateScoreBoard(self)
 	end,
 	NewMultiScoreMessageCommand = updateScoreBoard
