@@ -1,10 +1,8 @@
--- Seraphic: playlist wheel. Opening the Playlists tab hides the song wheel and puts this list in its place:
--- every playlist is a row styled like a pack, Start (or a click) opens it and lists its charts under it like songs
--- (charts whose song is not installed are left out). Moving onto a chart selects that song, difficulty and rate on
--- the real wheel (so banner, MSD and preview follow); Start on it plays it.
--- The list stays up on the General, MSD, Scores, Profile and Goals tabs. Back closes the open playlist; Back on the
--- playlist list (or the Search, Filters, Packs and Tags tabs) brings the song wheel back.
--- The engine has no playlist sort, so input is redirected to this file while the list is up.
+-- Seraphic: playlist wheel. While the Playlists tab is open the song wheel is hidden and this list takes its place:
+-- every playlist is a row styled like a pack, Start (or a click) opens it and lists its charts under it like songs.
+-- Moving onto a chart selects that song, difficulty and rate on the real wheel (so banner, MSD and preview follow);
+-- Start on it plays it. Back closes the open playlist, or returns to the General tab.
+-- The engine has no playlist sort, so input is redirected to this file while the tab is open.
 
 -- the wheel item art (seraphicBar, seraphicSelectedBar, seraphicPackProgressBar) is defined by this file
 if not seraphicBar then
@@ -12,9 +10,6 @@ if not seraphicBar then
 end
 
 local playlistTab = 7
--- tabs that keep the list up once it is open (0 General, 1 MSD, 2 Scores, 4 Profile, 6 Goals, 7 Playlists);
--- the others type into boxes or work with the song wheel
-local keepTabs = {[0] = true, [1] = true, [2] = true, [4] = true, [6] = true, [7] = true}
 local numSlots = 15
 local centre = math.ceil(numSlots / 2)
 local rowSpacing = 46
@@ -32,8 +27,6 @@ local ownsRedirect = false
 local ssmName
 local whee
 local root
-local tabChanging = false -- between a tab change and our Set: the left panel's reset broadcasts are not for us
-local ownBroadcast = false
 
 -- shared with _frame.lua (scroll crystal) and the wheel scroll helpers
 SeraphicPlaylistWheel = {active = false, fraction = 0}
@@ -67,20 +60,16 @@ local function buildRows()
 			local keys = pl:GetChartkeys() or {}
 			for i, chart in ipairs(charts) do
 				local key = keys[i]
-				local song = chart:IsLoaded() and key and SONGMAN:GetSongByChartKey(key) or nil
-				local steps = song and SONGMAN:GetStepsByChartKey(key) or nil
-				-- songs that are not installed are skipped
-				if song and steps then
-					rows[#rows + 1] = {
-						kind = "chart",
-						chart = chart,
-						key = key,
-						index = i,
-						loaded = true,
-						song = song,
-						steps = steps
-					}
-				end
+				local loaded = chart:IsLoaded()
+				rows[#rows + 1] = {
+					kind = "chart",
+					chart = chart,
+					key = key or "",
+					index = i,
+					loaded = loaded,
+					song = loaded and key and SONGMAN:GetSongByChartKey(key) or nil,
+					steps = loaded and key and SONGMAN:GetStepsByChartKey(key) or nil
+				}
 			end
 		end
 	end
@@ -123,9 +112,7 @@ end
 local function openPlaylist(name)
 	openName = name
 	SONGMAN:SetActivePlaylist(name)
-	ownBroadcast = true
 	MESSAGEMAN:Broadcast("DisplaySinglePlaylist")
-	ownBroadcast = false
 	buildRows()
 	cursorToPlaylist(name)
 end
@@ -133,9 +120,7 @@ end
 local function closePlaylist()
 	local name = openName
 	openName = nil
-	ownBroadcast = true
 	MESSAGEMAN:Broadcast("DisplayAllPlaylists")
-	ownBroadcast = false
 	buildRows()
 	if name then cursorToPlaylist(name) end
 end
@@ -150,7 +135,7 @@ local function move(n)
 	end
 	cursor = new
 	playSound("change")
-	root:GetChild("PreviewTimer"):stoptweening():sleep(0.2):queuecommand("Preview")
+	root:GetChild("PreviewTimer"):stoptweening():sleep(0.12):queuecommand("Preview")
 end
 
 local function startPlaying()
@@ -193,16 +178,10 @@ local function activate(i)
 	end
 end
 
-local setShown -- defined below
-
--- Back on the playlist list: song wheel again (and off the Playlists tab, whose panel needs the list)
-local function exitList()
-	setShown(false)
+local function leaveTab()
 	local from = getTabIndex()
-	if from == playlistTab then
-		setTabIndex(0)
-		MESSAGEMAN:Broadcast("TabChanged", {from = from, to = 0})
-	end
+	setTabIndex(0)
+	MESSAGEMAN:Broadcast("TabChanged", {from = from, to = 0})
 end
 
 local function input(event)
@@ -235,8 +214,7 @@ local function input(event)
 			playSound("collapse")
 			closePlaylist()
 		else
-			playSound("collapse")
-			exitList()
+			leaveTab()
 		end
 	end
 	return false
@@ -299,8 +277,9 @@ local function slot(k)
 			else
 				local c = r.chart
 				local rate = c:GetRate()
-				ch:GetChild("Title"):settext(r.song:GetDisplayMainTitle())
-				ch:GetChild("Sub"):settext(r.song:GetGroupName())
+				ch:GetChild("Title"):settext(c:GetSongTitle())
+				ch:GetChild("Title"):diffusealpha(r.loaded and 1 or 0.45)
+				ch:GetChild("Sub"):settext(c:GetPackName())
 				local diff = r.steps and r.steps:GetDifficulty() or c:GetDifficulty()
 				ch:GetChild("Diff"):settext(getShortDifficulty(diff) .. "  " .. rateString(rate)):diffuse(byDifficulty(diff))
 				if r.steps then
@@ -347,11 +326,9 @@ local function place(dt)
 		pos = pos + (cursor - pos) * math.min(1, dt * 20)
 	end
 	local base = math.floor(pos + 0.5)
-	for n = 1, numSlots do
-		-- each slot keeps its row while the list scrolls (row idx always lives in slot idx mod numSlots), so a
-		-- step only refills the one slot that comes into view
-		local idx = base + n - centre
-		local s = slots[(idx % numSlots) + 1]
+	for k = 1, numSlots do
+		local s = slots[k]
+		local idx = base + k - centre
 		if s.idx ~= idx then
 			s.idx = idx
 			s.actor:playcommand("Fill", rows[idx])
@@ -387,27 +364,6 @@ local function syncRedirect()
 	end
 end
 
-setShown = function(show)
-	if show == active then return end
-	active = show
-	SeraphicPlaylistWheel.active = show
-	whee:visible(not show)
-	root:visible(show)
-	if show then
-		openName = nil
-		buildRows()
-		-- start on the playlist the left panel last opened, else the first one
-		local apl = SONGMAN:GetActivePlaylist()
-		if apl then cursorToPlaylist(apl:GetName()) end
-		pos = cursor
-		previewed = nil
-	else
-		-- pack rows skipped their progress while hidden; redraw them
-		whee:RebuildWheelItems()
-	end
-	syncRedirect()
-end
-
 local t = Def.ActorFrame {
 	InitCommand = function(self)
 		root = self
@@ -434,26 +390,30 @@ local t = Def.ActorFrame {
 		syncRedirect()
 	end,
 	SetCommand = function(self)
-		tabChanging = false
-		local tab = getTabIndex()
 		-- only on the solo select screen (the net screen keeps its own wheel handling)
-		local show = ssmName == "ScreenSelectMusic" and (tab == playlistTab or (active and keepTabs[tab] == true))
-		setShown(show)
-		-- back on the Playlists tab with a playlist open: show it in the panel too
-		if active and tab == playlistTab and openName then
-			SONGMAN:SetActivePlaylist(openName)
-			ownBroadcast = true
-			MESSAGEMAN:Broadcast("DisplaySinglePlaylist")
-			ownBroadcast = false
+		local show = getTabIndex() == playlistTab and ssmName == "ScreenSelectMusic"
+		if show == active then return end
+		active = show
+		SeraphicPlaylistWheel.active = show
+		whee:visible(not show)
+		self:visible(show)
+		if show then
+			openName = nil
+			buildRows()
+			-- start on the playlist the left panel last opened, else the first one
+			local apl = SONGMAN:GetActivePlaylist()
+			if apl then cursorToPlaylist(apl:GetName()) end
+			pos = cursor
+			previewed = nil
 		end
+		syncRedirect()
 	end,
 	TabChangedMessageCommand = function(self)
-		tabChanging = true
 		self:queuecommand("Set")
 	end,
 	-- the left panel opened a playlist, closed one, or changed one (deleted chart, new rate, deleted playlist)
 	DisplaySinglePlaylistMessageCommand = function(self)
-		if not active or ownBroadcast or tabChanging then return end
+		if not active then return end
 		local apl = SONGMAN:GetActivePlaylist()
 		if apl and apl:GetName() ~= openName then
 			openName = apl:GetName()
@@ -464,7 +424,7 @@ local t = Def.ActorFrame {
 		end
 	end,
 	DisplayAllPlaylistsMessageCommand = function(self)
-		if not active or ownBroadcast or tabChanging then return end
+		if not active then return end
 		local name = openName
 		openName = nil
 		buildRows()
