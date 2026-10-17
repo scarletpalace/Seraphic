@@ -391,25 +391,25 @@ do
 			LoadFont("Common Normal") .. {
 				Name = "Rank",
 				InitCommand = function(self)
-					self:xy(616, y):halign(1):zoom(0.32):diffuse(color(seraphicLabelColor))
+					self:xy(618, y):halign(1):zoom(0.4):diffuse(color(seraphicLabelColor))
 				end
 			},
 			LoadFont("Common Normal") .. {
 				Name = "Name",
 				InitCommand = function(self)
-					self:xy(622, y):halign(0):zoom(0.34):maxwidth(110 / 0.34)
+					self:xy(624, y):halign(0):zoom(0.42):maxwidth(108 / 0.42)
 				end
 			},
 			LoadFont("Common Normal") .. {
 				Name = "SSR",
 				InitCommand = function(self)
-					self:xy(772, y):halign(1):zoom(0.32)
+					self:xy(774, y):halign(1):zoom(0.4)
 				end
 			},
 			LoadFont("Common Normal") .. {
 				Name = "Pct",
 				InitCommand = function(self)
-					self:xy(832, y):halign(1):zoom(0.34)
+					self:xy(832, y):halign(1):zoom(0.42)
 				end
 			}
 		}
@@ -942,7 +942,7 @@ local function scoreBoard(pn, position)
 				self:xy(LX + LW - 4, optionY)
 				self:zoom(0.32 * FZ)
 				self:halign(1)
-				self:maxwidth((LW - 44) / (0.32 * FZ))
+				self:maxwidth((LW - 64) / (0.32 * FZ))
 				self:diffuse(color(seraphicValueColor))
 			end,
 			BeginCommand = function(self)
@@ -1143,20 +1143,29 @@ local function scoreBoard(pn, position)
 				Name = "BG",
 				InitCommand = function(self)
 					self:xy(LX, judgeY0 + (judgmentIndex - 1) * judgeStep)
-					self:zoomto(LW, judgeStep - 1)
+					self:zoomto(LW, judgeStep - 3)
 					self:halign(0)
-					self:diffuse(color("#000000")):diffusealpha(judgmentIndex % 2 == 1 and 0.4 or 0.18)
+					self:diffuse(color("#000000")):diffusealpha(0.38)
 				end,
 			},
-			-- thin proportion strip along the bottom of the row
+			-- accent in the judgment colour on the left edge
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(LX, judgeY0 + (judgmentIndex - 1) * judgeStep)
+					self:zoomto(3, judgeStep - 3)
+					self:halign(0)
+					self:diffuse(byJudgment(judgmentName))
+				end,
+			},
+			-- faint fill behind the row showing this judgment's share of all taps
 			Def.Quad {
 				Name = "Fill",
 				InitCommand = function(self)
-					self:xy(LX, judgeY0 + (judgmentIndex - 1) * judgeStep + judgeStep / 2 - 2)
-					self:zoomto(0, 1)
+					self:xy(LX + 3, judgeY0 + (judgmentIndex - 1) * judgeStep)
+					self:zoomto(0, judgeStep - 3)
 					self:halign(0)
-					self:diffuse(byJudgment(judgmentName))
-					self:diffusealpha(0.45)
+					self:diffuseleftedge(byJudgment(judgmentName)):diffuserightedge(byJudgment(judgmentName))
+					self:diffusealpha(0.16)
 				end,
 				BeginCommand = function(self)
 					if aboutToForceWindowSettings then return end
@@ -1168,13 +1177,13 @@ local function scoreBoard(pn, position)
 				SetCommand = function(self)
 					self:finishtweening()
 					self:bounceend(0.2)
-					self:zoomx(LW * self:GetParent().jcount / totalTaps)
+					self:zoomx((LW - 3) * self:GetParent().jcount / totalTaps)
 				end,
 			},
 			LoadFont("Common Large") .. {
 				Name = "Name",
 				InitCommand = function(self)
-					self:xy(LX + 6, judgeY0 + (judgmentIndex - 1) * judgeStep)
+					self:xy(LX + 9, judgeY0 + (judgmentIndex - 1) * judgeStep)
 					self:zoom(0.2 * FZ)
 					self:halign(0)
 					self:maxwidth(70 / (0.21 * FZ))
