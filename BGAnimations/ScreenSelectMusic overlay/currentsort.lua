@@ -34,8 +34,8 @@ local translated_info = {
 	Sort = THEME:GetString("SortOrder", "SortWord")
 }
 
--- sort selector between the clock and the pack box: "Sort: Group". Clicking it drops down a table of every sort
--- (two columns); click one to switch to it, click the box again or anywhere else to close the table.
+-- sort selector between the clock and the pack box: < Sort: Group >
+-- left click or ">": next sort, right click or "<": previous one.
 -- Group keeps the packs; the other sorts regroup every song (by title letter, MSD range, BPM range, ...).
 local sortList = {
 	"SortOrder_Group", "SortOrder_Title", "SortOrder_Artist", "SortOrder_Author", "SortOrder_Genre",
@@ -45,30 +45,24 @@ local sortList = {
 }
 local selW, selH = 210, 15
 local selX, selY = boxX + (boxW - selW) / 2, 31
--- the table: under the selector, as wide as the pack box, drawn over everything (high z wins the clicks)
-local cols, cellH = 2, 15
-local rowsN = math.ceil(#sortList / cols)
-local tblX, tblY, tblW = boxX, selY + selH + 2, boxW
-local cellW = tblW / cols
-local tblZ = 20
-local dropdown -- the table's ActorFrame
 
-local function setOpen(open)
-	if dropdown then
-		dropdown:visible(open)
-		dropdown:playcommand("Refresh")
-	end
-end
-
-local function chooseSort(so)
-	setOpen(false)
-	if so == GAMESTATE:GetSortOrder() then return end
+local function stepSort(dir)
 	local top = SCREENMAN:GetTopScreen()
 	local w = top and top.GetMusicWheel and top:GetMusicWheel()
-	if not w then return end
-	local ok, changed = pcall(function() return w:ChangeSort(so) end)
-	if ok and changed then
-		SOUND:PlayOnce(THEME:GetPathS("MusicWheel", "change"))
+	if not w or not w:IsSettled() then return end
+	local cur = GAMESTATE:GetSortOrder()
+	local i = 1
+	for k, v in ipairs(sortList) do
+		if v == cur then i = k break end
+	end
+	-- skip sorts this build does not have
+	for _ = 1, #sortList do
+		i = ((i - 1 + dir) % #sortList) + 1
+		local ok, changed = pcall(function() return w:ChangeSort(sortList[i]) end)
+		if ok and changed then
+			SOUND:PlayOnce(THEME:GetPathS("MusicWheel", "change"))
+			return
+		end
 	end
 end
 
@@ -98,19 +92,16 @@ t[#t + 1] = Def.ActorFrame {
 			self:queuecommand("Set")
 		end
 	},
-	-- small "v" on the right: this box opens a list
-	LoadFont("Common Normal") .. {
-		InitCommand = function(self)
-			self:xy(selW - 12, selH / 2):zoom(0.34):settext("v"):diffuse(color(seraphicLabelColor))
-		end
-	},
+	-- whole box: click to step through the sorts
 	UIElements.QuadButton(1, 1) .. {
 		InitCommand = function(self)
 			self:halign(0):valign(0):zoomto(selW, selH):diffusealpha(0)
 		end,
 		MouseDownCommand = function(self, params)
 			if params.event == "DeviceButton_left mouse button" then
-				setOpen(not dropdown:GetVisible())
+				stepSort(1)
+			elseif params.event == "DeviceButton_right mouse button" then
+				stepSort(-1)
 			end
 		end,
 		MouseOverCommand = function(self)
@@ -121,102 +112,16 @@ t[#t + 1] = Def.ActorFrame {
 		end
 	}
 }
-
-local tbl = Def.ActorFrame {
-	InitCommand = function(self)
-		dropdown = self
-		self:visible(false)
-	end,
-	-- leaving the screen or switching tabs closes it
-	OffCommand = function(self) self:visible(false) end,
-	TabChangedMessageCommand = function(self) self:visible(false) end,
-	SortOrderChangedMessageCommand = function(self) self:playcommand("Refresh") end,
-	-- clicks anywhere outside the table close it (and do not reach the wheel under it)
-	UIElements.QuadButton(tblZ - 1, 1) .. {
+for _, side in ipairs({{"<", 10, -1}, {">", selW - 10, 1}}) do
+	t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(0, 0):halign(0):valign(0):zoomto(SCREEN_WIDTH, SCREEN_HEIGHT):diffusealpha(0)
+			self:xy(selX + side[2], selY + selH / 2):zoom(0.4):settext(side[1]):diffuse(color(seraphicLabelColor))
 		end,
 		MouseDownCommand = function(self, params)
-			setOpen(false)
-		end
-	},
-	-- panel: dark glass with the theme's thin silver rim
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(tblX, tblY):halign(0):valign(0):zoomto(tblW, rowsN * cellH + 6)
-			self:diffuse(color("#08080b")):diffusealpha(0.94)
-		end
-	},
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(tblX, tblY):halign(0):valign(0):zoomto(tblW, 1):diffuse(color(seraphicLabelColor)):diffusealpha(0.6)
-		end
-	},
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(tblX, tblY + rowsN * cellH + 6):halign(0):valign(1):zoomto(tblW, 1)
-			self:diffuse(color(seraphicLabelColor)):diffusealpha(0.6)
-		end
-	},
-	-- column divider
-	Def.Quad {
-		InitCommand = function(self)
-			self:xy(tblX + cellW, tblY + 4):halign(0.5):valign(0):zoomto(1, rowsN * cellH - 2)
-			self:diffuse(color(seraphicLabelColor)):diffusealpha(0.25)
-		end
-	}
-}
-for i, so in ipairs(sortList) do
-	local col = math.floor((i - 1) / rowsN)
-	local row = (i - 1) % rowsN
-	local x, y = tblX + col * cellW, tblY + 3 + row * cellH
-	tbl[#tbl + 1] = Def.ActorFrame {
-		InitCommand = function(self)
-			self:xy(x, y)
+			if params.event == "DeviceButton_left mouse button" then stepSort(side[3]) end
 		end,
-		-- current sort: red wash like the selected wheel row
-		Def.Quad {
-			Name = "Cur",
-			InitCommand = function(self)
-				self:xy(2, 0):halign(0):valign(0):zoomto(cellW - 4, cellH)
-				self:diffuseleftedge(color("#e0283c55")):diffuserightedge(color("#e0283c10"))
-			end,
-			RefreshCommand = function(self)
-				self:visible(GAMESTATE:GetSortOrder() == so)
-			end
-		},
-		Def.Quad {
-			Name = "Hover",
-			InitCommand = function(self)
-				self:xy(2, 0):halign(0):valign(0):zoomto(cellW - 4, cellH):diffuse(color("#ffffff")):diffusealpha(0)
-			end
-		},
-		LoadFont("Common Normal") .. {
-			Name = "Text",
-			InitCommand = function(self)
-				self:xy(10, cellH / 2):halign(0):zoom(0.34):maxwidth((cellW - 16) / 0.34)
-				self:settext(sortTable[so] or so:gsub("SortOrder_", ""))
-			end,
-			RefreshCommand = function(self)
-				self:diffuse(color(GAMESTATE:GetSortOrder() == so and seraphicValueColor or seraphicLabelColor))
-			end
-		},
-		UIElements.QuadButton(tblZ, 1) .. {
-			InitCommand = function(self)
-				self:halign(0):valign(0):zoomto(cellW, cellH):diffusealpha(0)
-			end,
-			MouseDownCommand = function(self, params)
-				if params.event == "DeviceButton_left mouse button" and dropdown:GetVisible() then
-					chooseSort(so)
-				end
-			end,
-			MouseOverCommand = function(self)
-				self:GetParent():GetChild("Hover"):diffusealpha(0.08)
-			end,
-			MouseOutCommand = function(self)
-				self:GetParent():GetChild("Hover"):diffusealpha(0)
-			end
-		}
+		MouseOverCommand = function(self) self:diffuse(color(seraphicValueColor)) end,
+		MouseOutCommand = function(self) self:diffuse(color(seraphicLabelColor)) end
 	}
 end
 
@@ -315,9 +220,6 @@ t[#t + 1] = UIElements.TextToolTip(1, 1, "Seraphic Title") .. {
 }
 
 t[#t + 1] = StandardDecorationFromFileOptional("BPMDisplay", "BPMDisplay")
-
--- sort table last, so it sits over the pack box
-t[#t + 1] = tbl
 t[#t + 1] = StandardDecorationFromFileOptional("BPMLabel", "BPMLabel")
 
 return t
