@@ -34,6 +34,97 @@ local translated_info = {
 	Sort = THEME:GetString("SortOrder", "SortWord")
 }
 
+-- sort selector between the clock and the pack box: < Sort: Group >
+-- left click or ">": next sort, right click or "<": previous one.
+-- Group keeps the packs; the other sorts regroup every song (by title letter, MSD range, BPM range, ...).
+local sortList = {
+	"SortOrder_Group", "SortOrder_Title", "SortOrder_Artist", "SortOrder_Author", "SortOrder_Genre",
+	"SortOrder_BPM", "SortOrder_Length", "SortOrder_DateAdded", "SortOrder_TopGrades", "SortOrder_Favorites",
+	"SortOrder_Overall", "SortOrder_Stream", "SortOrder_Jumpstream", "SortOrder_Handstream", "SortOrder_Stamina",
+	"SortOrder_JackSpeed", "SortOrder_Chordjack", "SortOrder_Technical", "SortOrder_Ungrouped"
+}
+local selW, selH = 210, 15
+local selX, selY = boxX + (boxW - selW) / 2, 31
+
+local function stepSort(dir)
+	local top = SCREENMAN:GetTopScreen()
+	local w = top and top.GetMusicWheel and top:GetMusicWheel()
+	if not w or not w:IsSettled() then return end
+	local cur = GAMESTATE:GetSortOrder()
+	local i = 1
+	for k, v in ipairs(sortList) do
+		if v == cur then i = k break end
+	end
+	-- skip sorts this build does not have
+	for _ = 1, #sortList do
+		i = ((i - 1 + dir) % #sortList) + 1
+		local ok, changed = pcall(function() return w:ChangeSort(sortList[i]) end)
+		if ok and changed then
+			SOUND:PlayOnce(THEME:GetPathS("MusicWheel", "change"))
+			return
+		end
+	end
+end
+
+t[#t + 1] = Def.ActorFrame {
+	InitCommand = function(self)
+		self:xy(selX, selY)
+	end,
+	Def.Sprite {
+		Texture = THEME:GetPathG("", "seraphic_packbar"),
+		InitCommand = function(self)
+			self:halign(0):valign(0):zoomto(selW, selH):diffusealpha(0.85)
+		end
+	},
+	LoadFont("Common Normal") .. {
+		Name = "Text",
+		InitCommand = function(self)
+			self:xy(selW / 2, selH / 2):zoom(0.34):maxwidth((selW - 40) / 0.34):diffuse(color(seraphicValueColor))
+		end,
+		BeginCommand = function(self)
+			self:playcommand("Set")
+		end,
+		SetCommand = function(self)
+			local sort = GAMESTATE:GetSortOrder()
+			self:settextf("%s: %s", translated_info["Sort"], sort and sortTable[sort] or "")
+		end,
+		SortOrderChangedMessageCommand = function(self)
+			self:queuecommand("Set")
+		end
+	},
+	-- whole box: click to step through the sorts
+	UIElements.QuadButton(1, 1) .. {
+		InitCommand = function(self)
+			self:halign(0):valign(0):zoomto(selW, selH):diffusealpha(0)
+		end,
+		MouseDownCommand = function(self, params)
+			if params.event == "DeviceButton_left mouse button" then
+				stepSort(1)
+			elseif params.event == "DeviceButton_right mouse button" then
+				stepSort(-1)
+			end
+		end,
+		MouseOverCommand = function(self)
+			self:GetParent():GetChild("Text"):diffusealpha(hoverAlpha)
+		end,
+		MouseOutCommand = function(self)
+			self:GetParent():GetChild("Text"):diffusealpha(1)
+		end
+	}
+}
+for _, side in ipairs({{"<", 10, -1}, {">", selW - 10, 1}}) do
+	t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Normal") .. {
+		InitCommand = function(self)
+			self:xy(selX + side[2], selY + selH / 2):zoom(0.4):settext(side[1]):diffuse(color(seraphicLabelColor))
+		end,
+		MouseDownCommand = function(self, params)
+			if params.event == "DeviceButton_left mouse button" then stepSort(side[3]) end
+		end,
+		MouseOverCommand = function(self) self:diffuse(color(seraphicValueColor)) end,
+		MouseOutCommand = function(self) self:diffuse(color(seraphicLabelColor)) end
+	}
+end
+
 -- LR2-style beveled bar (cropped from the skin's select sheet)
 t[#t + 1] = Def.Sprite {
 	Texture = THEME:GetPathG("", "seraphic_packbar"),
@@ -62,8 +153,16 @@ t[#t + 1] = UIElements.TextToolTip(1, 1, "Seraphic Title") .. {
 			group_rand = song:GetGroupName()
 			self:settext(group_rand)
 		else
-			self:settextf("%s: %s", translated_info["Sort"], sortTable[sort])
+			-- other sorts: the group the wheel is in (letter, MSD range, ...); the sort itself is shown above
 			group_rand = ""
+			local top = SCREENMAN:GetTopScreen()
+			local w = top and top.GetMusicWheel and top:GetMusicWheel()
+			local section = w and w:GetSelectedSection() or ""
+			if section ~= "" then
+				self:settext(section)
+			else
+				self:settextf("%s: %s", translated_info["Sort"], sortTable[sort])
+			end
 		end
 	end,
 	SortOrderChangedMessageCommand = function(self)

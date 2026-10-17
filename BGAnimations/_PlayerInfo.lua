@@ -748,8 +748,9 @@ t[#t + 1] = Def.ActorFrame {
 }
 
 -- Seraphic (select screen): date / time box in the top-right strip, set in the second (artist) font
-local dateBoxW, dateBoxH = 290, 29
-local dateBoxX, dateBoxY = SCREEN_WIDTH - 60 - dateBoxW, 10
+-- (a little shorter than the pack box below, to leave room for the sort selector between them: currentsort.lua)
+local dateBoxW, dateBoxH = 290, 24
+local dateBoxX, dateBoxY = SCREEN_WIDTH - 60 - dateBoxW, 4
 
 t[#t + 1] = Def.ActorFrame {
 	InitCommand = function(self)
@@ -766,7 +767,7 @@ t[#t + 1] = Def.ActorFrame {
 		Name = "CurrentTime",
 		InitCommand = function(self)
 			if onSelect then
-				self:xy(dateBoxX + dateBoxW / 2, dateBoxY + dateBoxH / 2):halign(0.5):valign(0.5):zoom(0.46):maxwidth((dateBoxW - 24) / 0.46)
+				self:xy(dateBoxX + dateBoxW / 2, dateBoxY + dateBoxH / 2):halign(0.5):valign(0.5):zoom(0.4):maxwidth((dateBoxW - 24) / 0.4)
 			else
 				self:xy(SCREEN_WIDTH - 38, SCREEN_BOTTOM - 3.5):halign(1):valign(1):zoom(0.3)
 			end
