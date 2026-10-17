@@ -205,7 +205,7 @@ if onSelect then
 			Texture = THEME:GetPathG("", "seraphic_crystal"),
 			InitCommand = function(self)
 				self:zoomto(19, 20)
-				self:diffuseshift():effectcolor1(color("#4da3ff")):effectcolor2(color("#d6ebff")):effectperiod(1.3)
+				self:diffuseshift():effectcolor1(color("#e0283c")):effectcolor2(color("#ffd3d8")):effectperiod(1.3)
 			end
 		}
 	}
