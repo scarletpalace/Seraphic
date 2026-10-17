@@ -186,7 +186,8 @@ t[#t + 1] = Def.ActorFrame {
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			self:y(-9):rotationz(45):zoomto(15, 15):diffuse(color("#9c1428")):diffusealpha(0.9)
+			-- centred on the screen's top edge, so only its lower half shows as a small point above the letters
+			self:y(-13):rotationz(45):zoomto(12, 12):diffuse(color("#9c1428")):diffusealpha(0.9)
 		end
 	},
 	Def.Quad {
