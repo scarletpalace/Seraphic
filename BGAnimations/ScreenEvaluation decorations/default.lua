@@ -230,8 +230,9 @@ do
 	local lbScrolled = false -- the list centres on your score until you scroll it yourself
 	local playedRate = 1
 	pcall(function() playedRate = score:GetMusicRate() end)
+	local allRates = false -- click the rank window to switch between the played rate and all rates
 
-	-- this chart's online scores at the played rate, best first, plus the index of your best one
+	-- this chart's online scores at the played rate (or every rate), best first, plus the index of your best one
 	local function rateBoard()
 		if not DLMAN:IsLoggedIn() then return nil end
 		local steps = GAMESTATE:GetCurrentSteps()
@@ -241,7 +242,7 @@ do
 		local list, mine = {}, nil
 		local me = DLMAN:GetUsername()
 		for _, hs in ipairs(lb) do
-			if string.format("%.2f", hs:GetMusicRate()) == want then
+			if allRates or string.format("%.2f", hs:GetMusicRate()) == want then
 				list[#list + 1] = hs
 				if not mine and hs:GetDisplayName() == me then mine = #list end
 			end
@@ -284,11 +285,47 @@ do
 		LoginMessageCommand = function(self)
 			self:queuecommand("Request")
 		end,
+		-- a click on the window switches CURRENT RATE <-> ALL RATES (rank and leaderboard together)
+		OnCommand = function(self)
+			local hit = self:GetChild("Hit")
+			self:SetUpdateFunction(function(f)
+				local over = isOver(hit)
+				if over ~= f.seraOver then
+					f.seraOver = over
+					f:GetChild("Mode"):diffuse(color(over and seraphicValueColor or seraphicLabelColor))
+				end
+			end)
+			SCREENMAN:GetTopScreen():AddInputCallback(function(event)
+				if event.type == "InputEventType_FirstPress" and event.DeviceInput.button == "DeviceButton_left mouse button"
+					and isOver(hit) then
+					allRates = not allRates
+					MESSAGEMAN:Broadcast("SeraLeaderboardMode", {all = allRates})
+					self:playcommand("Set")
+				end
+				return false
+			end)
+		end,
+		Def.Quad {
+			Name = "Hit",
+			InitCommand = function(self)
+				self:xy(-8, -16):halign(0):valign(0):zoomto(262, 32):diffusealpha(0)
+			end
+		},
 		seraphicBullet(-3, 0),
 		LoadFont("Common Normal") .. {
+			Name = "Mode",
 			InitCommand = function(self)
-				self:x(4):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor))
-				self:settext("ONLINE RANK  " .. getRateString(notShit.round(playedRate, 3)))
+				self:x(4):halign(0):zoom(0.34):diffuse(color(seraphicLabelColor)):playcommand("Show")
+			end,
+			ShowCommand = function(self)
+				if allRates then
+					self:settext("ALL RATES")
+				else
+					self:settext("CURRENT RATE  " .. getRateString(notShit.round(playedRate, 3)))
+				end
+			end,
+			SeraLeaderboardModeMessageCommand = function(self)
+				self:playcommand("Show")
 			end
 		},
 		LoadFont("Common Normal") .. {
@@ -333,6 +370,9 @@ do
 		end,
 		SeraLeaderboardDataMessageCommand = function(self)
 			self:playcommand("Refresh")
+		end,
+		SeraLeaderboardModeMessageCommand = function(self)
+			lbScrolled = false
 		end,
 		-- the window grew or folded: rows are added once it has opened, removed right away when it folds
 		SeraRightPanelMessageCommand = function(self, params)
@@ -408,6 +448,9 @@ do
 				self:GetChild("Mine"):visible(mineRow)
 				self:GetChild("Rank"):settextf("%d", i)
 				self:GetChild("Name"):settext(hs:GetDisplayName()):diffuse(color(mineRow and "#ffffff" or seraphicValueColor))
+				self:GetChild("Name"):maxwidth((allRates and 82 or 108) / 0.42)
+				local okR, r = pcall(function() return hs:GetMusicRate() end)
+				self:GetChild("Rate"):settext(allRates and okR and getRateString(notShit.round(r, 3)) or "")
 				local okS, ssr = pcall(function() return hs:GetSkillsetSSR("Overall") end)
 				if okS and ssr then
 					self:GetChild("SSR"):settextf("%5.2f", ssr):diffuse(byMSD(ssr))
@@ -439,6 +482,12 @@ do
 				Name = "Name",
 				InitCommand = function(self)
 					self:xy(624, y):halign(0):zoom(0.42):maxwidth(108 / 0.42)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				Name = "Rate",
+				InitCommand = function(self)
+					self:xy(734, y):halign(1):zoom(0.34):diffuse(color("#e8b8c2"))
 				end
 			},
 			LoadFont("Common Normal") .. {
