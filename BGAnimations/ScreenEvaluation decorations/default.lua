@@ -52,7 +52,7 @@ local frameWidth = 256
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
--- (the column sits at the bottom of the screen, under the song data window)
+-- (the column sits at the bottom of the screen, under the song data block in the same window)
 local optionY = 176
 local rowY = {clear = 192, level = 208, score = 226, scoreSub = 241, miss = 254, rating = 270}
 local judgeHeadY, judgeY0, judgeStep = 286, 298, 14
@@ -1874,9 +1874,9 @@ t[#t + 1] = Def.Quad {
 }
 
 -- right column headers + panel behind the offset plot
-t[#t + 1] = seraHeader(18.4, 94, 246, "SONG DATA")
--- judge details fill the bottom of the middle, between the left and right columns
-t[#t + 1] = seraHeader(284, 330, 286, "JUDGE DETAILS")
+t[#t + 1] = seraHeader(18.4, 136, 246, "SONG DATA")
+-- judge details fill the bottom of the middle, joined to the left and right windows
+t[#t + 1] = seraHeader(280, 334, 294, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
 
 do
@@ -1902,16 +1902,16 @@ do
 		end)
 		return out
 	end
-	-- Seraphic: song data window above the left column: title, artist, then BPM / DURATION / NOTES
+	-- Seraphic: compact song data block at the top of the left window: title, artist, then BPM / DURATION / NOTES
 	t[#t + 1] = LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(18.4, 110):halign(0):valign(0.5):zoom(0.55):maxwidth(246 / 0.55):settext("")
+			self:xy(18.4, 146):halign(0):valign(0.5):zoom(0.46):maxwidth(246 / 0.46):settext("")
 		end,
 		OnCommand = function(self) self:settext(getVals()[1]) end
 	}
 	t[#t + 1] = LoadFont("Seraphic Artist") .. {
 		InitCommand = function(self)
-			self:xy(18.4, 126):halign(0):valign(0.5):zoom(0.44):maxwidth(246 / 0.44):diffuse(color("#bdbdbd")):settext("")
+			self:xy(18.4, 158):halign(0):valign(0.5):zoom(0.36):maxwidth(246 / 0.36):diffuse(color("#bdbdbd")):settext("")
 		end,
 		OnCommand = function(self) self:settext(getVals()[2]) end
 	}
@@ -1921,7 +1921,7 @@ do
 		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 143):halign(0):valign(0.5):zoom(0.29):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 167):halign(0):valign(0.5):zoom(0.26):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
 		}
@@ -1929,7 +1929,7 @@ do
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 143):halign(0):valign(0.5):zoom(0.38):maxwidth(math.max(20, 78 - labelW - gap) / 0.38):settext("")
+				self:xy(x0 + labelW + gap, 167):halign(0):valign(0.5):zoom(0.32):maxwidth(math.max(20, 78 - labelW - gap) / 0.32):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
 		}

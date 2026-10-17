@@ -56,16 +56,15 @@ local function seraWindow(x, y, w, h)
 	t[#t + 1] = seraphicSoftEdge(x, y, w, h)
 end
 -- each window is only as tall as what it holds
-seraWindow(10, 162, 262, 294) -- options, compare rows, judgments, stats (bottom left)
-seraWindow(10, 72, 262, 84) -- song data, right above it
+seraWindow(10, 116, 262, 340) -- song data, options, compare rows, judgments, stats (bottom left)
 seraWindow(582, 314, 262, 142) -- score history
--- judge details window filling the bottom of the middle, between the side columns
-seraWindow(278, 310, 298, 146)
+-- judge details window joined to both side windows along the bottom of the middle
+seraWindow(272, 314, 310, 142)
 
 -- banner at the top of the middle, under the RESULT title:
 -- same 3.2:1 shape as the song select banner
 if BannersEnabled() then
-	local bw = 280
+	local bw = 310 -- the full width of the middle
 	local bx, by = SCREEN_CENTER_X - bw / 2, 30
 	local bh = bw / 3.2
 	t[#t + 1] = Def.Sprite {
