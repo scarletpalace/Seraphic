@@ -100,6 +100,15 @@ local tabZoom = 0.36 -- Common Normal, skillset tabs
 -- short skillset tab names (Overall .. Technical); all tabs share one zoom that fits the widest name
 local tabNames = {"OVERALL", "STREAM", "JS", "HS", "STAMINA", "JACK", "CJ", "TECH"}
 local tabTextW = {}
+-- header toggles (Session/Percent/Recent/Local/Online) share one zoom that fits the widest label
+local hdrTextW = {}
+local function hdrFit(self)
+	local widest = 1
+	for _, w in pairs(hdrTextW) do
+		if w > widest then widest = w end
+	end
+	self:zoom(math.min(labelZoom, (toggleW - 8) / widest))
+end
 local crimson = "#9c1428"
 -- header toggle / tab look: selected = crimson tint + light text, otherwise faint dark + silver text
 local function styleToggleQuad(self, selected)
@@ -704,8 +713,13 @@ local function recentButton()
 		},
 		LoadFont("Common Large") .. {
 			Name = "RecentButtonTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, recentactive)
 			end,
 			BeginCommand = function(self)
@@ -765,8 +779,13 @@ local function percentButton()
 		},
 		LoadFont("Common Large") .. {
 			Name = "PercentButtonTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, percentactive)
 			end,
 			BeginCommand = function(self)
@@ -831,8 +850,13 @@ t[#t + 1] = Def.ActorFrame {
 		},
 		LoadFont("Common Large") ..{
 			Name = "LocalTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, not showOnline)
 			end,
 			BeginCommand = function(self)
@@ -883,8 +907,13 @@ t[#t + 1] = Def.ActorFrame {
 		},
 		LoadFont("Common Large") .. {
 			Name = "OnlineTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, showOnline)
 			end,
 			BeginCommand = function(self)
@@ -1036,8 +1065,13 @@ local function sessionButton()
 		},
 		LoadFont("Common Large") .. {
 			Name = "SessionButtonTxt",
+			OnCommand = function(self)
+				hdrTextW[self:GetName()] = self:GetWidth()
+				self:queuecommand("HdrFit")
+			end,
+			HdrFitCommand = hdrFit,
 			InitCommand = function(self)
-				self:zoom(labelZoom):maxwidth((toggleW - 6) / labelZoom)
+				self:zoom(labelZoom)
 				styleToggleText(self, sessionactive)
 				self:settext("SESSION")
 			end,
