@@ -2173,7 +2173,7 @@ t[#t + 1] = Def.Quad {
 }
 
 -- right column headers + panel behind the offset plot
-t[#t + 1] = seraHeader(18.4, 152, 246, "SONG DATA")
+t[#t + 1] = seraHeader(18.4, 46, 246, "SONG DATA")
 -- judge details fill the bottom of the middle, joined to the left and right windows
 t[#t + 1] = seraHeader(280, 334, 294, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
@@ -2201,15 +2201,15 @@ do
 		end)
 		return out
 	end
-	-- Seraphic: compact song data line at the top of the left window: BPM / DURATION / NOTES
-	-- (title and artist sit under the banner)
+	-- Seraphic: song data at the top of the left window: BPM / DURATION / NOTES, then the chart's skillset
+	-- difficulties at the played rate (title and artist sit under the banner)
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
 	for i, st in ipairs(stats) do
 		local x0 = 18.4 + (i - 1) * 82
 		local labelW = 0
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 163):halign(0):valign(0.5):zoom(0.26):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 57):halign(0):valign(0.5):zoom(0.26):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
 		}
@@ -2217,9 +2217,69 @@ do
 		t[#t + 1] = LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 163):halign(0):valign(0.5):zoom(0.32):maxwidth(math.max(20, 78 - labelW - gap) / 0.32):settext("")
+				self:xy(x0 + labelW + gap, 57):halign(0):valign(0.5):zoom(0.32):maxwidth(math.max(20, 78 - labelW - gap) / 0.32):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
+		}
+	end
+
+	-- skillset rows: name, a bar scaled to the hardest skillset, and the MSD in its colour
+	local skills = {"Stream", "Jumpstream", "Handstream", "Stamina", "JackSpeed", "Chordjack", "Technical"}
+	local function skillValues()
+		local vals = {}
+		pcall(function()
+			local steps = GAMESTATE:GetCurrentSteps()
+			local rate = getCurRateValue() or 1
+			pcall(function() rate = score:GetMusicRate() end)
+			rate = notShit.round(rate, 3)
+			for i = 1, #skills do
+				vals[i] = steps:GetMSD(rate, i + 1)
+			end
+		end)
+		local top = 0
+		for i = 1, #skills do
+			top = math.max(top, vals[i] or 0)
+		end
+		return vals, top
+	end
+	local barX, barW = 92, 128
+	for i, name in ipairs(skills) do
+		local y = 72 + (i - 1) * 13
+		t[#t + 1] = Def.ActorFrame {
+			OnCommand = function(self)
+				local vals, top = skillValues()
+				local v = vals[i] or 0
+				local c = byMSD(v)
+				self:GetChild("Value"):settextf("%5.2f", v):diffuse(c)
+				self:GetChild("Bar"):diffuse(c):diffusealpha(0.7):zoomx(0):decelerate(0.6):zoomx(top > 0 and barW * v / top or 0)
+			end,
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(LX, y):halign(0):zoomto(LW, 12):diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.18)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				InitCommand = function(self)
+					self:xy(LX + 4, y):halign(0):zoom(0.3):diffuse(color(seraphicLabelColor)):settext(name:upper())
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(barX, y):halign(0):zoomto(barW, 3):diffuse(color("#ffffff")):diffusealpha(0.08)
+				end
+			},
+			Def.Quad {
+				Name = "Bar",
+				InitCommand = function(self)
+					self:xy(barX, y):halign(0):zoomto(0, 3)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				Name = "Value",
+				InitCommand = function(self)
+					self:xy(LX + LW - 4, y):halign(1):zoom(0.34)
+				end
+			}
 		}
 	end
 end
