@@ -54,12 +54,14 @@ local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
 -- (the RESULT tab of the left window, which uses the full window height; FZ scales its text up)
 local FZ = 1.25
-local optionY = 72
-local rowY = {clear = 92, level = 114, score = 138, scoreSub = 156, miss = 172, rating = 194}
-local rowH, scoreRowH = 20, 24
-local judgeHeadY, judgeY0, judgeStep = 214, 230, 20
-local comboY, ratioY = 348, 362
-local statsY0, statsStep = 384, 12
+local statY = 58 -- BPM / DURATION / NOTES cells
+local optionY = 79
+-- rating first, then the "best | this play" rows under their column heads
+local rowY = {rating = 96, head = 110, clear = 124, level = 144, score = 165, scoreBand = 171, scoreSub = 180, miss = 198}
+local rowH, scoreRowH, scoreBandH = 18, 24, 32
+local judgeHeadY, judgeY0, judgeStep = 219, 234, 20
+local comboY, ratioY = 352, 366
+local statsY0, statsStep = 388, 12
 local fastColor, slowColor = color("#7cc4ff"), color("#ffa060")
 
 -- the left window has two tabs (RESULT and CHART); actors of the RESULT tab hide while CHART is shown
@@ -199,7 +201,14 @@ t[#t + 1] = Def.ActorFrame {
 -- Seraphic: online leaderboard at the rate that was played, top right: this score's place in a small window,
 -- and under it a scrollable list of the players around it
 do
-	local lbRows, lbStep, lbY0 = 15, 14, 90
+	local lbMax, lbStep, lbY0 = 23, 14, 90 -- lbMax rows fit when the leaderboard is grown
+	-- rows that fit in the window for a fold state of the right column (see seraResultPanels)
+	local function lbFits(state)
+		local g = seraResultPanels(state)
+		return math.max(0, math.min(lbMax, math.floor((g.lbTop + g.lbH - 8 - (lbY0 - lbStep / 2)) / lbStep)))
+	end
+	local lbRows = lbFits(seraResultPanelState)
+	local lbPending = lbRows -- row count to switch to once the window has moved
 	local lbOffset = 0
 	local lbList = {}
 	local lbScrolled = false -- the list centres on your score until you scroll it yourself
@@ -309,6 +318,20 @@ do
 		SeraLeaderboardDataMessageCommand = function(self)
 			self:playcommand("Refresh")
 		end,
+		-- the window grew or folded: rows are added once it has opened, removed right away when it folds
+		SeraRightPanelMessageCommand = function(self, params)
+			lbPending = lbFits(params.state)
+			self:stoptweening()
+			if lbPending > lbRows then
+				self:sleep(0.2):queuecommand("Fold")
+			else
+				self:playcommand("Fold")
+			end
+		end,
+		FoldCommand = function(self)
+			lbRows = lbPending
+			self:playcommand("Refresh")
+		end,
 		-- works out the visible slice, then the rows redraw themselves with Set
 		RefreshCommand = function(self)
 			local ok, list, mine = pcall(rateBoard)
@@ -317,7 +340,9 @@ do
 			if not lbScrolled and mine then lbOffset = mine - math.ceil(lbRows / 2) end
 			lbOffset = math.max(0, math.min(lbOffset, #list - lbRows))
 			lbList = list
+			self:GetChild("Hover"):zoomto(254, math.max(1, lbRows) * lbStep)
 			local msg = self:GetChild("Empty")
+			msg:visible(lbRows > 3)
 			if not DLMAN:IsLoggedIn() then
 				msg:settext("Log in to see the leaderboard")
 			elseif #list == 0 then
@@ -325,8 +350,8 @@ do
 			else
 				msg:settext("")
 			end
-			self:GetChild("Scroll"):visible(#list > lbRows)
-			if #list > lbRows then
+			self:GetChild("Scroll"):visible(lbRows > 0 and #list > lbRows)
+			if lbRows > 0 and #list > lbRows then
 				local trackH = lbRows * lbStep
 				local h = math.max(8, trackH * lbRows / #list)
 				self:GetChild("Scroll"):zoomy(h):y(lbY0 - lbStep / 2 + (trackH - h) * lbOffset / (#list - lbRows))
@@ -354,13 +379,13 @@ do
 			end
 		}
 	}
-	for r = 1, lbRows do
+	for r = 1, lbMax do
 		local y = lbY0 + (r - 1) * lbStep
 		board[#board + 1] = Def.ActorFrame {
 			Name = "Row" .. r,
 			SetCommand = function(self)
 				local i = lbOffset + r
-				local hs = lbList[i]
+				local hs = r <= lbRows and lbList[i] or nil
 				self:visible(hs ~= nil)
 				if not hs then return end
 				local mineRow = hs:GetDisplayName() == DLMAN:GetUsername()
@@ -928,7 +953,7 @@ local function scoreBoard(pn, position)
 		-- play options along the top of the left column
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(LX, optionY):halign(0):zoomto(LW, 14):diffuse(color("#000000")):diffusealpha(0.4)
+				self:xy(LX, optionY):halign(0):zoomto(LW, 13):diffuse(color("#000000")):diffusealpha(0.4)
 			end
 		},
 		LoadFont("Common Normal") .. {
@@ -1281,7 +1306,8 @@ local function scoreBoard(pn, position)
 		return Def.ActorFrame {
 			Def.Quad {
 				InitCommand = function(self)
-					self:xy(LX, y):halign(0):zoomto(LW, h):diffuse(color("#000000")):diffusealpha(0.4)
+					self:xy(LX, y):halign(0):zoomto(LW, h)
+					self:diffuseleftedge(color("#000000A0")):diffuserightedge(color("#00000050"))
 				end
 			},
 			Def.Quad {
@@ -1290,13 +1316,17 @@ local function scoreBoard(pn, position)
 					self:diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff06"))
 				end
 			},
-			seraphicBullet(LX + 5, y)
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(LX, y):halign(0):zoomto(2, h - 4):diffuse(color("#9c1428"))
+				end
+			}
 		}
 	end
 	local function rowLabel(y, text)
 		return LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 12, y):halign(0):zoom(0.3 * FZ):maxwidth(64 / (0.3 * FZ))
+				self:xy(LX + 8, y):halign(0):zoom(0.3 * FZ):maxwidth(66 / (0.3 * FZ))
 				self:diffuse(color(seraphicLabelColor)):settext(text)
 			end
 		}
@@ -1354,20 +1384,38 @@ local function scoreBoard(pn, position)
 			self:queuecommand("Refresh")
 		end,
 
+		band(rowY.rating, rowH),
 		band(rowY.clear, rowH),
 		band(rowY.level, rowH),
-		band(rowY.score, scoreRowH),
+		band(rowY.scoreBand, scoreBandH),
 		band(rowY.miss, rowH),
-		band(rowY.rating, rowH),
+		rowLabel(rowY.rating, "MSD / SSR"),
 		rowLabel(rowY.clear, "CLEAR TYPE"),
 		rowLabel(rowY.level, "DJ LEVEL"),
 		rowLabel(rowY.score, "SCORE"),
 		rowLabel(rowY.miss, "MISS COUNT"),
-		rowLabel(rowY.rating, "RATING"),
+		rowSep(rowY.rating, rowH),
 		rowSep(rowY.clear, rowH),
 		rowSep(rowY.level, rowH),
 		rowSep(rowY.miss, rowH),
-		rowSep(rowY.rating, rowH),
+
+		-- column heads over the compare rows
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(PREVX, rowY.head):zoom(0.22 * FZ):diffuse(dimColor):settext("BEST")
+			end
+		},
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(NOWX, rowY.head):zoom(0.22 * FZ):diffuse(color(seraphicLabelColor)):settext("THIS PLAY")
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(PREVX - 38, rowY.head + 4):halign(0):zoomto(LX + LW - PREVX + 38, 1)
+				self:diffuseleftedge(color("#ffffff06")):diffuserightedge(color("#ffffff28"))
+			end
+		},
 
 		-- CLEAR TYPE: best | this play
 		LoadFont("Common Normal") .. {
@@ -1402,7 +1450,7 @@ local function scoreBoard(pn, position)
 			SetCommand = function(self)
 				local k = cmp.prevGrade and seraphicGradeIndex(cmp.prevGrade)
 				self:visible(k ~= nil)
-				if k then seraphicGradeFit(self, k, 0.5, 75):diffusealpha(0.65) end
+				if k then seraphicGradeFit(self, k, 0.46, 75):diffusealpha(0.65) end
 			end
 		},
 		LoadFont("Common Normal") .. {
@@ -1421,14 +1469,14 @@ local function scoreBoard(pn, position)
 			SetCommand = function(self)
 				local k = seraphicGradeIndex(cmp.grade)
 				self:visible(k ~= nil)
-				if k then seraphicGradeFit(self, k, 0.53, 80) end
+				if k then seraphicGradeFit(self, k, 0.49, 80) end
 			end
 		},
 
 		-- SCORE: this play is the wife percent text drawn by WifeDisplay; best and difference underneath
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 64, rowY.scoreSub):halign(1):zoom(0.3 * FZ):diffuse(dimColor)
+				self:xy(PREVX, rowY.scoreSub):zoom(0.3 * FZ):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				if cmp.prevPct then
@@ -2185,11 +2233,10 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = onResultTab(seraDivider(19.4, 81, 242.1))
-t[#t + 1] = onResultTab(seraDivider(19.4, 373, 242.1))
+t[#t + 1] = onResultTab(seraDivider(19.4, 377, 242.1))
 t[#t + 1] = onResultTab(Def.Quad {
 	InitCommand = function(self)
-		self:xy(131.4, 374.5):halign(0):valign(0):zoomto(1, 64):diffuse(color("#ffffff"))
+		self:xy(131.4, 378.5):halign(0):valign(0):zoomto(1, 64):diffuse(color("#ffffff"))
 		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
 })
@@ -2250,7 +2297,59 @@ do
 end
 -- judge details fill the bottom of the middle, joined to the left and right windows
 t[#t + 1] = seraHeader(280, 334, 294, "JUDGE DETAILS")
-t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
+-- the score history header moves with its window (it sits at 282 in the "mid" layout)
+t[#t + 1] = Def.ActorFrame {
+	InitCommand = function(self)
+		self:y(seraResultPanels(seraResultPanelState).shTop - 282)
+	end,
+	SeraRightPanelMessageCommand = function(self, params)
+		self:stoptweening():decelerate(0.2):y(seraResultPanels(params.state).shTop - 282)
+	end,
+	seraHeader(590, 302, 246, "SCORE HISTORY")
+}
+-- click the leaderboard (anywhere) or the score history header to grow that window and fold the other;
+-- clicking the grown one again evens them out
+t[#t + 1] = Def.ActorFrame {
+	Name = "RightPanelFold",
+	OnCommand = function(self)
+		self:playcommand("Place", {state = seraResultPanelState})
+		SCREENMAN:GetTopScreen():AddInputCallback(function(event)
+			if event.type ~= "InputEventType_FirstPress" or event.DeviceInput.button ~= "DeviceButton_left mouse button" then
+				return false
+			end
+			local s, new = seraResultPanelState, nil
+			if isOver(self:GetChild("LB")) then
+				new = s == "lb" and "mid" or "lb"
+			elseif isOver(self:GetChild("SH")) then
+				new = s == "sh" and "mid" or "sh"
+			end
+			if new then
+				seraResultPanelState = new
+				MESSAGEMAN:Broadcast("SeraRightPanel", {state = new})
+			end
+			return false
+		end)
+	end,
+	SeraRightPanelMessageCommand = function(self, params)
+		self:playcommand("Place", params)
+	end,
+	Def.Quad {
+		Name = "LB",
+		InitCommand = function(self) self:halign(0):valign(0):diffusealpha(0) end,
+		PlaceCommand = function(self, params)
+			local g = seraResultPanels(params.state)
+			self:xy(582, g.lbTop):zoomto(262, g.lbH)
+		end
+	},
+	Def.Quad {
+		Name = "SH",
+		InitCommand = function(self) self:halign(0):valign(0):diffusealpha(0) end,
+		PlaceCommand = function(self, params)
+			local g = seraResultPanels(params.state)
+			self:xy(582, g.shTop):zoomto(262, 26)
+		end
+	}
+}
 
 do
 	local rows = {"MUSIC TITLE", "ARTIST", "BPM", "DURATION", "NOTES"}
@@ -2278,22 +2377,42 @@ do
 	-- Seraphic: song data at the top of the left window: BPM / DURATION / NOTES, then the chart's skillset
 	-- difficulties at the played rate (title and artist sit under the banner)
 	local stats = {{"BPM", 3}, {"DURATION", 4}, {"NOTES", 5}}
+	local cellGap = 4
+	local cellW = (LW - cellGap * 2) / 3
 	for i, st in ipairs(stats) do
-		local x0 = 18.4 + (i - 1) * 82
-		local labelW = 0
-		t[#t + 1] = onResultTab(LoadFont("Common Normal") .. {
-			InitCommand = function(self)
-				self:xy(x0, 56):halign(0):valign(0.5):zoom(0.3):settext(st[1]):diffuse(color("#9a9a9a"))
-				labelW = self:GetZoomedWidth()
-			end
-		})
-		-- value follows its label instead of sitting at the far end of the slot
-		t[#t + 1] = onResultTab(LoadFont("Common Normal") .. {
-			InitCommand = function(self)
-				local gap = 5
-				self:xy(x0 + labelW + gap, 56):halign(0):valign(0.5):zoom(0.4):maxwidth(math.max(20, 78 - labelW - gap) / 0.4):settext("")
-			end,
-			OnCommand = function(self) self:settext(getVals()[st[2]]) end
+		local x0 = LX + (i - 1) * (cellW + cellGap)
+		local cx = x0 + cellW / 2
+		t[#t + 1] = onResultTab(Def.ActorFrame {
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(x0, statY):halign(0):zoomto(cellW, 24)
+					self:diffusetopedge(color("#00000040")):diffusebottomedge(color("#000000A0"))
+				end
+			},
+			-- crimson rule along the top of the cell
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(cx, statY - 12):zoomto(cellW, 1)
+					self:diffuseleftedge(color("#9c142820")):diffuserightedge(color("#9c142820"))
+				end
+			},
+			Def.Quad {
+				InitCommand = function(self)
+					self:xy(cx, statY - 12):zoomto(cellW * 0.5, 1):diffuse(color("#c01c34")):diffusealpha(0.8)
+				end
+			},
+			LoadFont("Common Normal") .. {
+				InitCommand = function(self)
+					self:xy(cx, statY - 5):zoom(0.24 * FZ):settext(st[1]):diffuse(color(seraphicLabelColor))
+				end
+			},
+			LoadFont("Common Normal") .. {
+				InitCommand = function(self)
+					self:xy(cx, statY + 6):zoom(0.4 * FZ):maxwidth((cellW - 6) / (0.4 * FZ)):settext("")
+					self:diffuse(color(seraphicValueColor))
+				end,
+				OnCommand = function(self) self:settext(getVals()[st[2]]) end
+			}
 		})
 	end
 

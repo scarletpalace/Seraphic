@@ -58,8 +58,53 @@ end
 -- each window is only as tall as what it holds
 seraWindow(10, 24, 262, 432) -- song data, options, compare rows, judgments, stats (full height)
 seraWindow(582, 24, 262, 32) -- online leaderboard rank at the played rate
-seraWindow(582, 60, 262, 248) -- leaderboard around your score (scrollable)
-seraWindow(582, 314, 262, 142) -- score history
+-- leaderboard and score history: they grow and fold when clicked (sizes from seraResultPanels)
+local function foldWindow(x, w, part)
+	local function geom(state)
+		local g = seraResultPanels(state)
+		if part == "lb" then return g.lbTop, g.lbH end
+		return g.shTop, g.shH
+	end
+	-- every piece places itself from the window's top / height; animated unless it is the first placement
+	local function piece(actor, place)
+		actor.InitCommand = function(self)
+			local y, h = geom(seraResultPanelState)
+			place(self, y, h, true)
+		end
+		actor.SeraRightPanelMessageCommand = function(self, params)
+			local y, h = geom(params.state)
+			self:stoptweening():decelerate(0.2)
+			place(self, y, h, false)
+		end
+		return actor
+	end
+	local function edge(place)
+		return piece(Def.Quad {}, function(self, y, h, first)
+			if first then self:halign(0):valign(0):diffuse(color("#ffffff")):diffusealpha(0.1) end
+			place(self, y, h)
+		end)
+	end
+	t[#t + 1] = piece(Def.Quad {}, function(self, y, h, first)
+		if first then
+			self:x(x):halign(0):valign(0)
+			self:diffuseupperleft(color("#262626E6")):diffuseupperright(color("#1a1a1aE6"))
+			self:diffuselowerleft(color("#0a0a0aF0")):diffuselowerright(color("#060606F0"))
+			self:diffusealpha(0.62)
+		end
+		self:y(y):zoomto(w, h)
+	end)
+	t[#t + 1] = piece(Def.Sprite {Texture = THEME:GetPathG("", "seraphic_filigree")}, function(self, y, h, first)
+		if first then self:x(x + 4):halign(0):valign(1):zoomto(w - 8, 30) end
+		-- no filigree on a folded window (it would stick out of it)
+		self:y(y + h - 3):diffusealpha(h > 60 and 0.16 or 0)
+	end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x, y):zoomto(w, 1) end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x, y + h - 1):zoomto(w, 1) end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x, y + 1):zoomto(1, h - 2) end)
+	t[#t + 1] = edge(function(self, y, h) self:xy(x + w - 1, y + 1):zoomto(1, h - 2) end)
+end
+foldWindow(582, 262, "lb") -- leaderboard around your score (scrollable)
+foldWindow(582, 262, "sh") -- score history
 -- judge details window joined to both side windows along the bottom of the middle
 seraWindow(272, 314, 310, 142)
 
