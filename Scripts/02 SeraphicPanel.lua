@@ -188,7 +188,10 @@ function seraphicFitBanner(spr, path, w, h)
 		local iw, ih = tex:GetImageWidth(), tex:GetImageHeight()
 		local tw, th = tex:GetTextureWidth(), tex:GetTextureHeight()
 		if iw <= 0 or ih <= 0 or tw <= 0 or th <= 0 then error("no size") end
-		local s = math.max(w / iw, h / ih)
+		-- many video banners are 4:3 pictures inside a wide frame with black side bars baked in, so
+		-- wide videos are first narrowed to their centre 4:3 area (the bars can't be detected from Lua)
+		local cw = math.min(iw, ih * 4 / 3)
+		local s = math.max(w / cw, h / ih)
 		local vw, vh = w / s, h / s
 		local u0, v0 = (iw - vw) / 2 / tw, (ih - vh) / 2 / th
 		spr:customtexturerect(u0, v0, u0 + vw / tw, v0 + vh / th)
