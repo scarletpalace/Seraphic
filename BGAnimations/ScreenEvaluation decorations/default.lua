@@ -67,17 +67,17 @@ local frameWidth = 256
 
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
-local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
+local PREVX, SEPX, NOWX = LX + 108, LX + 140, LX + 172 -- "best | this play" cells; the difference sits at the right end
 -- (the RESULT tab of the left window, which uses the full window height; FZ scales its text up)
 local FZ = 1.25
 local statY = 58 -- BPM / DURATION / NOTES cells
 local optionY = 79
 -- rating first, then the "best | this play" rows under their column heads
-local rowY = {rating = 96, head = 110, score = 125, scoreBand = 131, scoreSub = 140, miss = 158}
-local rowH, scoreRowH, scoreBandH = 18, 24, 32
-local judgeHeadY, judgeY0, judgeStep = 180, 196, 24
+local rowY = {rating = 96, head = 113, score = 128, miss = 150}
+local rowH, scoreRowH = 20, 20
+local judgeHeadY, judgeY0, judgeStep = 172, 190, 25
 local comboY, ratioY = 338, 354
-local statsY0, statsStep = 382, 14
+local statsY0, statsStep = 381, 14
 local fastColor, slowColor = color("#7cc4ff"), color("#ffa060")
 
 -- the left window has two tabs (RESULT and CHART); actors of the RESULT tab hide while CHART is shown
@@ -827,10 +827,10 @@ local function scoreBoard(pn, position)
 		LoadFont("Common Large") .. {
 			Name = "DifficultyName",
 			InitCommand = function(self)
-				self:xy(LX + 86, rowY.rating)
+				self:xy(LX + 70, rowY.rating)
 				self:zoom(0.24 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(30 / (0.24 * FZ))
+				self:maxwidth(22 / (0.24 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -863,9 +863,9 @@ local function scoreBoard(pn, position)
 			UIElements.QuadButton(1, 1) .. {
 				Name = "MouseHoverBG",
 				InitCommand = function(self)
-					self:xy(LX + LW - 12, rowY.score)
-					self:zoomto(175, scoreRowH)
-					self:halign(1):valign(0.5)
+					self:xy(NOWX, rowY.score)
+					self:zoomto(70, scoreRowH)
+					self:halign(0.5):valign(0.5)
 					self:diffusealpha(0)
 				end,
 				MouseOverCommand = function(self)
@@ -890,10 +890,10 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Large") .. {
 				Name = "NormalText",
 				InitCommand = function(self)
-					self:xy(LX + LW - 12, rowY.score)
-					self:zoom(0.36 * FZ)
-					self:halign(1):valign(0.5)
-					self:maxwidth(175 / (0.36 * FZ))
+					self:xy(NOWX, rowY.score)
+					self:zoom(0.24 * FZ)
+					self:halign(0.5):valign(0.5)
+					self:maxwidth(62 / (0.24 * FZ))
 					self:visible(true)
 				end,
 				BeginCommand = function(self)
@@ -908,7 +908,7 @@ local function scoreBoard(pn, position)
 					local ws = "Wife" .. wv .. " J"
 					self:diffuse(getGradeColor(score:GetWifeGrade()))
 					self:settextf(
-						"%05.2f%% (%s)",
+						"%05.2f%%",
 						notShit.floor(rescorepercent, 2), ws .. js
 					)
 				end,
@@ -930,7 +930,7 @@ local function scoreBoard(pn, position)
 						local pct = notShit.floor(rescorepercent, 2)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
 						self:settextf(
-							"%05.2f%% (%s)", pct, ws .. judge
+							"%05.2f%%", pct, ws .. judge
 						)
 						MESSAGEMAN:Broadcast("RecalculateGraphs", {judge = judge})
 					elseif params.Name == "NextJudge" and judge < 9 then
@@ -941,7 +941,7 @@ local function scoreBoard(pn, position)
 						local pct = notShit.floor(rescorepercent, 2)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
 						self:settextf(
-							"%05.2f%% (%s)", pct, ws .. js
+							"%05.2f%%", pct, ws .. js
 						)
 						MESSAGEMAN:Broadcast("RecalculateGraphs", {judge = judge})
 					end
@@ -956,10 +956,10 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Large") ..	{-- high precision rollover
 				Name = "LongerText",
 				InitCommand = function(self)
-					self:xy(LX + LW - 12, rowY.score)
-					self:zoom(0.36 * FZ)
-					self:halign(1):valign(0.5)
-					self:maxwidth(175 / (0.36 * FZ))
+					self:xy(NOWX, rowY.score)
+					self:zoom(0.24 * FZ)
+					self:halign(0.5):valign(0.5)
+					self:maxwidth(62 / (0.24 * FZ))
 					self:visible(false)
 				end,
 				BeginCommand = function(self)
@@ -974,7 +974,7 @@ local function scoreBoard(pn, position)
 					local ws = "Wife" .. wv .. " J"
 					self:diffuse(getGradeColor(score:GetWifeGrade()))
 					self:settextf(
-						"%05.4f%% (%s)",
+						"%05.4f%%",
 						notShit.floor(rescorepercent, 4), ws .. js
 					)
 				end,
@@ -996,7 +996,7 @@ local function scoreBoard(pn, position)
 						local pct = notShit.floor(rescorepercent, 4)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
 						self:settextf(
-							"%05.4f%% (%s)", pct, ws .. judge2
+							"%05.4f%%", pct, ws .. judge2
 						)
 					elseif params.Name == "NextJudge" and judge2 < 9 then
 						judge2 = judge2 + 1
@@ -1005,7 +1005,7 @@ local function scoreBoard(pn, position)
 						local pct = notShit.floor(rescorepercent, 4)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
 						self:settextf(
-							"%05.4f%% (%s)", pct, ws .. js
+							"%05.4f%%", pct, ws .. js
 						)
 					end
 					if params.Name == "ResetJudge" then
@@ -1493,13 +1493,28 @@ local function scoreBoard(pn, position)
 		end,
 
 		band(rowY.rating, rowH),
-		band(rowY.scoreBand, scoreBandH),
+		band(rowY.score, rowH),
 		band(rowY.miss, rowH),
 		rowLabel(rowY.rating, "MSD / SSR"),
 		rowLabel(rowY.score, "SCORE"),
 		rowLabel(rowY.miss, "MISS COUNT"),
 		rowSep(rowY.rating, rowH),
+		rowSep(rowY.score, rowH),
 		rowSep(rowY.miss, rowH),
+
+		-- scoring system and judge of the percentages, at the left of the column heads
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(LX + 8, rowY.head):halign(0):zoom(0.22 * FZ):diffuse(dimColor)
+			end,
+			SetCommand = function(self)
+				if usingCustomWindows then
+					self:settext("CUSTOM WINDOWS")
+				else
+					self:settext(judge == 9 and "WIFE3 JUSTICE" or ("WIFE3 J" .. judge))
+				end
+			end
+		},
 
 		-- column heads over the compare rows
 		LoadFont("Common Normal") .. {
@@ -1514,27 +1529,27 @@ local function scoreBoard(pn, position)
 		},
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(PREVX - 38, rowY.head + 4):halign(0):zoomto(LX + LW - PREVX + 38, 1)
+				self:xy(LX + 8, rowY.head + 5):halign(0):zoomto(LW - 8, 1)
 				self:diffuseleftedge(color("#ffffff06")):diffuserightedge(color("#ffffff28"))
 			end
 		},
 
-		-- SCORE: this play is the wife percent text drawn by WifeDisplay; best and difference underneath
-		LoadFont("Common Normal") .. {
+		-- SCORE: best | this play (drawn by WifeDisplay), difference at the right end
+		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(PREVX, rowY.scoreSub):zoom(0.3 * FZ):diffuse(dimColor)
+				self:xy(PREVX, rowY.score):zoom(0.22 * FZ):maxwidth(56 / (0.22 * FZ)):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				if cmp.prevPct then
-					self:settextf("BEST  %05.2f%%", notShit.floor(cmp.prevPct, 2))
+					self:settextf("%05.2f%%", notShit.floor(cmp.prevPct, 2))
 				else
-					self:settext("BEST  -")
+					self:settext("-")
 				end
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 12, rowY.scoreSub):halign(1):zoom(0.32 * FZ)
+				self:xy(LX + LW - 6, rowY.score):halign(1):zoom(0.28 * FZ):maxwidth(36 / (0.28 * FZ))
 			end,
 			SetCommand = function(self)
 				if cmp.prevPct then
@@ -1557,7 +1572,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(NOWX - 8, rowY.miss):zoom(0.22 * FZ):diffuse(color(seraphicValueColor))
+				self:xy(NOWX, rowY.miss):zoom(0.22 * FZ):diffuse(color(seraphicValueColor))
 			end,
 			SetCommand = function(self)
 				self:settext(tostring(cmp.miss))
@@ -1565,7 +1580,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 6, rowY.miss):halign(1):zoom(0.3 * FZ)
+				self:xy(LX + LW - 6, rowY.miss):halign(1):zoom(0.28 * FZ):maxwidth(36 / (0.28 * FZ))
 			end,
 			SetCommand = function(self)
 				if cmp.prevMiss then
@@ -2279,10 +2294,10 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = onResultTab(seraDivider(19.4, 369, 242.1))
+t[#t + 1] = onResultTab(seraDivider(19.4, 368, 242.1))
 t[#t + 1] = onResultTab(Def.Quad {
 	InitCommand = function(self)
-		self:xy(131.4, 370.5):halign(0):valign(0):zoomto(1, 76):diffuse(color("#ffffff"))
+		self:xy(131.4, 369.5):halign(0):valign(0):zoomto(1, 76):diffuse(color("#ffffff"))
 		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
 })
