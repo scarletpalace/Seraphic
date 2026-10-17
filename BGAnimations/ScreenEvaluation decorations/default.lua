@@ -278,16 +278,16 @@ do
 		end,
 		BeginCommand = function(self)
 			self:queuecommand("Set")
-			-- ask again a little later, so the score just uploaded is on the board
-			self:sleep(0.2):queuecommand("Request"):sleep(5):queuecommand("Request")
+			self:sleep(0.2):queuecommand("Request")
 		end,
 		RequestCommand = function(self)
 			pcall(function()
 				if not DLMAN:IsLoggedIn() then return end
-				DLMAN:RequestChartLeaderBoardFromOnline(GAMESTATE:GetCurrentSteps():GetChartKey(), function()
-					self:queuecommand("Set")
-				end)
+				seraphicRequestLeaderboard(GAMESTATE:GetCurrentSteps():GetChartKey())
 			end)
+		end,
+		SeraLeaderboardArrivedMessageCommand = function(self)
+			self:queuecommand("Set")
 		end,
 		SetCommand = function(self)
 			local ok, list, mine = pcall(rateBoard)

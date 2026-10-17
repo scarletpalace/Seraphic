@@ -63,7 +63,7 @@ local sd = Def.ActorFrame {
 		if leaderboardEnabled and GAMESTATE:GetCurrentSteps() then
 			local chartkey = GAMESTATE:GetCurrentSteps():GetChartKey()
 			if SCREENMAN:GetTopScreen():GetMusicWheel():IsSettled() then
-				DLMAN:RequestChartLeaderBoardFromOnline(
+				seraphicRequestLeaderboard(
 					chartkey,
 					function(leaderboard)
 					end
