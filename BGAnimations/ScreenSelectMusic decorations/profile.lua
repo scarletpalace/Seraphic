@@ -905,7 +905,8 @@ local function pageCount()
 	end
 	return numrankingpages
 end
--- prev/next page
+-- prev/next page; text matches the bottom profile buttons (Common Large at 0.19)
+local pageZoom = 0.19
 r[#r + 1] = Def.ActorFrame {
 	InitCommand = function(self)
 		self:xy(10, frameHeight - 12):visible(false)
@@ -949,7 +950,7 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "NextP",
 		InitCommand = function(self)
-			self:x(frameWidth - 48):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:x(frameWidth - 48):zoom(pageZoom):maxwidth(50 / pageZoom):diffuse(color(seraphicValueColor))
 			self:settext(tostring(translated_info["NextPage"]):upper())
 		end,
 	},
@@ -980,7 +981,7 @@ r[#r + 1] = Def.ActorFrame {
 	LoadFont("Common Large") .. {
 		Name = "PrevP",
 		InitCommand = function(self)
-			self:x(26):zoom(labelZoom):maxwidth(52 / labelZoom):diffuse(color(seraphicValueColor))
+			self:x(26):zoom(pageZoom):maxwidth(50 / pageZoom):diffuse(color(seraphicValueColor))
 			self:settext(tostring(translated_info["PrevPage"]):upper())
 		end,
 	},
