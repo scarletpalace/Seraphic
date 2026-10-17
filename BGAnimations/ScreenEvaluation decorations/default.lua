@@ -52,12 +52,11 @@ local frameWidth = 256
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
-local rowY = {clear = 196, level = 212, score = 230, scoreSub = 245, miss = 258, rating = 274}
-local judgeHeadY, judgeY0, judgeStep = 290, 302, 14
-local comboY, ratioY = 388, 399
-local statsY0, statsStep = 413, 9
--- the graphs keep their original size: scaled from the old 0.9126 frame zoom at (5.67, 52.89)
-local GZ, GOX, GOY = 0.9126, 5.67, 52.89
+local optionY = 38
+local rowY = {clear = 54, level = 70, score = 88, scoreSub = 103, miss = 116, rating = 132}
+local judgeHeadY, judgeY0, judgeStep = 148, 160, 14
+local comboY, ratioY = 246, 257
+local statsY0, statsStep = 271, 9
 local fastColor, slowColor = color("#7cc4ff"), color("#ffa060")
 
 -- dont default to using custom windows and dont persist that state
@@ -613,21 +612,21 @@ local function scoreBoard(pn, position)
 				end,
 			},
 		},
-		-- IIDX style: the play options sit along the bottom of the graph box
+		-- play options along the top of the left column
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(LX, 180):halign(0):zoomto(LW, 10):diffuse(color("#000000")):diffusealpha(0.4)
+				self:xy(LX, optionY):halign(0):zoomto(LW, 10):diffuse(color("#000000")):diffusealpha(0.4)
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 4, 180):halign(0):zoom(0.3):diffuse(color(seraphicLabelColor)):settext("OPTION")
+				self:xy(LX + 4, optionY):halign(0):zoom(0.3):diffuse(color(seraphicLabelColor)):settext("OPTION")
 			end
 		},
 		LoadFont("Common Normal") .. {
 			Name = "ModString",
 			InitCommand = function(self)
-				self:xy(LX + LW - 4, 180)
+				self:xy(LX + LW - 4, optionY)
 				self:zoom(0.32)
 				self:halign(1)
 				self:maxwidth((LW - 44) / 0.32)
@@ -1830,55 +1829,11 @@ local function scoreBoard(pn, position)
 		}
 	end
 
-	local gx = frameX - 5 + (frameWidth + 10) / 2
-	t[#t + 1] = Def.ActorFrame {Name = "GraphDisplayP1", InitCommand = function(self) self:xy(GOX + gx * GZ, GOY + 58 * GZ):zoom(GZ) end, GraphDisplay()}
-	-- Seraphic: gothic frame around the graphs (silver hairline border + corner diamonds + pointed ornament)
-	do
-		local gw = (frameWidth + 10) * 0.95
-		local function box(cy, h, ornament)
-			local a = Def.ActorFrame {InitCommand = function(self) self:xy(GOX + gx * GZ, GOY + cy * GZ):zoom(GZ) end}
-			local function edge(x, y, w, hh, setup)
-				a[#a + 1] = Def.Quad {
-					InitCommand = function(self)
-						self:xy(x, y):zoomto(w, hh):diffuse(color("#ffffff")):diffusealpha(0.75)
-						if setup then setup(self) end
-					end
-				}
-			end
-			if ornament then
-				for _, f in ipairs({0.25, 0.5, 0.75}) do
-					a[#a + 1] = Def.Quad {
-						InitCommand = function(self)
-							self:xy(0, -h / 2 + h * f):zoomto(gw, 1):diffuse(color("#ffffff")):diffusealpha(0.12)
-						end
-					}
-				end
-			end
-			return a
-		end
-		t[#t + 1] = box(58, 80 * 1.45, true)
-	end
-	t[#t + 1] = Def.ActorFrame {Name = "ComboGraphP1", InitCommand = function(self) self:xy(GOX + gx * GZ, GOY + 128 * GZ):zoom(GZ) end, ComboGraph()}
-
-	-- IIDX style: this play's rank emblem large over the left part of the life graph
-	t[#t + 1] = Def.Sprite {
-		Name = "GraphGrade",
-		InitCommand = function(self)
-			self:xy(LX + 58, GOY + 58 * GZ):diffusealpha(0)
-		end,
-		SeraCompareUpdatedMessageCommand = function(self, params)
-			local k = seraphicGradeIndex(params.grade)
-			self:visible(k ~= nil)
-			if not k then return end
-			seraphicGradeFit(self, k, 1.6, 104)
-			if not self.shown then
-				self.shown = true
-				self:diffusealpha(0):sleep(0.5):decelerate(0.5):diffusealpha(0.92)
-			else
-				self:finishtweening():diffusealpha(0.92)
-			end
-		end
-	}
+	-- Seraphic: the life / combo graphs are not shown on this layout. They stay loaded (hidden) because the life
+	-- graph's RecalculateGraphs handler rescores the replay for the judge / custom window changes, and the custom
+	-- window toggle looks both frames up by name.
+	t[#t + 1] = Def.ActorFrame {Name = "GraphDisplayP1", Def.ActorFrame {InitCommand = function(self) self:visible(false) end, GraphDisplay()}}
+	t[#t + 1] = Def.ActorFrame {Name = "ComboGraphP1", Def.ActorFrame {InitCommand = function(self) self:visible(false) end, ComboGraph()}}
 
 	return t
 end
@@ -1908,19 +1863,19 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = seraDivider(19.4, 186, 242.1)
-t[#t + 1] = seraDivider(19.4, 407, 242.1)
+t[#t + 1] = seraDivider(19.4, 44, 242.1)
+t[#t + 1] = seraDivider(19.4, 265, 242.1)
 t[#t + 1] = Def.Quad {
 	InitCommand = function(self)
-		self:xy(131.4, 408.5):halign(0):valign(0):zoomto(1, 45):diffuse(color("#ffffff"))
+		self:xy(131.4, 266.5):halign(0):valign(0):zoomto(1, 45):diffuse(color("#ffffff"))
 		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
 }
 
 -- right column headers + panel behind the offset plot
 t[#t + 1] = seraHeader(590, 46, 246, "SONG DATA")
--- judge details sit in their own window in the middle, next to the left column
-t[#t + 1] = seraHeader(282, 144, 246, "JUDGE DETAILS")
+-- judge details sit in their own window at the bottom of the middle, next to the left column
+t[#t + 1] = seraHeader(282, 330, 246, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
 
 do
@@ -2003,7 +1958,7 @@ do
 		if diff > 0 then gain = diff end
 	end)
 	if gain then
-		local rx, ry, rw = SCREEN_CENTER_X, 300, 290
+		local rx, ry, rw = SCREEN_CENTER_X, 215, 290
 		t[#t + 1] = Def.ActorFrame {
 			Name = "NewRecord",
 			InitCommand = function(self)
