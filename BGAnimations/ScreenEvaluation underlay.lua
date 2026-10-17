@@ -1,5 +1,5 @@
 local enabled = PREFSMAN:GetPreference("ShowBackgrounds")
-local brightness = 0.28
+local brightness = 0.36 -- the centre is open now (no stage image), so the background shows a little more
 local t = Def.ActorFrame {}
 
 if enabled then
@@ -35,37 +35,6 @@ local function vig(x, halign, left)
 end
 t[#t + 1] = vig(0, 0, true)
 t[#t + 1] = vig(SCREEN_WIDTH, 1, false)
-
--- Seraphic: tall framed stage image in the centre (LR2 / beatoraja result style)
-local cx, cy, cw, ch = SCREEN_CENTER_X, 46, 230, 318
-t[#t + 1] = Def.Sprite {
-	Name = "StageImage",
-	OnCommand = function(self)
-		self:xy(cx, cy):valign(0)
-		local song = GAMESTATE:GetCurrentSong()
-		local path = song and (song:GetBackgroundPath() or song:GetBannerPath())
-		if not path then path = THEME:GetPathG("Common", "fallback banner") end
-		self:LoadBackground(path)
-		self:scaletoclipped(cw, ch)
-		self:diffusealpha(0):sleep(0.2):smooth(0.6):diffusealpha(1)
-	end
-}
--- LR2 style: faint edge instead of the bright silver frame (crystals below stay)
-t[#t + 1] = seraphicSoftEdge(cx - cw / 2, cy, cw, ch, 0.3)
-do
-	local function gem(x, y, zx, zy)
-		return Def.Sprite {
-			Texture = THEME:GetPathG("", "seraphic_corner"),
-			InitCommand = function(self)
-				self:xy(x, y):halign(0):valign(0):zoomx(0.34 * zx):zoomy(0.34 * zy):diffuse(color("#ffffff")):diffusealpha(0.95)
-			end
-		}
-	end
-	t[#t + 1] = gem(cx - cw / 2 - 4, cy - 4, 1, 1)
-	t[#t + 1] = gem(cx + cw / 2 + 4, cy - 4, -1, 1)
-	t[#t + 1] = gem(cx - cw / 2 - 4, cy + ch + 4, 1, -1)
-	t[#t + 1] = gem(cx + cw / 2 + 4, cy + ch + 4, -1, -1)
-end
 
 -- Seraphic: one window per column (drawn here so the banner stays on top of the body)
 -- LR2 window: translucent dark body, faint filigree footer and a soft 1px edge (no silver frame / diamonds)
