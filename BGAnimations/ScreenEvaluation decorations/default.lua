@@ -52,13 +52,23 @@ local frameWidth = 256
 -- Seraphic: IIDX-style left column, laid out in screen coordinates
 local LX, LW = 19.4, 243 -- left / width of the column contents
 local PREVX, SEPX, NOWX = LX + 128, LX + 170, LX + 210 -- "best | this play" cells of the compare rows
--- (the column sits at the bottom of the screen, under the song data line in the same window)
-local optionY = 176
-local rowY = {clear = 192, level = 208, score = 226, scoreSub = 241, miss = 254, rating = 270}
-local judgeHeadY, judgeY0, judgeStep = 286, 298, 14
-local comboY, ratioY = 384, 395
-local statsY0, statsStep = 409, 9
+-- (the RESULT tab of the left window, which uses the full window height; FZ scales its text up)
+local FZ = 1.25
+local optionY = 72
+local rowY = {clear = 92, level = 114, score = 138, scoreSub = 156, miss = 172, rating = 194}
+local rowH, scoreRowH = 20, 24
+local judgeHeadY, judgeY0, judgeStep = 214, 230, 20
+local comboY, ratioY = 348, 362
+local statsY0, statsStep = 384, 12
 local fastColor, slowColor = color("#7cc4ff"), color("#ffa060")
+
+-- the left window has two tabs (RESULT and CHART); actors of the RESULT tab hide while CHART is shown
+local function onResultTab(actor)
+	actor.SeraLeftTabMessageCommand = function(self, params)
+		self:visible(params.tab == 1)
+	end
+	return actor
+end
 
 -- dont default to using custom windows and dont persist that state
 -- custom windows are meant to be used as a thing you occasionally check, not the primary way to play the game
@@ -473,6 +483,9 @@ local function scoreBoard(pn, position)
 
 	local t = Def.ActorFrame {
 		Name = "ScoreDisplay",
+		SeraLeftTabMessageCommand = function(self, params)
+			self:visible(params.tab == 1)
+		end,
 		BeginCommand = function(self)
 			if position == 1 then
 				self:x(SCREEN_WIDTH - (frameX * 2) - frameWidth)
@@ -560,7 +573,7 @@ local function scoreBoard(pn, position)
 		Def.ActorFrame {
 			Name = "CustomScoringDisplay",
 			InitCommand = function(self)
-				self:xy(LX + 10, rowY.score + 9)
+				self:xy(LX + 10, rowY.score + scoreRowH / 2)
 				self:visible(usingCustomWindows)
 			end,
 			ToggleCustomWindowsMessageCommand = function(self)
@@ -613,7 +626,7 @@ local function scoreBoard(pn, position)
 			UIElements.QuadButton(1, 1) .. {
 				Name = "BG",
 				InitCommand = function(self)
-					self:zoomto(LW - 20, 18)
+					self:zoomto(LW - 20, scoreRowH)
 					self:halign(0):valign(1)
 					self:diffuse(getMainColor("tabs")):diffusetopedge(panelTopColor())
 				end,
@@ -645,10 +658,10 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Large") .. {
 				Name = "CustomPercent",
 				InitCommand = function(self)
-					self:xy(LW - 22, -9)
-					self:zoom(0.36)
+					self:xy(LW - 22, -scoreRowH / 2)
+					self:zoom(0.36 * FZ)
 					self:halign(1):valign(0.5)
-					self:maxwidth((LW - 30) / 0.36)
+					self:maxwidth((LW - 30) / (0.36 * FZ))
 				end,
 				SetCommand = function(self)
 					self:diffuse(getGradeColor(score:GetWifeGrade()))
@@ -672,9 +685,9 @@ local function scoreBoard(pn, position)
 			Name = "MSDDisplay",
 			InitCommand = function(self)
 				self:xy(PREVX, rowY.rating)
-				self:zoom(0.27)
+				self:zoom(0.27 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(70 / 0.27)
+				self:maxwidth(70 / (0.27 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -705,9 +718,9 @@ local function scoreBoard(pn, position)
 			Name = "SSRDisplay",
 			InitCommand = function(self)
 				self:xy(NOWX, rowY.rating)
-				self:zoom(0.27)
+				self:zoom(0.27 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(70 / 0.27)
+				self:maxwidth(70 / (0.27 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -725,9 +738,9 @@ local function scoreBoard(pn, position)
 			Name = "DifficultyName",
 			InitCommand = function(self)
 				self:xy(LX + 86, rowY.rating)
-				self:zoom(0.24)
+				self:zoom(0.24 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(30 / 0.24)
+				self:maxwidth(30 / (0.24 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -761,7 +774,7 @@ local function scoreBoard(pn, position)
 				Name = "MouseHoverBG",
 				InitCommand = function(self)
 					self:xy(LX + LW - 12, rowY.score)
-					self:zoomto(175, 18)
+					self:zoomto(175, scoreRowH)
 					self:halign(1):valign(0.5)
 					self:diffusealpha(0)
 				end,
@@ -788,9 +801,9 @@ local function scoreBoard(pn, position)
 				Name = "NormalText",
 				InitCommand = function(self)
 					self:xy(LX + LW - 12, rowY.score)
-					self:zoom(0.36)
+					self:zoom(0.36 * FZ)
 					self:halign(1):valign(0.5)
-					self:maxwidth(175 / 0.36)
+					self:maxwidth(175 / (0.36 * FZ))
 					self:visible(true)
 				end,
 				BeginCommand = function(self)
@@ -854,9 +867,9 @@ local function scoreBoard(pn, position)
 				Name = "LongerText",
 				InitCommand = function(self)
 					self:xy(LX + LW - 12, rowY.score)
-					self:zoom(0.36)
+					self:zoom(0.36 * FZ)
 					self:halign(1):valign(0.5)
-					self:maxwidth(175 / 0.36)
+					self:maxwidth(175 / (0.36 * FZ))
 					self:visible(false)
 				end,
 				BeginCommand = function(self)
@@ -915,21 +928,21 @@ local function scoreBoard(pn, position)
 		-- play options along the top of the left column
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(LX, optionY):halign(0):zoomto(LW, 10):diffuse(color("#000000")):diffusealpha(0.4)
+				self:xy(LX, optionY):halign(0):zoomto(LW, 14):diffuse(color("#000000")):diffusealpha(0.4)
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 4, optionY):halign(0):zoom(0.3):diffuse(color(seraphicLabelColor)):settext("OPTION")
+				self:xy(LX + 4, optionY):halign(0):zoom(0.3 * FZ):diffuse(color(seraphicLabelColor)):settext("OPTION")
 			end
 		},
 		LoadFont("Common Normal") .. {
 			Name = "ModString",
 			InitCommand = function(self)
 				self:xy(LX + LW - 4, optionY)
-				self:zoom(0.32)
+				self:zoom(0.32 * FZ)
 				self:halign(1)
-				self:maxwidth((LW - 44) / 0.32)
+				self:maxwidth((LW - 44) / (0.32 * FZ))
 				self:diffuse(color(seraphicValueColor))
 			end,
 			BeginCommand = function(self)
@@ -952,9 +965,9 @@ local function scoreBoard(pn, position)
 			Name = "ChordCohesionIndicator",
 			InitCommand = function(self)
 				self:xy(LX + 4, ratioY)
-				self:zoom(0.19)
+				self:zoom(0.19 * FZ)
 				self:halign(0)
-				self:maxwidth(80 / 0.19)
+				self:maxwidth(80 / (0.19 * FZ))
 				self:settext(tostring(translated_info["CCOn"]):upper())
 				self:diffuse(color(seraphicLabelColor))
 				self:visible(false)
@@ -1162,9 +1175,9 @@ local function scoreBoard(pn, position)
 				Name = "Name",
 				InitCommand = function(self)
 					self:xy(LX + 6, judgeY0 + (judgmentIndex - 1) * judgeStep)
-					self:zoom(0.2)
+					self:zoom(0.2 * FZ)
 					self:halign(0)
-					self:maxwidth(70 / 0.21)
+					self:maxwidth(70 / (0.21 * FZ))
 					self:diffuse(byJudgment(judgmentName))
 				end,
 				BeginCommand = function(self)
@@ -1182,8 +1195,8 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Large") .. {
 				Name = "Count",
 				InitCommand = function(self)
-					self:xy(LX + 112, judgeY0 + (judgmentIndex - 1) * judgeStep)
-					self:zoom(0.22)
+					self:xy(LX + 124, judgeY0 + (judgmentIndex - 1) * judgeStep)
+					self:zoom(0.22 * FZ)
 					self:halign(1)
 					self:diffuse(color(seraphicValueColor))
 				end,
@@ -1198,8 +1211,8 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Normal") .. {
 				Name = "Percentage",
 				InitCommand = function(self)
-					self:xy(LX + 115, judgeY0 + (judgmentIndex - 1) * judgeStep + 0.5)
-					self:zoom(0.24)
+					self:xy(LX + 127, judgeY0 + (judgmentIndex - 1) * judgeStep + 0.5)
+					self:zoom(0.24 * FZ)
 					self:halign(0)
 					self:diffuse(color("#8f8588"))
 				end,
@@ -1215,7 +1228,7 @@ local function scoreBoard(pn, position)
 				Name = "Slow",
 				InitCommand = function(self)
 					self:xy(SLOWX, judgeY0 + (judgmentIndex - 1) * judgeStep + 0.5)
-					self:zoom(0.3)
+					self:zoom(0.3 * FZ)
 					self:halign(1)
 					self:diffuse(slowColor)
 				end,
@@ -1230,7 +1243,7 @@ local function scoreBoard(pn, position)
 				Name = "Fast",
 				InitCommand = function(self)
 					self:xy(FASTX, judgeY0 + (judgmentIndex - 1) * judgeStep + 0.5)
-					self:zoom(0.3)
+					self:zoom(0.3 * FZ)
 					self:halign(1)
 					self:diffuse(fastColor)
 				end,
@@ -1274,7 +1287,7 @@ local function scoreBoard(pn, position)
 	local function rowLabel(y, text)
 		return LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 12, y):halign(0):zoom(0.3):maxwidth(64 / 0.3)
+				self:xy(LX + 12, y):halign(0):zoom(0.3 * FZ):maxwidth(64 / (0.3 * FZ))
 				self:diffuse(color(seraphicLabelColor)):settext(text)
 			end
 		}
@@ -1332,25 +1345,25 @@ local function scoreBoard(pn, position)
 			self:queuecommand("Refresh")
 		end,
 
-		band(rowY.clear, 14),
-		band(rowY.level, 14),
-		band(rowY.score, 18),
-		band(rowY.miss, 14),
-		band(rowY.rating, 14),
+		band(rowY.clear, rowH),
+		band(rowY.level, rowH),
+		band(rowY.score, scoreRowH),
+		band(rowY.miss, rowH),
+		band(rowY.rating, rowH),
 		rowLabel(rowY.clear, "CLEAR TYPE"),
 		rowLabel(rowY.level, "DJ LEVEL"),
 		rowLabel(rowY.score, "SCORE"),
 		rowLabel(rowY.miss, "MISS COUNT"),
 		rowLabel(rowY.rating, "RATING"),
-		rowSep(rowY.clear, 14),
-		rowSep(rowY.level, 14),
-		rowSep(rowY.miss, 14),
-		rowSep(rowY.rating, 14),
+		rowSep(rowY.clear, rowH),
+		rowSep(rowY.level, rowH),
+		rowSep(rowY.miss, rowH),
+		rowSep(rowY.rating, rowH),
 
 		-- CLEAR TYPE: best | this play
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(PREVX, rowY.clear):zoom(0.32):maxwidth(76 / 0.32)
+				self:xy(PREVX, rowY.clear):zoom(0.32 * FZ):maxwidth(76 / (0.32 * FZ))
 			end,
 			SetCommand = function(self)
 				if cmp.prev then
@@ -1363,7 +1376,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(NOWX, rowY.clear):zoom(0.34):maxwidth(76 / 0.34)
+				self:xy(NOWX, rowY.clear):zoom(0.34 * FZ):maxwidth(76 / (0.34 * FZ))
 			end,
 			SetCommand = function(self)
 				self:settext(tostring(getClearTypeFromScore(PLAYER_1, score, 0)):upper())
@@ -1380,12 +1393,12 @@ local function scoreBoard(pn, position)
 			SetCommand = function(self)
 				local k = cmp.prevGrade and seraphicGradeIndex(cmp.prevGrade)
 				self:visible(k ~= nil)
-				if k then seraphicGradeFit(self, k, 0.4, 60):diffusealpha(0.65) end
+				if k then seraphicGradeFit(self, k, 0.5, 75):diffusealpha(0.65) end
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(PREVX, rowY.level):zoom(0.32):diffuse(dimColor)
+				self:xy(PREVX, rowY.level):zoom(0.32 * FZ):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				self:settext((cmp.prevGrade and seraphicGradeIndex(cmp.prevGrade)) and "" or "-")
@@ -1399,14 +1412,14 @@ local function scoreBoard(pn, position)
 			SetCommand = function(self)
 				local k = seraphicGradeIndex(cmp.grade)
 				self:visible(k ~= nil)
-				if k then seraphicGradeFit(self, k, 0.42, 64) end
+				if k then seraphicGradeFit(self, k, 0.53, 80) end
 			end
 		},
 
 		-- SCORE: this play is the wife percent text drawn by WifeDisplay; best and difference underneath
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 64, rowY.scoreSub):halign(1):zoom(0.3):diffuse(dimColor)
+				self:xy(LX + LW - 64, rowY.scoreSub):halign(1):zoom(0.3 * FZ):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				if cmp.prevPct then
@@ -1418,7 +1431,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 12, rowY.scoreSub):halign(1):zoom(0.32)
+				self:xy(LX + LW - 12, rowY.scoreSub):halign(1):zoom(0.32 * FZ)
 			end,
 			SetCommand = function(self)
 				if cmp.prevPct then
@@ -1433,7 +1446,7 @@ local function scoreBoard(pn, position)
 		-- MISS COUNT: best | this play, difference at the right end
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(PREVX, rowY.miss):zoom(0.22):diffuse(dimColor)
+				self:xy(PREVX, rowY.miss):zoom(0.22 * FZ):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				self:settext(cmp.prevMiss and tostring(cmp.prevMiss) or "-")
@@ -1441,7 +1454,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(NOWX - 8, rowY.miss):zoom(0.22):diffuse(color(seraphicValueColor))
+				self:xy(NOWX - 8, rowY.miss):zoom(0.22 * FZ):diffuse(color(seraphicValueColor))
 			end,
 			SetCommand = function(self)
 				self:settext(tostring(cmp.miss))
@@ -1449,7 +1462,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + LW - 6, rowY.miss):halign(1):zoom(0.3)
+				self:xy(LX + LW - 6, rowY.miss):halign(1):zoom(0.3 * FZ)
 			end,
 			SetCommand = function(self)
 				if cmp.prevMiss then
@@ -1464,34 +1477,34 @@ local function scoreBoard(pn, position)
 		-- judgment table header
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 4, judgeHeadY):halign(0):zoom(0.26):diffuse(color(seraphicLabelColor)):settext("JUDGE DETAIL")
+				self:xy(LX + 4, judgeHeadY):halign(0):zoom(0.26 * FZ):diffuse(color(seraphicLabelColor)):settext("JUDGE DETAIL")
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(SLOWX, judgeHeadY):halign(1):zoom(0.26):diffuse(slowColor):settext("SLOW")
+				self:xy(SLOWX, judgeHeadY):halign(1):zoom(0.26 * FZ):diffuse(slowColor):settext("SLOW")
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(FASTX, judgeHeadY):halign(1):zoom(0.26):diffuse(fastColor):settext("FAST")
+				self:xy(FASTX, judgeHeadY):halign(1):zoom(0.26 * FZ):diffuse(fastColor):settext("FAST")
 			end
 		},
 
 		-- MAX COMBO and the FAST / SLOW totals under the table
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(LX, comboY):halign(0):zoomto(LW, 10):diffuse(color("#000000")):diffusealpha(0.25)
+				self:xy(LX, comboY):halign(0):zoomto(LW, 14):diffuse(color("#000000")):diffusealpha(0.25)
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 4, comboY):halign(0):zoom(0.28):diffuse(color(seraphicLabelColor)):settext("MAX COMBO")
+				self:xy(LX + 4, comboY):halign(0):zoom(0.28 * FZ):diffuse(color(seraphicLabelColor)):settext("MAX COMBO")
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(LX + 112, comboY):halign(1):zoom(0.32):diffuse(color(seraphicValueColor))
+				self:xy(LX + 124, comboY):halign(1):zoom(0.32 * FZ):diffuse(color(seraphicValueColor))
 			end,
 			SetCommand = function(self)
 				local ok, mc = pcall(function() return score:GetMaxCombo() end)
@@ -1501,7 +1514,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(SLOWX, comboY):halign(1):zoom(0.3):diffuse(slowColor)
+				self:xy(SLOWX, comboY):halign(1):zoom(0.3 * FZ):diffuse(slowColor)
 			end,
 			SetCommand = function(self)
 				local fs = fastSlow()
@@ -1510,7 +1523,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(FASTX, comboY):halign(1):zoom(0.3):diffuse(fastColor)
+				self:xy(FASTX, comboY):halign(1):zoom(0.3 * FZ):diffuse(fastColor)
 			end,
 			SetCommand = function(self)
 				local fs = fastSlow()
@@ -1519,7 +1532,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(SLOWX - 34, comboY):halign(1):zoom(0.26):diffuse(color(seraphicLabelColor)):settext("TOTAL")
+				self:xy(SLOWX - 34, comboY):halign(1):zoom(0.26 * FZ):diffuse(color(seraphicLabelColor)):settext("TOTAL")
 			end
 		},
 	}
@@ -1629,14 +1642,14 @@ local function scoreBoard(pn, position)
 		-- LR2 banded row behind the ratio line
 		Def.Quad {
 			InitCommand = function(self)
-				self:xy(LX, ratioY):halign(0):zoomto(LW, 10):diffuse(color("#000000")):diffusealpha(0.4)
+				self:xy(LX, ratioY):halign(0):zoomto(LW, 14):diffuse(color("#000000")):diffusealpha(0.4)
 			end
 		},
 		UIElements.QuadButton(1,1) .. {
 			Name = "MAPAHoverThing",
 			InitCommand = function(self)
-				self:xy(LX + LW / 3, ratioY + 6)
-				self:zoomto(LW / 3 * 2, 12)
+				self:xy(LX + LW / 3, ratioY + 8)
+				self:zoomto(LW / 3 * 2, 16)
 				self:halign(0):valign(1)
 				self:diffusealpha(0)
 				mapaHover = self
@@ -1653,7 +1666,7 @@ local function scoreBoard(pn, position)
 			InitCommand = function(self)
 				ratioText = self
 				self:settextf("%s:", tostring(translated_info["MAPARatio"]):upper())
-				self:zoom(0.18):halign(1):diffuse(color(seraphicLabelColor))
+				self:zoom(0.18 * FZ):halign(1):diffuse(color(seraphicLabelColor))
 			end
 		},
 		LoadFont("Common Large") .. {
@@ -1661,7 +1674,7 @@ local function scoreBoard(pn, position)
 			InitCommand = function(self)
 				laRatio = self
 				self:settextf("%.2f:1", 0)
-				self:zoom(0.19):halign(1):rainbow() -- Rainbow cuz it's LA man come on
+				self:zoom(0.19 * FZ):halign(1):rainbow() -- Rainbow cuz it's LA man come on
 				self:visible(false)
 			end
 		},
@@ -1670,7 +1683,7 @@ local function scoreBoard(pn, position)
 			InitCommand = function(self)
 				raRatio = self
 				self:settextf("%.2f:1", 0)
-				self:zoom(0.19):halign(1)  -- No color, user can set whatever they want here. AAAAA is white so I left as white
+				self:zoom(0.19 * FZ):halign(1)  -- No color, user can set whatever they want here. AAAAA is white so I left as white
 				self:visible(false)
 			end
 		},
@@ -1678,7 +1691,7 @@ local function scoreBoard(pn, position)
 			Name = "MAText",
 			InitCommand = function(self)
 				maRatio = self
-				self:zoom(0.19):halign(1):diffuse(byJudgment(judges[1]))
+				self:zoom(0.19 * FZ):halign(1):diffuse(byJudgment(judges[1]))
 			end
 		},
 		LoadFont("Common Large") .. {
@@ -1686,7 +1699,7 @@ local function scoreBoard(pn, position)
 			InitCommand = function(self)
 				paRatio = self
 				self:xy(LX + LW - 4, ratioY)
-				self:zoom(0.19)
+				self:zoom(0.19 * FZ)
 				self:halign(1)
 				self:diffuse(byJudgment(judges[2]))
 
@@ -1821,7 +1834,7 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Normal") .. {
 				InitCommand = function(self)
 					self:xy(LX + 4, statsY0 + statsStep * (i - 1))
-					self:zoom(0.31)
+					self:zoom(0.31 * FZ)
 					self:halign(0)
 					self:diffuse(color(seraphicLabelColor))
 					self:settext(tostring(radars_translated[radars[i]]):upper())
@@ -1830,7 +1843,7 @@ local function scoreBoard(pn, position)
 			LoadFont("Common Normal") .. {
 				InitCommand = function(self)
 					self:xy(LX + 108, statsY0 + statsStep * (i - 1))
-					self:zoom(0.33)
+					self:zoom(0.33 * FZ)
 					self:halign(1)
 					self:diffuse(color(seraphicValueColor))
 				end,
@@ -1988,7 +2001,7 @@ local function scoreBoard(pn, position)
 		}
 		-- if theres a middle lane, display its cbs too
 		local lines = ((ncol+1) % 2 == 0) and #statNames-1  or #statNames
-		local tzoom = lines == 5 and 0.33 or 0.28
+		local tzoom = (lines == 5 and 0.33 or 0.28) * FZ
 		local ySpacing = lines == 5 and statsStep or statsStep * 0.87
 		local statsMid = statsY0 + statsStep * 2
 		local function statsLine(i)
@@ -2163,17 +2176,69 @@ local function seraDivider(x, y, w)
 		end
 	}
 end
-t[#t + 1] = seraDivider(19.4, 182, 242.1)
-t[#t + 1] = seraDivider(19.4, 403, 242.1)
-t[#t + 1] = Def.Quad {
+t[#t + 1] = onResultTab(seraDivider(19.4, 81, 242.1))
+t[#t + 1] = onResultTab(seraDivider(19.4, 373, 242.1))
+t[#t + 1] = onResultTab(Def.Quad {
 	InitCommand = function(self)
-		self:xy(131.4, 404.5):halign(0):valign(0):zoomto(1, 45):diffuse(color("#ffffff"))
+		self:xy(131.4, 374.5):halign(0):valign(0):zoomto(1, 64):diffuse(color("#ffffff"))
 		self:diffusetopedge(color("#ffffff30")):diffusebottomedge(color("#ffffff06"))
 	end
-}
+})
 
 -- right column headers + panel behind the offset plot
-t[#t + 1] = seraHeader(18.4, 46, 246, "SONG DATA")
+-- tab bar of the left window: RESULT (this play) and CHART (the chart's difficulty); click a tab to switch
+do
+	local tabs = {{"RESULT", 24}, {"CHART", 104}}
+	local current = 1
+	local bar = Def.ActorFrame {
+		Name = "LeftTabs",
+		OnCommand = function(self)
+			SCREENMAN:GetTopScreen():AddInputCallback(function(event)
+				if event.type ~= "InputEventType_FirstPress" or event.DeviceInput.button ~= "DeviceButton_left mouse button" then
+					return false
+				end
+				for i = 1, #tabs do
+					if i ~= current and isOver(self:GetChild("Hit" .. i)) then
+						current = i
+						MESSAGEMAN:Broadcast("SeraLeftTab", {tab = i})
+					end
+				end
+				return false
+			end)
+			self:playcommand("Show", {tab = current})
+		end,
+		SeraLeftTabMessageCommand = function(self, params)
+			self:playcommand("Show", params)
+		end,
+		seraphicHeaderBand(18.4, 28, 246, 16)
+	}
+	for i, tb in ipairs(tabs) do
+		bar[#bar + 1] = Def.Quad {
+			Name = "Hit" .. i,
+			InitCommand = function(self)
+				self:xy(tb[2] - 4, 28):halign(0):valign(0):zoomto(76, 17):diffusealpha(0)
+			end
+		}
+		bar[#bar + 1] = LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(tb[2], 36):halign(0):zoom(0.45):settext(seraphicHeading(tb[1]))
+			end,
+			ShowCommand = function(self, params)
+				self:diffuse(color(params.tab == i and seraphicValueColor or "#6f6669"))
+			end
+		}
+		-- crimson mark under the active tab
+		bar[#bar + 1] = Def.Quad {
+			InitCommand = function(self)
+				self:xy(tb[2] - 2, 43):halign(0):zoomto(70, 2):diffuse(color("#c01c34"))
+			end,
+			ShowCommand = function(self, params)
+				self:visible(params.tab == i)
+			end
+		}
+	end
+	t[#t + 1] = bar
+end
 -- judge details fill the bottom of the middle, joined to the left and right windows
 t[#t + 1] = seraHeader(280, 334, 294, "JUDGE DETAILS")
 t[#t + 1] = seraHeader(590, 337, 246, "SCORE HISTORY")
@@ -2207,31 +2272,32 @@ do
 	for i, st in ipairs(stats) do
 		local x0 = 18.4 + (i - 1) * 82
 		local labelW = 0
-		t[#t + 1] = LoadFont("Common Normal") .. {
+		t[#t + 1] = onResultTab(LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(x0, 57):halign(0):valign(0.5):zoom(0.26):settext(st[1]):diffuse(color("#9a9a9a"))
+				self:xy(x0, 56):halign(0):valign(0.5):zoom(0.3):settext(st[1]):diffuse(color("#9a9a9a"))
 				labelW = self:GetZoomedWidth()
 			end
-		}
+		})
 		-- value follows its label instead of sitting at the far end of the slot
-		t[#t + 1] = LoadFont("Common Normal") .. {
+		t[#t + 1] = onResultTab(LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				local gap = 5
-				self:xy(x0 + labelW + gap, 57):halign(0):valign(0.5):zoom(0.32):maxwidth(math.max(20, 78 - labelW - gap) / 0.32):settext("")
+				self:xy(x0 + labelW + gap, 56):halign(0):valign(0.5):zoom(0.4):maxwidth(math.max(20, 78 - labelW - gap) / 0.4):settext("")
 			end,
 			OnCommand = function(self) self:settext(getVals()[st[2]]) end
-		}
+		})
 	end
 
-	-- skillset rows: name, a bar scaled to the hardest skillset, and the MSD in its colour
+	-- CHART tab: overall difficulty, then one large row per skillset (name, MSD in its colour, bar scaled to
+	-- the hardest skillset), all at the played rate
 	local skills = {"Stream", "Jumpstream", "Handstream", "Stamina", "JackSpeed", "Chordjack", "Technical"}
-	local function skillValues()
-		local vals = {}
+	local function chartValues()
+		local vals, overall, rate = {}, 0, getCurRateValue() or 1
+		pcall(function() rate = score:GetMusicRate() end)
+		rate = notShit.round(rate, 3)
 		pcall(function()
 			local steps = GAMESTATE:GetCurrentSteps()
-			local rate = getCurRateValue() or 1
-			pcall(function() rate = score:GetMusicRate() end)
-			rate = notShit.round(rate, 3)
+			overall = steps:GetMSD(rate, 1)
 			for i = 1, #skills do
 				vals[i] = steps:GetMSD(rate, i + 1)
 			end
@@ -2240,48 +2306,92 @@ do
 		for i = 1, #skills do
 			top = math.max(top, vals[i] or 0)
 		end
-		return vals, top
+		return vals, top, overall, rate
 	end
-	local barX, barW = 92, 128
-	for i, name in ipairs(skills) do
-		local y = 72 + (i - 1) * 13
-		t[#t + 1] = Def.ActorFrame {
-			OnCommand = function(self)
-				local vals, top = skillValues()
+	local chart = Def.ActorFrame {
+		Name = "ChartTab",
+		InitCommand = function(self)
+			self:visible(false)
+		end,
+		SeraLeftTabMessageCommand = function(self, params)
+			self:visible(params.tab == 2)
+			if params.tab == 2 then self:playcommand("Fill") end
+		end,
+		OnCommand = function(self)
+			local vals, top, overall, rate = chartValues()
+			self:GetChild("Overall"):settextf("%5.2f", overall):diffuse(byMSD(overall))
+			self:GetChild("Rate"):settext("MSD at " .. getRateString(rate))
+			for i = 1, #skills do
+				local row = self:GetChild("Skill" .. i)
 				local v = vals[i] or 0
-				local c = byMSD(v)
-				self:GetChild("Value"):settextf("%5.2f", v):diffuse(c)
-				self:GetChild("Bar"):diffuse(c):diffusealpha(0.7):zoomx(0):decelerate(0.6):zoomx(top > 0 and barW * v / top or 0)
+				row.target = top > 0 and (LW - 8) * v / top or 0
+				row:GetChild("Value"):settextf("%5.2f", v):diffuse(byMSD(v))
+				row:GetChild("Bar"):diffuse(byMSD(v)):diffusealpha(0.75)
+			end
+		end,
+		-- overall line
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(LX + 4, 64):halign(0):zoom(0.45):diffuse(color(seraphicLabelColor)):settext("OVERALL")
+			end
+		},
+		LoadFont("Common Large") .. {
+			Name = "Overall",
+			InitCommand = function(self)
+				self:xy(LX + LW - 4, 66):halign(1):zoom(0.5)
+			end
+		},
+		LoadFont("Common Normal") .. {
+			Name = "Rate",
+			InitCommand = function(self)
+				self:xy(LX + 4, 82):halign(0):zoom(0.32):diffuse(color("#8f8588"))
+			end
+		},
+		Def.Quad {
+			InitCommand = function(self)
+				self:xy(LX, 94):halign(0):valign(0):zoomto(LW, 1)
+				self:diffuseleftedge(color("#ffffff30")):diffuserightedge(color("#ffffff06"))
+			end
+		}
+	}
+	for i, name in ipairs(skills) do
+		local y = 104 + (i - 1) * 47
+		chart[#chart + 1] = Def.ActorFrame {
+			Name = "Skill" .. i,
+			FillCommand = function(self)
+				self:GetChild("Bar"):finishtweening():zoomx(0):sleep(0.04 * i):decelerate(0.5):zoomx(self.target or 0)
 			end,
 			Def.Quad {
 				InitCommand = function(self)
-					self:xy(LX, y):halign(0):zoomto(LW, 12):diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.18)
+					self:xy(LX, y):halign(0):valign(0):zoomto(LW, 42):diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.18)
 				end
 			},
+			seraphicBullet(LX + 6, y + 13),
 			LoadFont("Common Normal") .. {
 				InitCommand = function(self)
-					self:xy(LX + 4, y):halign(0):zoom(0.3):diffuse(color(seraphicLabelColor)):settext(name:upper())
+					self:xy(LX + 14, y + 13):halign(0):zoom(0.45):diffuse(color(seraphicLabelColor)):settext(name:upper())
+				end
+			},
+			LoadFont("Common Large") .. {
+				Name = "Value",
+				InitCommand = function(self)
+					self:xy(LX + LW - 4, y + 14):halign(1):zoom(0.36)
 				end
 			},
 			Def.Quad {
 				InitCommand = function(self)
-					self:xy(barX, y):halign(0):zoomto(barW, 3):diffuse(color("#ffffff")):diffusealpha(0.08)
+					self:xy(LX + 4, y + 31):halign(0):zoomto(LW - 8, 6):diffuse(color("#ffffff")):diffusealpha(0.07)
 				end
 			},
 			Def.Quad {
 				Name = "Bar",
 				InitCommand = function(self)
-					self:xy(barX, y):halign(0):zoomto(0, 3)
-				end
-			},
-			LoadFont("Common Normal") .. {
-				Name = "Value",
-				InitCommand = function(self)
-					self:xy(LX + LW - 4, y):halign(1):zoom(0.34)
+					self:xy(LX + 4, y + 31):halign(0):zoomto(0, 6)
 				end
 			}
 		}
 	end
+	t[#t + 1] = chart
 end
 
 if GAMESTATE:IsPlayerEnabled() then
