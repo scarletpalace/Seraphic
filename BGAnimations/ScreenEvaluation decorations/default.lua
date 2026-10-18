@@ -249,12 +249,18 @@ do
 			end
 		end
 		-- not on the board at this rate (not uploaded yet, or your online best is at another rate):
-		-- put this play where its percent would land
+		-- put this play where it would land. The board comes sorted by SSR, so rank by SSR (percent only
+		-- breaks ties); by percent alone a slower play went above everyone with a lower percent but higher SSR
 		if not mine and score then
-			local w = score:GetWifeScore()
+			local function ssr(hs)
+				local ok, v = pcall(function() return hs:GetSkillsetSSR("Overall") end)
+				return ok and v or 0
+			end
+			local s, w = ssr(score), score:GetWifeScore()
 			local pos = #list + 1
 			for i, hs in ipairs(list) do
-				if hs:GetWifeScore() < w then
+				local hsr = ssr(hs)
+				if hsr < s or (hsr == s and hs:GetWifeScore() < w) then
 					pos = i
 					break
 				end
