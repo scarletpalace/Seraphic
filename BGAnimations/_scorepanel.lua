@@ -47,6 +47,7 @@ local t = Def.ActorFrame {
 	LogOutMessageCommand = function(self) self:queuecommand("Set") end,
 	OnlineUpdateMessageCommand = function(self) self:queuecommand("Set") end,
 	SeraphicLeaderboardMessageCommand = function(self) self:queuecommand("Set") end,
+	SeraLeaderboardArrivedMessageCommand = function(self) self:queuecommand("Set") end,
 
 	SetCommand = function(self)
 		local score, steps = currentScore()
@@ -71,7 +72,7 @@ local t = Def.ActorFrame {
 				end
 			elseif not requested[key] and playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).leaderboardEnabled then
 				requested[key] = true
-				DLMAN:RequestChartLeaderBoardFromOnline(key, function() self:queuecommand("Set") end)
+				seraphicRequestLeaderboard(key)
 			end
 		end
 		v[4]:settext(rank)
