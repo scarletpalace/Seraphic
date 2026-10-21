@@ -297,8 +297,14 @@ do
 	local function rateBoard()
 		if not DLMAN:IsLoggedIn() then return nil end
 		local steps = GAMESTATE:GetCurrentSteps()
-		local lb = steps and DLMAN:GetChartLeaderBoard(steps:GetChartKey())
-		if not lb then return {} end
+		if not steps then return {} end
+		-- the engine drops other rates itself while its rate filter is on (the gameplay leaderboard turns it on),
+		-- so fetch with it off and filter here; put it back as it was
+		local rateFilter = DLMAN:GetCurrentRateFilter()
+		if rateFilter then DLMAN:ToggleRateFilter() end
+		local ok, lb = pcall(function() return DLMAN:GetChartLeaderBoard(steps:GetChartKey()) end)
+		if rateFilter then DLMAN:ToggleRateFilter() end
+		if not ok or not lb then return {} end
 		local want = string.format("%.2f", playedRate)
 		local list, mine = {}, nil
 		local me = DLMAN:GetUsername()
