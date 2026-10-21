@@ -57,6 +57,12 @@ local score = SCOREMAN:GetMostRecentScore()
 if not score then
 	score = SCOREMAN:GetTempReplayScore()
 end
+-- score is whatever the panels show (a score history row or a leaderboard row can replace it); playScore stays this play
+local playScore = score
+-- the online leaderboard score shown in place of this play (nil while a local score is shown)
+local viewedOnline = nil
+-- true while the mouse is over a row of the leaderboard list (set up with the leaderboard below)
+local lbRowHit = function() return false end
 local dvt = {}
 local totalTaps = 0
 local pss = STATSMAN:GetCurStageStats():GetPlayerStageStats()
@@ -167,7 +173,7 @@ t[#t + 1] = Def.ActorFrame {
 		local rate = 1
 		pcall(function()
 			local top = SCREENMAN:GetTopScreen()
-			if top:GetName() == "ScreenNetEvaluation" then
+			if top:GetName() == "ScreenNetEvaluation" or score ~= playScore then
 				rate = score:GetMusicRate()
 			else
 				rate = top:GetReplayRate() or getCurRateValue()
@@ -230,8 +236,62 @@ do
 	local lbMine = nil -- row of your score in lbList
 	local lbScrolled = false -- the list centres on your score until you scroll it yourself
 	local playedRate = 1
-	pcall(function() playedRate = score:GetMusicRate() end)
+	pcall(function() playedRate = playScore:GetMusicRate() end)
 	local allRates = false -- click the rank window to switch between the played rate and all rates
+	local lbBoard = nil -- the list's frame, once it has begun
+	local lbToken = 0 -- bumped by every row click, so a replay that arrives after a later click is dropped
+	local lbLoading = nil -- the score whose replay is downloading
+
+	local function lbName(hs)
+		if hs == playScore then return DLMAN:GetUsername() end
+		local ok, n = pcall(function() return hs:GetDisplayName() end)
+		return ok and n or "?"
+	end
+	-- the visible row under the mouse (1 = top row shown), or nil
+	local function lbRowAt(f)
+		if not f or not isOver(f:GetChild("Hover")) then return nil end
+		for r = 1, lbRows do
+			local row = f:GetChild("Row" .. r)
+			if row and row:GetVisible() and isOver(row:GetChild("BG")) then return r end
+		end
+		return nil
+	end
+	lbRowHit = function() return lbRowAt(lbBoard) ~= nil end
+	-- a click on a row shows that score in the result panels, after downloading its replay when it has one
+	-- (without one the stored judgments are shown and the judge can't be changed); a click on your own row,
+	-- or on the row already shown, goes back to this play
+	local function lbPick(i)
+		local hs = lbList[i]
+		if not hs then return end
+		lbToken = lbToken + 1
+		local token = lbToken
+		if i == lbMine or hs == playScore or hs == viewedOnline then
+			lbLoading = nil
+			if score == playScore then
+				MESSAGEMAN:Broadcast("SeraLeaderboardLoading")
+			else
+				MESSAGEMAN:Broadcast("SeraViewScore", {score = playScore})
+			end
+			return
+		end
+		local function show()
+			if token ~= lbToken then return end
+			lbLoading = nil
+			MESSAGEMAN:Broadcast("SeraViewScore", {score = hs, online = true})
+		end
+		local okR, has = pcall(function() return hs:HasReplayData() end)
+		if okR and has then
+			lbLoading = hs
+			MESSAGEMAN:Broadcast("SeraLeaderboardLoading")
+			local ok, err = pcall(function() DLMAN:RequestOnlineScoreReplayData(hs, show) end)
+			if not ok then
+				Trace("Seraphic: online replay request failed: " .. tostring(err))
+				show()
+			end
+		else
+			show()
+		end
+	end
 
 	-- this chart's online scores at the played rate (or every rate), best first, plus the index of your best one
 	local function rateBoard()
@@ -251,12 +311,12 @@ do
 		-- not on the board at this rate (not uploaded yet, or your online best is at another rate):
 		-- put this play where it would land. The board comes sorted by SSR, so rank by SSR (percent only
 		-- breaks ties); by percent alone a slower play went above everyone with a lower percent but higher SSR
-		if not mine and score then
+		if not mine and playScore then
 			local function ssr(hs)
 				local ok, v = pcall(function() return hs:GetSkillsetSSR("Overall") end)
 				return ok and v or 0
 			end
-			local s, w = ssr(score), score:GetWifeScore()
+			local s, w = ssr(playScore), playScore:GetWifeScore()
 			local pos = #list + 1
 			for i, hs in ipairs(list) do
 				local hsr = ssr(hs)
@@ -265,7 +325,7 @@ do
 					break
 				end
 			end
-			table.insert(list, pos, score)
+			table.insert(list, pos, playScore)
 			mine = pos
 		end
 		return list, mine
@@ -371,15 +431,42 @@ do
 				self:xy(594, 72):halign(0):valign(0.5):zoom(0.45):maxwidth(238 / 0.45)
 				self:settext(seraphicHeading("LEADERBOARD")):diffuse(color(seraphicLabelColor))
 			end
+		},
+		-- whose score the result panels show, while it isn't this play
+		LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(832, 72):halign(1):valign(0.5):zoom(0.34):maxwidth(130 / 0.34):diffuse(color("#e8b8c2"))
+			end,
+			ShowCommand = function(self)
+				if lbLoading then
+					self:settext("LOADING REPLAY...")
+				elseif viewedOnline then
+					self:settext("VIEWING " .. lbName(viewedOnline))
+				else
+					self:settext("")
+				end
+			end,
+			SeraLeaderboardLoadingMessageCommand = function(self)
+				self:playcommand("Show")
+			end,
+			SeraScoreViewedMessageCommand = function(self)
+				self:playcommand("Show")
+			end
 		}
 	}
 	local board = Def.ActorFrame {
 		Name = "RateLeaderboard",
 		BeginCommand = function(self)
-			-- mouse wheel over the list scrolls it
+			lbBoard = self
+			-- mouse wheel over the list scrolls it, a click on a row shows that score
 			SCREENMAN:GetTopScreen():AddInputCallback(function(event)
 				if event.type ~= "InputEventType_FirstPress" then return false end
 				local b = event.DeviceInput.button
+				if b == "DeviceButton_left mouse button" then
+					local r = lbRowAt(self)
+					if r then lbPick(lbOffset + r) end
+					return false
+				end
 				local dir = (b == "DeviceButton_mousewheel up" and -1) or (b == "DeviceButton_mousewheel down" and 1) or 0
 				if dir ~= 0 and isOver(self:GetChild("Hover")) then
 					lbScrolled = true
@@ -389,8 +476,21 @@ do
 				return false
 			end)
 		end,
+		OnCommand = function(self)
+			self:SetUpdateFunction(function(f)
+				local r = lbRowAt(f)
+				if r ~= f.seraHot then
+					f.seraHot = r
+					f:GetChild("RowLight"):visible(r ~= nil)
+					if r then f:GetChild("RowLight"):y(lbY0 + (r - 1) * lbStep) end
+				end
+			end)
+		end,
 		SeraLeaderboardDataMessageCommand = function(self)
 			self:playcommand("Refresh")
+		end,
+		SeraScoreViewedMessageCommand = function(self)
+			self:playcommand("Set")
 		end,
 		SeraLeaderboardModeMessageCommand = function(self)
 			lbScrolled = false
@@ -468,8 +568,9 @@ do
 				if not hs then return end
 				local mineRow = i == lbMine
 				self:GetChild("Mine"):visible(mineRow)
+				self:GetChild("Viewed"):visible(viewedOnline ~= nil and hs == viewedOnline)
 				self:GetChild("Rank"):settextf("%d", i)
-				self:GetChild("Name"):settext(hs == score and DLMAN:GetUsername() or hs:GetDisplayName()):diffuse(color(mineRow and "#ffffff" or seraphicValueColor))
+				self:GetChild("Name"):settext(hs == playScore and DLMAN:GetUsername() or hs:GetDisplayName()):diffuse(color(mineRow and "#ffffff" or seraphicValueColor))
 				self:GetChild("Name"):maxwidth((allRates and 82 or 108) / 0.42)
 				local okR, r = pcall(function() return hs:GetMusicRate() end)
 				self:GetChild("Rate"):settext(allRates and okR and getRateString(notShit.round(r, 3)) or "")
@@ -482,6 +583,7 @@ do
 				self:GetChild("Pct"):settextf("%05.2f%%", notShit.floor(hs:GetWifeScore() * 100, 2)):diffuse(byGrade(hs:GetWifeGrade()))
 			end,
 			Def.Quad {
+				Name = "BG",
 				InitCommand = function(self)
 					self:xy(588, y):halign(0):zoomto(248, lbStep - 1):diffuse(color("#000000")):diffusealpha(r % 2 == 1 and 0.4 or 0.18)
 				end
@@ -492,6 +594,14 @@ do
 				InitCommand = function(self)
 					self:xy(588, y):halign(0):zoomto(248, lbStep - 1)
 					self:diffuseleftedge(color("#9c1428D0")):diffuserightedge(color("#9c142840")):visible(false)
+				end
+			},
+			-- the score the result panels show in place of this play: pale band
+			Def.Quad {
+				Name = "Viewed",
+				InitCommand = function(self)
+					self:xy(588, y):halign(0):zoomto(248, lbStep - 1)
+					self:diffuseleftedge(color("#ffffff48")):diffuserightedge(color("#ffffff0c")):visible(false)
 				end
 			},
 			LoadFont("Common Normal") .. {
@@ -526,6 +636,13 @@ do
 			}
 		}
 	end
+	-- faint light over the row under the mouse (rows can be clicked)
+	board[#board + 1] = Def.Quad {
+		Name = "RowLight",
+		InitCommand = function(self)
+			self:x(588):halign(0):zoomto(248, lbStep - 1):diffuse(color("#ffffff")):diffusealpha(0.07):visible(false)
+		end
+	}
 	t[#t + 1] = board
 end
 
@@ -533,6 +650,12 @@ end
 local function gatherRadarValue(radar, score)
     local n = score:GetRadarValues():GetValue(radar)
     if n == -1 then
+        -- Seraphic: this play's stage stats only stand in for this play; another player's score that doesn't
+        -- store the value counts as every hold held and every mine avoided
+        if score ~= playScore then
+            local p = score:GetRadarPossible():GetValue(radar)
+            if p >= 0 then return p end
+        end
         return pss:GetRadarActual():GetValue(radar)
     end
     return n
@@ -563,7 +686,8 @@ local function scoreBoard(pn, position)
 	local function setupNewScoreData(score)
 		local replay = usingCustomWindows and REPLAYS:GetActiveReplay() or score:GetReplay()
 		replay:LoadAllData()
-		local dvtTmp = replay:GetOffsetVector()
+		-- (an online score without replay data has no offsets)
+		local dvtTmp = replay:GetOffsetVector() or {}
 		local tvt = replay:GetTapNoteTypeVector()
 		-- if available, filter out non taps from the deviation list
 		-- (hitting mines directly without filtering would make them appear here)
@@ -585,6 +709,17 @@ local function scoreBoard(pn, position)
 		end
 	end
 	setupNewScoreData(score)
+
+	-- Seraphic: judgment i and the wife percent at a judge, rescored from the replay offsets; a score without them
+	-- (an online score with no replay) keeps the values it was stored with
+	local function judgeCount(i)
+		if #dvt > 0 then return getRescoredJudge(dvt, judge, i) end
+		return score:GetTapNoteScore(judges[i])
+	end
+	local function wifeAtJudge(j)
+		if #dvt > 0 then return getRescoredWife3Judge(3, j, getRescoreElements(score)) end
+		return score:GetWifeScore() * 100
+	end
 
 	-- we removed j1-3 so uhhh this stops things lazily
 	local function clampJudge()
@@ -619,8 +754,19 @@ local function scoreBoard(pn, position)
 				MESSAGEMAN:Broadcast("LoadScoreInOffsetPlot", {score = score})
 			end
 		end,
+		-- Seraphic: a leaderboard row was clicked (params.online) or this play was picked again
+		SeraViewScoreMessageCommand = function(self, params)
+			if not params.score then return end
+			-- custom windows rescore the active replay, which stays this play's: switch them off for an online score
+			if params.online and usingCustomWindows then
+				MESSAGEMAN:Broadcast("ToggleCustomWindows")
+			end
+			self:playcommand("ChangeScore", params)
+			MESSAGEMAN:Broadcast("SetFromDisplay", {score = params.score})
+		end,
 		ChangeScoreCommand = function(self, params)
 			if params.score then
+				viewedOnline = params.online and params.score or nil
 				score = params.score
 				if usingCustomWindows then
 					-- this is done very carefully to rescore a newly selected score once for wife3 and once for custom rescoring
@@ -642,6 +788,7 @@ local function scoreBoard(pn, position)
 			else
 				MESSAGEMAN:Broadcast("ScoreChanged")
 			end
+			MESSAGEMAN:Broadcast("SeraScoreViewed", {score = score, online = viewedOnline ~= nil})
 		end,
 		UpdateNetEvalStatsMessageCommand = function(self)
 			local s = SCREENMAN:GetTopScreen():GetHighScore()
@@ -689,7 +836,7 @@ local function scoreBoard(pn, position)
 				self:visible(usingCustomWindows)
 			end,
 			ToggleCustomWindowsMessageCommand = function(self)
-				if inMulti then return end
+				if inMulti or viewedOnline then return end
 				usingCustomWindows = not usingCustomWindows
 
 				self:visible(usingCustomWindows)
@@ -810,7 +957,7 @@ local function scoreBoard(pn, position)
 			SetCommand = function(self)
 				local top = SCREENMAN:GetTopScreen()
 				local rate
-				if top:GetName() == "ScreenNetEvaluation" then
+				if top:GetName() == "ScreenNetEvaluation" or score ~= playScore then
 					rate = score:GetMusicRate()
 				else
 					rate = top:GetReplayRate()
@@ -924,8 +1071,7 @@ local function scoreBoard(pn, position)
 				SetCommand = function(self)
 					local wv = score:GetWifeVers()
 					local js = judge ~= 9 and judge or "ustice"
-					local rescoretable = getRescoreElements(score)
-					local rescorepercent = getRescoredWife3Judge(3, judge, rescoretable)
+					local rescorepercent = wifeAtJudge(judge)
 					wv = 3 -- this should really only be applicable if we can convert the score
 					local ws = "Wife" .. wv .. " J"
 					self:diffuse(getGradeColor(score:GetWifeGrade()))
@@ -942,13 +1088,12 @@ local function scoreBoard(pn, position)
 						return
 					end
 
-					local rescoretable = getRescoreElements(score)
 					local rescorepercent = 0
 					local ws = "Wife3" .. " J"
 					if params.Name == "PrevJudge" and judge > 4 then
 						judge = judge - 1
 						clampJudge()
-						rescorepercent = getRescoredWife3Judge(3, judge, rescoretable)
+						rescorepercent = wifeAtJudge(judge)
 						local pct = notShit.floor(rescorepercent, 2)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
 						self:settextf(
@@ -958,7 +1103,7 @@ local function scoreBoard(pn, position)
 					elseif params.Name == "NextJudge" and judge < 9 then
 						judge = judge + 1
 						clampJudge()
-						rescorepercent = getRescoredWife3Judge(3, judge, rescoretable)
+						rescorepercent = wifeAtJudge(judge)
 						local js = judge ~= 9 and judge or "ustice"
 						local pct = notShit.floor(rescorepercent, 2)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
@@ -990,8 +1135,7 @@ local function scoreBoard(pn, position)
 				SetCommand = function(self)
 					local wv = score:GetWifeVers()
 					local js = judge ~= 9 and judge or "ustice"
-					local rescoretable = getRescoreElements(score)
-					local rescorepercent = getRescoredWife3Judge(3, judge, rescoretable)
+					local rescorepercent = wifeAtJudge(judge)
 					wv = 3 -- this should really only be applicable if we can convert the score
 					local ws = "Wife" .. wv .. " J"
 					self:diffuse(getGradeColor(score:GetWifeGrade()))
@@ -1008,13 +1152,12 @@ local function scoreBoard(pn, position)
 						return
 					end
 
-					local rescoretable = getRescoreElements(score)
 					local rescorepercent = 0
 					local wv = score:GetWifeVers()
 					local ws = "Wife3" .. " J"
 					if params.Name == "PrevJudge" and judge2 > 4 then
 						judge2 = judge2 - 1
-						rescorepercent = getRescoredWife3Judge(3, judge2, rescoretable)
+						rescorepercent = wifeAtJudge(judge2)
 						local pct = notShit.floor(rescorepercent, 4)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
 						self:settextf(
@@ -1022,7 +1165,7 @@ local function scoreBoard(pn, position)
 						)
 					elseif params.Name == "NextJudge" and judge2 < 9 then
 						judge2 = judge2 + 1
-						rescorepercent = getRescoredWife3Judge(3, judge2, rescoretable)
+						rescorepercent = wifeAtJudge(judge2)
 						local js = judge2 ~= 9 and judge2 or "ustice"
 						local pct = notShit.floor(rescorepercent, 4)
 						self:diffuse(getGradeColor(GetGradeFromPercent(pct/100)))
@@ -1261,13 +1404,13 @@ local function scoreBoard(pn, position)
 				-- (was: jcount = 0 while aboutToForceWindowSettings) the ForceWindow message that fills jcount has
 				-- already been sent by the parent's BeginCommand, so zeroing here left every bar with a stale 0.
 				if aboutToForceWindowSettings then
-					self.jcount = getRescoredJudge(dvt, judge, judgmentIndex)
+					self.jcount = judgeCount(judgmentIndex)
 				else
 					self.jcount = score:GetTapNoteScore(judgmentName)
 				end
 			end,
 			ForceWindowMessageCommand = function(self, params)
-				self.jcount = getRescoredJudge(dvt, judge, judgmentIndex)
+				self.jcount = judgeCount(judgmentIndex)
 				self:playcommand("Set")
 			end,
 			LoadedCustomWindowMessageCommand = function(self)
@@ -1275,13 +1418,13 @@ local function scoreBoard(pn, position)
 				self:playcommand("Set")
 			end,
 			ScoreChangedMessageCommand = function(self)
-				self.jcount = getRescoredJudge(dvt, judge, judgmentIndex)
+				self.jcount = judgeCount(judgmentIndex)
 				self:playcommand("Set")
 			end,
 			CodeMessageCommand = function(self, params)
 				if usingCustomWindows then return end
 				if params.Name == "PrevJudge" or params.Name == "NextJudge" then
-					self.jcount = getRescoredJudge(dvt, judge, judgmentIndex)
+					self.jcount = judgeCount(judgmentIndex)
 				elseif params.Name == "ResetJudge" then
 					self.jcount = score:GetTapNoteScore(judgmentName)
 				else
@@ -1556,11 +1699,23 @@ local function scoreBoard(pn, position)
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
 				self:xy(PREVX, rowY.head):zoom(0.22 * FZ):diffuse(dimColor):settext("BEST")
+			end,
+			SeraScoreViewedMessageCommand = function(self, params)
+				self:settext(params.online and "MY BEST" or "BEST")
 			end
 		},
 		LoadFont("Common Normal") .. {
 			InitCommand = function(self)
-				self:xy(NOWX, rowY.head):zoom(0.22 * FZ):diffuse(color(seraphicLabelColor)):settext("THIS PLAY")
+				self:xy(NOWX, rowY.head):zoom(0.22 * FZ):maxwidth(64 / (0.22 * FZ)):diffuse(color(seraphicLabelColor)):settext("THIS PLAY")
+			end,
+			-- an online score shown in place of this play is headed by its player's name
+			SeraScoreViewedMessageCommand = function(self, params)
+				local name
+				if params.online then
+					pcall(function() name = params.score:GetDisplayName() end)
+				end
+				self:settext(name and name:upper() or "THIS PLAY")
+				self:diffuse(color(name and "#e8b8c2" or seraphicLabelColor))
 			end
 		},
 		Def.Quad {
@@ -1936,9 +2091,9 @@ local function scoreBoard(pn, position)
 				end
 
 				if params.Name == "PrevJudge" or params.Name == "NextJudge" then
-					marvelousTaps = getRescoredJudge(dvt, judge, 1)
-					perfectTaps = getRescoredJudge(dvt, judge, 2)
-					greatTaps = getRescoredJudge(dvt, judge, 3)
+					marvelousTaps = judgeCount(1)
+					perfectTaps = judgeCount(2)
+					greatTaps = judgeCount(3)
 					self:playcommand("Set")
 				end
 				if params.Name == "ResetJudge" then
@@ -1949,9 +2104,9 @@ local function scoreBoard(pn, position)
 				end
 			end,
 			ForceWindowMessageCommand = function(self)
-				marvelousTaps = getRescoredJudge(dvt, judge, 1)
-				perfectTaps = getRescoredJudge(dvt, judge, 2)
-				greatTaps = getRescoredJudge(dvt, judge, 3)
+				marvelousTaps = judgeCount(1)
+				perfectTaps = judgeCount(2)
+				greatTaps = judgeCount(3)
 				self:playcommand("Set")
 			end,
 			ScoreChangedMessageCommand = function(self)
@@ -2037,7 +2192,7 @@ local function scoreBoard(pn, position)
 	local function scoreStatistics(score)
 		local replay = usingCustomWindows and REPLAYS:GetActiveReplay() or score:GetReplay()
 		replay:LoadAllData()
-		local tracks = replay:GetTrackVector()
+		local tracks = replay:GetTrackVector() or {}
 		local dvtTmp = replay:GetOffsetVector() or {}
 		local devianceTable = {}
 		local types = replay:GetTapNoteTypeVector()
@@ -2077,6 +2232,8 @@ local function scoreBoard(pn, position)
 				end
 			end
 		end
+		-- (an online score without replay data)
+		if #devianceTable == 0 then return nil end
 		local smallest, largest = wifeRange(devianceTable)
 
 		-- this needs to match the statValues table below
@@ -2186,7 +2343,11 @@ local function scoreBoard(pn, position)
 					end,
 					SetCommand = function(self, params)
 						local statValues = scoreStatistics(params ~= nil and params.score or score)
-						if i < 4 then
+						if not statValues then
+							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (lines + 1) / 2))
+							self:zoom(tzoom):halign(1):diffuse(color(seraphicValueColor))
+							self:settext("-")
+						elseif i < 4 then
 							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (lines + 1) / 2))
 							self:zoom(tzoom)
 							self:halign(1)
@@ -2265,6 +2426,9 @@ local function scoreBoard(pn, position)
 				RecalculateGraphsMessageCommand = function(self, params)
 					-- called by the end of a codemessagecommand somewhere else
 					if not ms.JudgeScalers[params.judge] then return end
+					-- Seraphic: online scores are rescored from their offsets in Lua; the engine's replay rescore
+					-- is left on the last local score (it fails on many online replays)
+					if viewedOnline then return end
 					local success = SCREENMAN:GetTopScreen():RescoreReplay(SCREENMAN:GetTopScreen():GetStageStats():GetPlayerStageStats(), ms.JudgeScalers[params.judge], score, usingCustomWindows and currentCustomWindowConfigUsesOldestNoteFirst())
 					if not success then ms.ok("Failed to recalculate score for some reason...") return end
 					self:playcommand("Begin")
@@ -2390,6 +2554,44 @@ do
 			end
 		}
 	end
+	-- Seraphic: while another player's score is shown, "MY PLAY" at the right of the tab bar goes back to this play
+	bar[#bar + 1] = Def.ActorFrame {
+		Name = "Back",
+		InitCommand = function(self)
+			self:visible(false)
+		end,
+		OnCommand = function(self)
+			SCREENMAN:GetTopScreen():AddInputCallback(function(event)
+				if event.type == "InputEventType_FirstPress" and event.DeviceInput.button == "DeviceButton_left mouse button"
+					and self:GetVisible() and isOver(self:GetChild("Hit")) then
+					MESSAGEMAN:Broadcast("SeraViewScore", {score = playScore})
+				end
+				return false
+			end)
+			self:SetUpdateFunction(function(f)
+				local over = f:GetVisible() and isOver(f:GetChild("Hit"))
+				if over ~= f.seraOver then
+					f.seraOver = over
+					f:GetChild("Text"):diffuse(color(over and seraphicValueColor or "#e8b8c2"))
+				end
+			end)
+		end,
+		SeraScoreViewedMessageCommand = function(self, params)
+			self:visible(params.online == true)
+		end,
+		Def.Quad {
+			Name = "Hit",
+			InitCommand = function(self)
+				self:xy(262, 28):halign(1):valign(0):zoomto(74, 17):diffusealpha(0)
+			end
+		},
+		LoadFont("Common Normal") .. {
+			Name = "Text",
+			InitCommand = function(self)
+				self:xy(258, 36):halign(1):zoom(0.4):diffuse(color("#e8b8c2")):settext("<< MY PLAY")
+			end
+		}
+	}
 	t[#t + 1] = bar
 end
 -- judge details fill the bottom of the middle, joined to the left and right windows
@@ -2404,7 +2606,8 @@ t[#t + 1] = Def.ActorFrame {
 	end,
 	seraHeader(590, 302, 246, "SCORE HISTORY")
 }
--- click the leaderboard (anywhere) or the score history header to grow that window and fold the other;
+-- click the leaderboard (anywhere but its rows, which pick a score) or the score history header to grow that
+-- window and fold the other;
 -- clicking the grown one again evens them out
 t[#t + 1] = Def.ActorFrame {
 	Name = "RightPanelFold",
@@ -2415,7 +2618,7 @@ t[#t + 1] = Def.ActorFrame {
 				return false
 			end
 			local s, new = seraResultPanelState, nil
-			if isOver(self:GetChild("LB")) then
+			if isOver(self:GetChild("LB")) and not lbRowHit() then
 				new = s == "lb" and "mid" or "lb"
 			elseif isOver(self:GetChild("SH")) then
 				new = s == "sh" and "mid" or "sh"
@@ -2639,6 +2842,10 @@ do
 			OnCommand = function(self)
 				self:sleep(0.9):decelerate(0.4):diffusealpha(1)
 			end,
+			-- hidden while another player's score is shown
+			SeraScoreViewedMessageCommand = function(self, params)
+				self:visible(not params.online)
+			end,
 			-- crimson band fading out to both ends
 			Def.Quad {
 				InitCommand = function(self)
@@ -2709,11 +2916,17 @@ t[#t + 1] = Def.ActorFrame {
 			self:y(268):zoom(0.5):maxwidth(260 / 0.5)
 		end,
 		OnCommand = function(self)
+			self:playcommand("Set")
+			self:diffusealpha(0):sleep(0.55):decelerate(0.3):diffusealpha(1)
+		end,
+		SetCommand = function(self)
 			local ok, ct = pcall(getClearTypeFromScore, PLAYER_1, score, 0)
 			local okc, cc = pcall(getClearTypeFromScore, PLAYER_1, score, 2)
 			self:settext(ok and ct and tostring(ct):upper() or "")
 			if okc and cc then self:diffuse(cc) end
-			self:diffusealpha(0):sleep(0.55):decelerate(0.3):diffusealpha(1)
+		end,
+		SeraScoreViewedMessageCommand = function(self)
+			self:playcommand("Set")
 		end
 	}
 }
