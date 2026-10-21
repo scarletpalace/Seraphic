@@ -96,6 +96,14 @@ local t = Def.ActorFrame {
 		lines = pendingLines
 		centre()
 		MESSAGEMAN:Broadcast("SeraScoreHistoryPage")
+	end,
+	-- the result panels switched score: mark it here, or nothing while it is an online leaderboard score
+	SeraScoreViewedMessageCommand = function(self, params)
+		local doot
+		if not params.online then
+			pcall(function() doot = getHighScoreIndex(hsTable, params.score) end)
+		end
+		self:playcommand("HahaThisCodeINeedHelp", {doot = doot})
 	end
 }
 
