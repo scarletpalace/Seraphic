@@ -50,6 +50,7 @@ local up = false
 local right = false
 local middle = false
 local usingCustomWindows = false
+local hoverOff = false -- Seraphic: an online leaderboard score is shown; the hover readout would be this play's
 
 local function fitX(x) -- Scale time values to fit within plot width.
 	if finalSecond == 0 then
@@ -178,10 +179,11 @@ local o = Def.ActorFrame {
 			if score:HasReplayData() then
 				local replay = score:GetReplay()
 				replay:LoadAllData()
-				dvt = replay:GetOffsetVector()
-				nrt = replay:GetNoteRowVector()
-				ctt = replay:GetTrackVector()
-				ntt = replay:GetTapNoteTypeVector()
+				-- (online replays can miss any of these)
+				dvt = replay:GetOffsetVector() or {}
+				nrt = replay:GetNoteRowVector() or {}
+				ctt = replay:GetTrackVector() or {}
+				ntt = replay:GetTapNoteTypeVector() or {}
 			else
 				dvt = {}
 				nrt = {}
@@ -196,6 +198,9 @@ local o = Def.ActorFrame {
 
 			MESSAGEMAN:Broadcast("JudgeDisplayChanged")
 		end
+	end,
+	SeraScoreViewedMessageCommand = function(self, params)
+		hoverOff = params.online == true
 	end,
 	LoadScoreInOffsetPlotMessageCommand = function(self, params)
 		if params.score == nil then return end
@@ -295,7 +300,7 @@ o[#o + 1] = Def.Quad {
 		local txt = self:GetParent():GetChild("PosText")
 		local txt2 = self:GetParent():GetChild("PosText2")
 		local bg = self:GetParent():GetChild("PosBG")
-		if isOver(self) then
+		if isOver(self) and not hoverOff then
 			local xpos = INPUTFILTER:GetMouseX() - self:GetParent():GetX()
 			bar:visible(true)
 			txt:visible(true)
@@ -442,6 +447,8 @@ o[#o + 1] = Def.ActorMultiVertex {
 	JudgeDisplayChangedMessageCommand = function(self)
 		local verts = {}
 		for i = 1, #dvt do
+			-- offsets without a noterow (many online replays) have no place on the time axis
+			if not wuab[i] then break end
 			local x = fitX(wuab[i])
 			local y = fitY(dvt[i])
 			local fit = math.max(183, 183 * tso)
