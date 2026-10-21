@@ -944,9 +944,9 @@ local function scoreBoard(pn, position)
 			Name = "MSDDisplay",
 			InitCommand = function(self)
 				self:xy(PREVX, rowY.rating)
-				self:zoom(0.27 * FZ)
+				self:zoom(0.23 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(70 / (0.27 * FZ))
+				self:maxwidth(70 / (0.23 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -977,9 +977,9 @@ local function scoreBoard(pn, position)
 			Name = "SSRDisplay",
 			InitCommand = function(self)
 				self:xy(NOWX, rowY.rating)
-				self:zoom(0.27 * FZ)
+				self:zoom(0.23 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(70 / (0.27 * FZ))
+				self:maxwidth(70 / (0.23 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -997,9 +997,9 @@ local function scoreBoard(pn, position)
 			Name = "DifficultyName",
 			InitCommand = function(self)
 				self:xy(LX + 70, rowY.rating)
-				self:zoom(0.24 * FZ)
+				self:zoom(0.21 * FZ)
 				self:halign(0.5):valign(0.5)
-				self:maxwidth(22 / (0.24 * FZ))
+				self:maxwidth(22 / (0.21 * FZ))
 			end,
 			BeginCommand = function(self)
 				self:queuecommand("Set")
@@ -1060,9 +1060,9 @@ local function scoreBoard(pn, position)
 				Name = "NormalText",
 				InitCommand = function(self)
 					self:xy(NOWX, rowY.score)
-					self:zoom(0.24 * FZ)
+					self:zoom(0.2 * FZ)
 					self:halign(0.5):valign(0.5)
-					self:maxwidth(62 / (0.24 * FZ))
+					self:maxwidth(62 / (0.2 * FZ))
 					self:visible(true)
 				end,
 				BeginCommand = function(self)
@@ -1124,9 +1124,9 @@ local function scoreBoard(pn, position)
 				Name = "LongerText",
 				InitCommand = function(self)
 					self:xy(NOWX, rowY.score)
-					self:zoom(0.24 * FZ)
+					self:zoom(0.2 * FZ)
 					self:halign(0.5):valign(0.5)
-					self:maxwidth(62 / (0.24 * FZ))
+					self:maxwidth(62 / (0.2 * FZ))
 					self:visible(false)
 				end,
 				BeginCommand = function(self)
@@ -1505,7 +1505,7 @@ local function scoreBoard(pn, position)
 				Name = "Count",
 				InitCommand = function(self)
 					self:xy(LX + 124, judgeY0 + (judgmentIndex - 1) * judgeStep)
-					self:zoom(0.22 * FZ)
+					self:zoom(0.19 * FZ)
 					self:halign(1)
 					self:diffuse(color(seraphicValueColor))
 				end,
@@ -1728,7 +1728,7 @@ local function scoreBoard(pn, position)
 		-- SCORE: best | this play (drawn by WifeDisplay), difference at the right end
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(PREVX, rowY.score):zoom(0.22 * FZ):maxwidth(56 / (0.22 * FZ)):diffuse(dimColor)
+				self:xy(PREVX, rowY.score):zoom(0.19 * FZ):maxwidth(56 / (0.19 * FZ)):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				if cmp.prevPct then
@@ -1755,7 +1755,7 @@ local function scoreBoard(pn, position)
 		-- MISS COUNT: best | this play, difference at the right end
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(PREVX, rowY.miss):zoom(0.22 * FZ):diffuse(dimColor)
+				self:xy(PREVX, rowY.miss):zoom(0.19 * FZ):diffuse(dimColor)
 			end,
 			SetCommand = function(self)
 				self:settext(cmp.prevMiss and tostring(cmp.prevMiss) or "-")
@@ -1763,7 +1763,7 @@ local function scoreBoard(pn, position)
 		},
 		LoadFont("Common Large") .. {
 			InitCommand = function(self)
-				self:xy(NOWX, rowY.miss):zoom(0.22 * FZ):diffuse(color(seraphicValueColor))
+				self:xy(NOWX, rowY.miss):zoom(0.19 * FZ):diffuse(color(seraphicValueColor))
 			end,
 			SetCommand = function(self)
 				self:settext(tostring(cmp.miss))
@@ -2696,7 +2696,7 @@ do
 			},
 			LoadFont("Common Normal") .. {
 				InitCommand = function(self)
-					self:xy(cx, statY + 6):zoom(0.4 * FZ):maxwidth((cellW - 6) / (0.4 * FZ)):settext("")
+					self:xy(cx, statY + 6):zoom(0.36 * FZ):maxwidth((cellW - 6) / (0.36 * FZ)):settext("")
 					self:diffuse(color(seraphicValueColor))
 				end,
 				OnCommand = function(self) self:settext(getVals()[st[2]]) end
