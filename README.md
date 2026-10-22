@@ -31,3 +31,9 @@ To go back to the old fonts, set the contents of
   Fonts/Common Normal.redir to  bokutachinogothic2bold/doubleres/24px
 and delete Fonts/TextBanner text.redir and the Fonts/MusicWheelItem *.redir files
 (and set the wheel Section/Sort zoom in metrics.ini back from 0.44 to 0.875).
+
+## Manip Factor
+The result screen shows the Manip Factor (MF) of 4k plays, ported from ManipFactorEtterna by MaidOfFire
+(https://github.com/MaidOfFire/ManipFactorEtterna): the last line of the stats box, colored green (clean) to red (heavy manip).
+Hover it to split it into left and right hand; the offset plot tooltip also shows the MF up to the cursor.
+The calculation is in Scripts/08 ManipFactor.lua (restart the game after updating the theme so it loads).
