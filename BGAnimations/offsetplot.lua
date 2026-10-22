@@ -51,6 +51,7 @@ local right = false
 local middle = false
 local usingCustomWindows = false
 local hoverOff = false -- Seraphic: an online leaderboard score is shown; the hover readout would be this play's
+local manip = nil -- Seraphic: manip factor of the plotted score (Scripts/08 ManipFactor.lua), nil when there is none
 
 local function fitX(x) -- Scale time values to fit within plot width.
 	if finalSecond == 0 then
@@ -195,6 +196,7 @@ local o = Def.ActorFrame {
 			for i = 1, #nrt do
 				wuab[i] = td:GetElapsedTimeFromNoteRow(nrt[i])
 			end
+			manip = seraManipFactor and seraManipFactor(score) or nil
 
 			MESSAGEMAN:Broadcast("JudgeDisplayChanged")
 		end
@@ -283,6 +285,7 @@ local o = Def.ActorFrame {
 			for i = 1, #nrt do
 				wuab[i] = td:GetElapsedTimeFromNoteRow(nrt[i])
 			end
+			manip = seraManipFactor and seraManipFactor(score) or nil
 		end
 		MESSAGEMAN:Broadcast("JudgeDisplayChanged")
 	end
@@ -341,6 +344,11 @@ o[#o + 1] = Def.Quad {
 				translated_info["Mean"], mean,
 				"Time", timebro
 			)
+			-- Seraphic: manip factor of the notes up to the cursor
+			if manip then
+				local mf = manip.at(td:GetElapsedTimeFromNoteRow(row) / manip.rate * 1000)
+				txt2:settextf("%s\n%s: %2.1f%%", txt2:GetText(), "MF", mf * 100)
+			end
 			local z = textzoom
 			txt:zoom(z)
 			txt2:zoom(z)

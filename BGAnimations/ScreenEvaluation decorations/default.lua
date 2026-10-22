@@ -2318,8 +2318,11 @@ local function scoreBoard(pn, position)
 		}
 		-- if theres a middle lane, display its cbs too
 		local lines = ((ncol+1) % 2 == 0) and #statNames-1  or #statNames
-		local tzoom = (lines == 5 and 0.33 or 0.28) * FZ
-		local ySpacing = lines == 5 and statsStep or statsStep * 0.87
+		-- Seraphic: 4k plays get a manip factor line under the others
+		local showMF = ncol + 1 == 4
+		local slots = lines + (showMF and 1 or 0)
+		local tzoom = (slots == 5 and 0.33 or 0.28) * FZ
+		local ySpacing = slots == 5 and statsStep or statsStep * 0.87
 		local statsMid = statsY0 + statsStep * 2
 		local function statsLine(i)
 			return Def.ActorFrame {
@@ -2327,7 +2330,7 @@ local function scoreBoard(pn, position)
 				-- LR2 banded row
 				Def.Quad {
 					InitCommand = function(self)
-						self:xy(LX + 113, statsMid + ySpacing * (i - (lines + 1) / 2)):halign(0)
+						self:xy(LX + 113, statsMid + ySpacing * (i - (slots + 1) / 2)):halign(0)
 						self:zoomto(LW - 113, ySpacing)
 						self:diffuse(color("#000000")):diffusealpha(i % 2 == 1 and 0.4 or 0.15)
 					end,
@@ -2335,7 +2338,7 @@ local function scoreBoard(pn, position)
 				LoadFont("Common Normal") .. {
 					Name = "StatText",
 					InitCommand = function(self)
-						self:xy(LX + 117, statsMid + ySpacing * (i - (lines + 1) / 2))
+						self:xy(LX + 117, statsMid + ySpacing * (i - (slots + 1) / 2))
 						self:zoom(tzoom * 0.95)
 						self:halign(0)
 						self:diffuse(color(seraphicLabelColor))
@@ -2350,17 +2353,17 @@ local function scoreBoard(pn, position)
 					SetCommand = function(self, params)
 						local statValues = scoreStatistics(params ~= nil and params.score or score)
 						if not statValues then
-							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (lines + 1) / 2))
+							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (slots + 1) / 2))
 							self:zoom(tzoom):halign(1):diffuse(color(seraphicValueColor))
 							self:settext("-")
 						elseif i < 4 then
-							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (lines + 1) / 2))
+							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (slots + 1) / 2))
 							self:zoom(tzoom)
 							self:halign(1)
 							self:diffuse(color(seraphicValueColor))
 							self:settextf("%5.2fms", statValues[i])
 						else
-							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (lines + 1) / 2))
+							self:xy(LX + LW - 4, statsMid + ySpacing * (i - (slots + 1) / 2))
 							self:zoom(tzoom)
 							self:halign(1)
 							self:diffuse(color(seraphicValueColor))
@@ -2404,6 +2407,73 @@ local function scoreBoard(pn, position)
 		}
 		for i = 1, lines do
 			sl[#sl+1] = statsLine(i)
+		end
+		-- Seraphic: manip factor of the shown score (Scripts/08 ManipFactor.lua); hovering the line splits it by hand
+		if showMF then
+			local mfY = statsMid + ySpacing * (slots - (slots + 1) / 2)
+			local mf = nil
+			local mfLabel = "MANIP FACTOR"
+			sl[#sl+1] = Def.ActorFrame {
+				Name = "ManipFactorLine",
+				BeginCommand = function(self)
+					self:queuecommand("Set")
+				end,
+				ScoreChangedMessageCommand = function(self)
+					self:queuecommand("Set")
+				end,
+				SetCommand = function(self)
+					mf = seraManipFactor and seraManipFactor(score) or nil
+					local v = self:GetChild("Value")
+					if mf then
+						v:diffuse(seraManipFactorColor(mf.total)):settextf("%2.1f%%", mf.total * 100)
+					else
+						v:diffuse(color(seraphicValueColor)):settext("-")
+					end
+					self:GetChild("Label"):settext(mfLabel)
+				end,
+				Def.Quad {
+					InitCommand = function(self)
+						self:xy(LX + 113, mfY):halign(0)
+						self:zoomto(LW - 113, ySpacing)
+						self:diffuse(color("#000000")):diffusealpha(slots % 2 == 1 and 0.4 or 0.15)
+					end,
+				},
+				UIElements.QuadButton(1, 1) .. {
+					InitCommand = function(self)
+						self:xy(LX + 113, mfY):halign(0)
+						self:zoomto(LW - 113, ySpacing)
+						self:diffusealpha(0)
+					end,
+					MouseOverCommand = function(self)
+						if mf then
+							self:GetParent():GetChild("Label"):settextf("L %2.1f%%  R %2.1f%%", mf.left * 100, mf.right * 100)
+						end
+					end,
+					MouseOutCommand = function(self)
+						self:GetParent():GetChild("Label"):settext(mfLabel)
+					end,
+				},
+				LoadFont("Common Normal") .. {
+					Name = "Label",
+					InitCommand = function(self)
+						self:xy(LX + 117, mfY)
+						self:zoom(tzoom * 0.95)
+						self:halign(0)
+						self:maxwidth((LW - 113 - 44) / (tzoom * 0.95))
+						self:diffuse(color(seraphicLabelColor))
+						self:settext(mfLabel)
+					end,
+				},
+				LoadFont("Common Normal") .. {
+					Name = "Value",
+					InitCommand = function(self)
+						self:xy(LX + LW - 4, mfY)
+						self:zoom(tzoom)
+						self:halign(1)
+						self:diffuse(color(seraphicValueColor))
+					end,
+				},
+			}
 		end
 		t[#t+1] = sl
 	end
