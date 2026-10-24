@@ -15,27 +15,68 @@ t[#t + 1] = Def.Quad {
 	end
 }
 
--- Seraphic: decide screen. After the fade to black the song banner opens up in the middle with the
--- title, subtitle and artist under it over the song's background, holds, then folds shut into a line.
+-- Seraphic: decide screen, after the LR2 Seraphic decide skin. Behind the filigree frame the song's
+-- background shrinks from 3x down to the screen while the title settles between two lines, with the
+-- genre above it and the subtitle and artist under it; then the background collapses into a streak
+-- across the title and the screen fades to black.
 -- The screen waits for this transition to finish, so it is also the window for entering player options.
--- (built when the screen loads, before a song is picked, so the song itself is checked when it plays)
+-- (built when the screen loads, before a song is picked, so the song itself is read on StartTransitioning)
 local showDecide = themeConfig:get_data().global.ShowDecideScreen ~= false
 local decideIn = 0.2 -- black fade is done
-local decideHold = 1.0 -- seconds the decide screen stays fully open
-local decideFold = 0.2
+local decideScene = 2.3 -- background zooming in
+local decideFold = 0.2 -- background collapsing into a line
+local decideOut = 0.35 -- fade to black
 
 if showDecide then
-	local bannerW, bannerH = 384, 120 -- 3.2:1, same as the music select banner
-	local bannerY = SCREEN_CENTER_Y - 50
-	local textY = bannerY + bannerH / 2 + 26
-	local poolW = 460
-	local foldAt = decideIn + 0.3 + decideHold
+	local add = "BlendMode_Add"
+	local cyan = color("#80ffff")
+	local lineTop, lineBottom = 154, 327 -- the LR2 skin's 640x480 layout, same height as ours
+	local titleY = 232
+
+	-- copy of the title or its glow, LR2 style; build(self) sets the start state, tween(self) animates it
+	local function titleText(build, tween)
+		return LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(SCREEN_CENTER_X, titleY):maxwidth(600 / 1.3):diffuse(color(seraphicValueColor))
+				build(self)
+			end,
+			OnCommand = function(self)
+				self:sleep(decideIn)
+				tween(self)
+			end,
+			SetCommand = function(self)
+				self:settext(GAMESTATE:GetCurrentSong():GetDisplayMainTitle())
+			end
+		}
+	end
+
+	local function infoText(y, z, c, get)
+		return LoadFont("Common Normal") .. {
+			InitCommand = function(self)
+				self:xy(SCREEN_CENTER_X, y):zoom(z):maxwidth(400 / z):diffuse(c):diffusealpha(0)
+			end,
+			OnCommand = function(self)
+				self:sleep(decideIn):linear(0.2):diffusealpha(1)
+			end,
+			SetCommand = function(self)
+				self:settext(get(GAMESTATE:GetCurrentSong()))
+			end
+		}
+	end
+
+	local function line(y)
+		return Def.Quad {
+			InitCommand = function(self)
+				self:xy(SCREEN_CENTER_X, y):zoomto(0, 2):diffuse(color("#a0a0a0")):diffusealpha(0.63):blend(add)
+			end,
+			OnCommand = function(self)
+				self:sleep(decideIn):decelerate(0.4):zoomto(SCREEN_WIDTH, 2)
+			end
+		}
+	end
 
 	t[#t + 1] = Def.ActorFrame {
 		Name = "Decide",
-		OnCommand = function(self)
-			self:diffusealpha(0):sleep(decideIn):linear(0.25):diffusealpha(1)
-		end,
 		-- On runs when the screen loads (the tweens wait until the transition starts), so the song is
 		-- only known here, once it has been picked
 		StartTransitioningCommand = function(self)
@@ -45,135 +86,92 @@ if showDecide then
 			SeraphicDecideShown = true -- the gameplay title splash skips itself after this
 			self:playcommand("Set")
 		end,
-		-- the song's own background (the LR2 decide backdrop when it has none), dimmed, drifting slowly inwards
-		Def.ActorFrame {
+		-- dark fractal underneath, what is left once the song background has collapsed
+		Def.Sprite {
+			Texture = THEME:GetPathG("", "seraphic_decide_bg"),
 			InitCommand = function(self)
 				self:Center()
+				local z = math.max(SCREEN_WIDTH / 640, SCREEN_HEIGHT / 480)
+				self:zoomto(640 * z, 480 * z):diffusealpha(0)
+			end,
+			OnCommand = function(self)
+				self:sleep(decideIn):linear(0.15):diffusealpha(0.5)
+			end
+		},
+		-- the song background, drawn twice (plain + added on top) for the washed out LR2 look
+		Def.ActorFrame {
+			Name = "Stage",
+			InitCommand = function(self)
+				self:Center():zoom(3)
+			end,
+			OnCommand = function(self)
+				self:sleep(decideIn):decelerate(decideScene):zoom(1)
+				self:accelerate(decideFold):zoomx(15):zoomy(0)
 			end,
 			SetCommand = function(self)
-				self:zoom(1.08):linear(foldAt + decideFold):zoom(1)
+				local bgpath = GAMESTATE:GetCurrentSong():GetBackgroundPath()
+				local has = bgpath ~= nil and bgpath ~= ""
+				self:visible(has)
+				if not has then return end
+				for _, name in ipairs({"Plain", "Glow"}) do
+					local spr = self:GetChild(name)
+					spr:LoadBackground(bgpath)
+					spr:scaletocover(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+				end
 			end,
+			Def.Sprite {Name = "Plain"},
 			Def.Sprite {
-				Name = "Backdrop",
-				SetCommand = function(self)
-					local bgpath = GAMESTATE:GetCurrentSong():GetBackgroundPath()
-					if not bgpath or bgpath == "" then
-						bgpath = THEME:GetPathG("", "seraphic_decide_bg")
-					end
-					self:LoadBackground(bgpath)
-					self:scaletocover(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-					self:diffuse(color("0.5,0.5,0.5,1"))
+				Name = "Glow",
+				InitCommand = function(self)
+					self:blend(add):diffusealpha(0.5)
 				end
 			}
 		},
-		-- dark pool so the text stays readable over the backdrop
-		Def.Quad {
+		-- filigree frame
+		Def.Sprite {
+			Texture = THEME:GetPathG("", "seraphic_decide_frame"),
 			InitCommand = function(self)
-				self:xy(SCREEN_CENTER_X, bannerY + 12):zoomto(SCREEN_WIDTH, bannerH + 170)
-				self:diffuse(color("#000000")):diffusealpha(0.55):fadetop(0.25):fadebottom(0.25)
-			end
-		},
-		-- everything that folds shut at the end lives in here
-		Def.ActorFrame {
-			Name = "Window",
-			OnCommand = function(self)
-				self:zoomy(0):sleep(decideIn):decelerate(0.3):zoomy(1)
-				self:sleep(decideHold):accelerate(decideFold):zoomy(0)
-			end,
-			InitCommand = function(self)
-				-- fold around the banner's centre line, like the LR2 skin
-				self:y(bannerY)
-			end,
-			Def.Sprite {
-				Name = "Banner",
-				InitCommand = function(self)
-					self:visible(BannersEnabled())
-				end,
-				SetCommand = function(self)
-					if not BannersEnabled() then return end
-					local bnpath = GAMESTATE:GetCurrentSong():GetBannerPath()
-					if not bnpath or bnpath == "" then
-						bnpath = THEME:GetPathG("Common", "fallback banner")
-					end
-					self:LoadBackground(bnpath)
-					self:x(SCREEN_CENTER_X):scaletoclipped(bannerW, bannerH)
-					if self:GetNumStates() > 1 then
-						self:StopUsingCustomTexCoords()
-					else
-						self:EnableCustomTexCoords()
-					end
-				end
-			},
-			-- thin silver outline around the banner
-			Def.ActorFrame {
-				InitCommand = function(self)
-					self:xy(SCREEN_CENTER_X - bannerW / 2, -bannerH / 2):visible(BannersEnabled())
-				end,
-				seraphicSoftEdge(-1, -1, bannerW + 2, bannerH + 2, 0.45)
-			},
-			-- crimson rules fading out from the middle, above and below the text block
-			Def.Quad {
-				InitCommand = function(self)
-					self:xy(SCREEN_CENTER_X - poolW / 2, textY - bannerY - 16):halign(0):zoomto(poolW / 2, 1)
-					self:diffuseleftedge(color("#9c142800")):diffuserightedge(color("#9c1428E6"))
-				end
-			},
-			Def.Quad {
-				InitCommand = function(self)
-					self:xy(SCREEN_CENTER_X, textY - bannerY - 16):halign(0):zoomto(poolW / 2, 1)
-					self:diffuseleftedge(color("#9c1428E6")):diffuserightedge(color("#9c142800"))
-				end
-			},
-			-- title, then the subtitle on its own row, then the artist
-			LoadFont("Common Normal") .. {
-				Name = "Title",
-				InitCommand = function(self)
-					self:xy(SCREEN_CENTER_X, textY - bannerY):zoom(0.8):maxwidth(poolW / 0.8):diffuse(color(seraphicValueColor))
-				end,
-				SetCommand = function(self)
-					self:settext(GAMESTATE:GetCurrentSong():GetDisplayMainTitle())
-				end
-			},
-			LoadFont("Common Normal") .. {
-				Name = "Subtitle",
-				InitCommand = function(self)
-					self:xy(SCREEN_CENTER_X, textY - bannerY + 22):zoom(0.45):maxwidth(poolW / 0.45):diffuse(color(seraphicValueColor)):diffusealpha(0.78)
-				end,
-				SetCommand = function(self)
-					self:settext(GAMESTATE:GetCurrentSong():GetDisplaySubTitle())
-				end
-			},
-			LoadFont("Seraphic Artist") .. {
-				Name = "Artist",
-				InitCommand = function(self)
-					self:x(SCREEN_CENTER_X):zoom(0.5):maxwidth(poolW / 0.5):diffuse(color(seraphicLabelColor))
-				end,
-				SetCommand = function(self)
-					local song = GAMESTATE:GetCurrentSong()
-					local hasSub = song:GetDisplaySubTitle() ~= ""
-					self:y(textY - bannerY + (hasSub and 42 or 24))
-					self:settext(song:GetDisplayArtist())
-				end
-			}
-		},
-		-- crimson line that is left over when the window folds shut, then fades
-		Def.Quad {
-			InitCommand = function(self)
-				self:xy(SCREEN_CENTER_X, bannerY):zoomto(0, 1):diffuse(color("#9c1428"))
+				self:Center():zoomto(SCREEN_WIDTH, SCREEN_HEIGHT):blend(add):diffusealpha(0)
 			end,
 			OnCommand = function(self)
-				self:sleep(foldAt):decelerate(decideFold):zoomto(SCREEN_WIDTH, 1)
+				self:sleep(decideIn):linear(0.15):diffusealpha(0.75)
 			end
-		}
+		},
+		line(lineTop),
+		line(lineBottom),
+		-- big glow of the title drifting in behind it
+		titleText(function(self)
+			self:zoom(7.8):diffusealpha(0.5):blend(add)
+		end, function(self)
+			self:decelerate(1.2):zoom(3.9):diffusealpha(0)
+		end),
+		-- the title, shrinking into place
+		titleText(function(self)
+			self:zoom(3.9):diffusealpha(0)
+		end, function(self)
+			self:linear(0.3):zoom(1.3):diffusealpha(1)
+		end),
+		-- quick flicker over the title as it lands
+		titleText(function(self)
+			self:zoom(1.3):diffusealpha(0):blend(add)
+		end, function(self)
+			self:sleep(0.2)
+			for _ = 1, 4 do
+				self:diffusealpha(1):sleep(0.02):diffusealpha(0):sleep(0.02)
+			end
+		end),
+		infoText(195, 0.6, cyan, function(song) return song:GetGenre() end),
+		infoText(263, 0.7, color(seraphicValueColor), function(song) return song:GetDisplaySubTitle() end),
+		infoText(295, 0.6, cyan, function(song) return song:GetDisplayArtist() end)
 	}
 
-	-- folds shut into a black screen before gameplay fades in
+	-- fade to black before gameplay fades in
 	t[#t + 1] = Def.Quad {
 		InitCommand = function(self)
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y):zoomto(SCREEN_WIDTH, SCREEN_HEIGHT):diffuse(color("0,0,0,0"))
 		end,
 		OnCommand = function(self)
-			self:sleep(foldAt + decideFold):linear(0.1):diffusealpha(1)
+			self:sleep(decideIn + decideScene + decideFold):linear(decideOut):diffusealpha(1)
 		end
 	}
 end
