@@ -32,6 +32,25 @@ local decideScene = dt(2.3) -- background zooming in
 local decideFold = dt(0.2) -- background collapsing into a line
 local decideOut = dt(0.35) -- fade to black
 
+-- set by the score tab right before it opens an evaluation screen, which leaves through this transition too
+SeraphicSkipDecide = false
+local skipping = false
+
+-- jump every tween in the tree to its end, so a skipped decide screen does not hold the transition open
+local function finishAll(actor)
+	actor:finishtweening()
+	if not actor.GetChildren then return end
+	for _, c in pairs(actor:GetChildren()) do
+		if c.finishtweening then
+			finishAll(c)
+		else
+			for _, dup in ipairs(c) do -- children sharing a name come back as a list
+				finishAll(dup)
+			end
+		end
+	end
+end
+
 if showDecide then
 	local add = "BlendMode_Add"
 	local cyan = color("#80ffff")
@@ -86,8 +105,13 @@ if showDecide then
 		-- only known here, once it has been picked
 		StartTransitioningCommand = function(self)
 			local song = GAMESTATE:GetCurrentSong()
-			self:visible(song ~= nil)
-			if not song then return end
+			skipping = SeraphicSkipDecide == true or song == nil
+			SeraphicSkipDecide = false
+			self:visible(not skipping)
+			if skipping then
+				finishAll(self)
+				return
+			end
 			SeraphicDecideShown = true -- the gameplay title splash skips itself after this
 			self:playcommand("Set")
 		end,
@@ -177,6 +201,9 @@ if showDecide then
 		end,
 		OnCommand = function(self)
 			self:sleep(decideIn + decideScene + decideFold):linear(decideOut):diffusealpha(1)
+		end,
+		StartTransitioningCommand = function(self)
+			if skipping then self:finishtweening() end
 		end
 	}
 end
