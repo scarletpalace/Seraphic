@@ -6,6 +6,10 @@ local translated_info = {
 }
 
 -- splashy thing when you first start a song
+-- Seraphic: when the decide screen already showed the song, only the invalid mods warning is left
+local hideSplash = SeraphicDecideShown == true
+SeraphicDecideShown = false
+
 local t = Def.ActorFrame {
 	Name = "Splashy",
 	DootCommand = function(self)
@@ -15,6 +19,7 @@ local t = Def.ActorFrame {
 		Name = "DestroyMe",
 		InitCommand = function(self)
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 37)
+			self:visible(not hideSplash)
 			self:zoomto(400, 58)
 			self:diffuse(getMainColor("highlight"))
 			self:fadeleft(0.4):faderight(0.4)
@@ -28,6 +33,7 @@ local t = Def.ActorFrame {
 		Name = "DestroyMe2",
 		InitCommand = function(self)
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 50):zoom(0.5):diffusealpha(0):maxwidth(400 / 0.45)
+			self:visible(not hideSplash)
 		end,
 		BeginCommand = function(self)
 			self:settext(GAMESTATE:GetCurrentSong():GetDisplayMainTitle())
@@ -40,6 +46,7 @@ local t = Def.ActorFrame {
 		Name = "DestroyMe3",
 		InitCommand = function(self)
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 35):zoom(0.45):diffusealpha(0):maxwidth(400 / 0.45)
+			self:visible(not hideSplash)
 		end,
 		BeginCommand = function(self)
 			self:settext(GAMESTATE:GetCurrentSong():GetDisplaySubTitle())
@@ -52,6 +59,7 @@ local t = Def.ActorFrame {
 		Name = "DestroyMe4",
 		InitCommand = function(self)
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 25):zoom(0.45):diffusealpha(0)
+			self:visible(not hideSplash)
 		end,
 		BeginCommand = function(self)
 			self:settext(GAMESTATE:GetCurrentSong():GetDisplayArtist())
@@ -71,6 +79,7 @@ local t = Def.ActorFrame {
 		Name = "DestroyMe6",
 		InitCommand = function(self)
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y - 15):zoom(0.3):diffusealpha(0)
+			self:visible(not hideSplash)
 		end,
 		BeginCommand = function(self)
 			local auth = GAMESTATE:GetCurrentSong():GetOrTryAtLeastToGetSimfileAuthor()
