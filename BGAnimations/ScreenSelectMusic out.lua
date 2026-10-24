@@ -23,9 +23,14 @@ t[#t + 1] = Def.Quad {
 -- (built when the screen loads, before a song is picked, so the song itself is read on StartTransitioning)
 local showDecide = themeConfig:get_data().global.ShowDecideScreen ~= false
 local decideIn = 0.2 -- black fade is done
-local decideScene = 2.3 -- background zooming in
-local decideFold = 0.2 -- background collapsing into a line
-local decideOut = 0.35 -- fade to black
+-- the LR2 skin's timings, sped up; 1 = as in the skin (about 3s), 0.5 = twice as fast
+local decideSpeed = 0.5
+local function dt(seconds)
+	return seconds * decideSpeed
+end
+local decideScene = dt(2.3) -- background zooming in
+local decideFold = dt(0.2) -- background collapsing into a line
+local decideOut = dt(0.35) -- fade to black
 
 if showDecide then
 	local add = "BlendMode_Add"
@@ -56,7 +61,7 @@ if showDecide then
 				self:xy(SCREEN_CENTER_X, y):zoom(z):maxwidth(400 / z):diffuse(c):diffusealpha(0)
 			end,
 			OnCommand = function(self)
-				self:sleep(decideIn):linear(0.2):diffusealpha(1)
+				self:sleep(decideIn):linear(dt(0.2)):diffusealpha(1)
 			end,
 			SetCommand = function(self)
 				self:settext(get(GAMESTATE:GetCurrentSong()))
@@ -70,7 +75,7 @@ if showDecide then
 				self:xy(SCREEN_CENTER_X, y):zoomto(0, 2):diffuse(color("#a0a0a0")):diffusealpha(0.63):blend(add)
 			end,
 			OnCommand = function(self)
-				self:sleep(decideIn):decelerate(0.4):zoomto(SCREEN_WIDTH, 2)
+				self:sleep(decideIn):decelerate(dt(0.4)):zoomto(SCREEN_WIDTH, 2)
 			end
 		}
 	end
@@ -95,7 +100,7 @@ if showDecide then
 				self:zoomto(640 * z, 480 * z):diffusealpha(0)
 			end,
 			OnCommand = function(self)
-				self:sleep(decideIn):linear(0.15):diffusealpha(0.5)
+				self:sleep(decideIn):linear(dt(0.15)):diffusealpha(0.5)
 			end
 		},
 		-- the song background, drawn twice (plain + added on top) for the washed out LR2 look
@@ -134,7 +139,7 @@ if showDecide then
 				self:Center():zoomto(SCREEN_WIDTH, SCREEN_HEIGHT):blend(add):diffusealpha(0)
 			end,
 			OnCommand = function(self)
-				self:sleep(decideIn):linear(0.15):diffusealpha(0.75)
+				self:sleep(decideIn):linear(dt(0.15)):diffusealpha(0.75)
 			end
 		},
 		line(lineTop),
@@ -143,21 +148,21 @@ if showDecide then
 		titleText(function(self)
 			self:zoom(7.8):diffusealpha(0.5):blend(add)
 		end, function(self)
-			self:decelerate(1.2):zoom(3.9):diffusealpha(0)
+			self:decelerate(dt(1.2)):zoom(3.9):diffusealpha(0)
 		end),
 		-- the title, shrinking into place
 		titleText(function(self)
 			self:zoom(3.9):diffusealpha(0)
 		end, function(self)
-			self:linear(0.3):zoom(1.3):diffusealpha(1)
+			self:linear(dt(0.3)):zoom(1.3):diffusealpha(1)
 		end),
 		-- quick flicker over the title as it lands
 		titleText(function(self)
 			self:zoom(1.3):diffusealpha(0):blend(add)
 		end, function(self)
-			self:sleep(0.2)
+			self:sleep(dt(0.2))
 			for _ = 1, 4 do
-				self:diffusealpha(1):sleep(0.02):diffusealpha(0):sleep(0.02)
+				self:diffusealpha(1):sleep(dt(0.02)):diffusealpha(0):sleep(dt(0.02))
 			end
 		end),
 		infoText(195, 0.6, cyan, function(song) return song:GetGenre() end),
