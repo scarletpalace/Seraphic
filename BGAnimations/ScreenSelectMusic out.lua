@@ -34,11 +34,16 @@ if showDecide then
 	t[#t + 1] = Def.ActorFrame {
 		Name = "Decide",
 		OnCommand = function(self)
-			self:visible(GAMESTATE:GetCurrentSong() ~= nil)
-			if not GAMESTATE:GetCurrentSong() then return end
+			self:diffusealpha(0):sleep(decideIn):linear(0.25):diffusealpha(1)
+		end,
+		-- On runs when the screen loads (the tweens wait until the transition starts), so the song is
+		-- only known here, once it has been picked
+		StartTransitioningCommand = function(self)
+			local song = GAMESTATE:GetCurrentSong()
+			self:visible(song ~= nil)
+			if not song then return end
 			SeraphicDecideShown = true -- the gameplay title splash skips itself after this
 			self:playcommand("Set")
-			self:diffusealpha(0):sleep(decideIn):linear(0.25):diffusealpha(1)
 		end,
 		-- the song's own background (the LR2 decide backdrop when it has none), dimmed, drifting slowly inwards
 		Def.ActorFrame {
@@ -168,7 +173,6 @@ if showDecide then
 			self:xy(SCREEN_CENTER_X, SCREEN_CENTER_Y):zoomto(SCREEN_WIDTH, SCREEN_HEIGHT):diffuse(color("0,0,0,0"))
 		end,
 		OnCommand = function(self)
-			if not GAMESTATE:GetCurrentSong() then return end
 			self:sleep(foldAt + decideFold):linear(0.1):diffusealpha(1)
 		end
 	}
