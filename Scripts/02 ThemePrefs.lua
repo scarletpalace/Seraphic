@@ -1316,3 +1316,32 @@ function ShowPlayerOptionsHint()
 	setmetatable(t, t)
 	return t
 end
+
+function ShowDecideScreen()
+	local t = {
+		Name = "ShowDecideScreen",
+		LayoutType = "ShowAllInRow",
+		SelectType = "SelectOne",
+		OneChoiceForAllPlayers = false,
+		ExportOnChange = false,
+        ExportOnCancel = true,
+		Choices = {THEME:GetString("OptionNames", "Off"), THEME:GetString("OptionNames", "On")},
+		LoadSelections = function(self, list, pn)
+			local pref = themeConfig:get_data().global.ShowDecideScreen
+			if pref then
+				list[2] = true
+			else
+				list[1] = true
+			end
+		end,
+		SaveSelections = function(self, list, pn)
+			local value
+			value = list[2]
+			themeConfig:get_data().global.ShowDecideScreen = value
+			themeConfig:set_dirty()
+			themeConfig:save()
+		end
+	}
+	setmetatable(t, t)
+	return t
+end

@@ -13,6 +13,7 @@ local defaultConfig = {
 		CenteredCombo = false,
 		FadeNoteFieldInSyncMachine = true,
 		ShowPlayerOptionsHint = true,
+		ShowDecideScreen = true, -- banner + title splash after picking a song
 		ShowBanners = true, -- false to turn off banners everywhere
 		PlayTitleMusic = true,
         PlaySongSelectBGM = true,
