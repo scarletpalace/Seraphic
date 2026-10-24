@@ -298,14 +298,20 @@ do
 		if not DLMAN:IsLoggedIn() then return nil end
 		local steps = GAMESTATE:GetCurrentSteps()
 		if not steps then return {} end
-		-- the engine drops other rates itself while its rate filter is on (the gameplay leaderboard turns it on),
-		-- so fetch with it off and filter here; put it back as it was
-		local rateFilter = DLMAN:GetCurrentRateFilter()
-		if rateFilter then DLMAN:ToggleRateFilter() end
-		local ok, lb = pcall(function() return DLMAN:GetChartLeaderBoard(steps:GetChartKey()) end)
-		if rateFilter then DLMAN:ToggleRateFilter() end
-		if not ok or not lb then return {} end
+		-- fetch with the engine's rate filter on for the played rate and off for all rates, like the select
+		-- screen does, then put it back as it was. Filtering here instead is wrong: with top scores only the
+		-- engine keeps each player's best score over all rates before any rate filtering here, so everyone
+		-- whose best is at another rate went missing from the played rate's board. The engine's filter uses
+		-- the current rate, so filter here too when that isn't the played rate
 		local want = string.format("%.2f", playedRate)
+		local curRate = 1
+		pcall(function() curRate = getCurRateValue() end)
+		local useFilter = not allRates and string.format("%.2f", curRate) == want
+		local rateFilter = DLMAN:GetCurrentRateFilter()
+		if rateFilter ~= useFilter then DLMAN:ToggleRateFilter() end
+		local ok, lb = pcall(function() return DLMAN:GetChartLeaderBoard(steps:GetChartKey()) end)
+		if rateFilter ~= useFilter then DLMAN:ToggleRateFilter() end
+		if not ok or not lb then return {} end
 		local list, mine = {}, nil
 		local me = DLMAN:GetUsername()
 		for _, hs in ipairs(lb) do
@@ -315,10 +321,14 @@ do
 			end
 		end
 		-- not on the board at this rate (not uploaded yet, or your online best is at another rate):
-		-- put this play where it would land. The board comes sorted by SSR, so rank by SSR (percent only
-		-- breaks ties); by percent alone a slower play went above everyone with a lower percent but higher SSR
+		-- put this play where it would land. Over all rates the board comes sorted by SSR, so rank by SSR
+		-- (percent only breaks ties); by percent alone a slower play went above everyone with a lower percent
+		-- but higher SSR. At one rate rank by percent, as the select screen lists it: this play's SSR comes
+		-- from the local calc and can read a hair above the server's for the same percent (25.83 vs 25.82),
+		-- which put it over every higher percent
 		if not mine and playScore then
 			local function ssr(hs)
+				if not allRates then return 0 end
 				local ok, v = pcall(function() return hs:GetSkillsetSSR("Overall") end)
 				return ok and v or 0
 			end
