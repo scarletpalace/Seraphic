@@ -825,6 +825,7 @@ l[#l + 1] = Def.ActorFrame {
 		MouseDownCommand = function(self, params)
 			if nestedTab == 1 and params.event == "DeviceButton_left mouse button" then
 				if getTabIndex() == 2 and getScoreForPlot() and hasReplayData and isOver(self) then
+					SeraphicSkipDecide = true -- no decide screen on the way to an old score's evaluation
 					SCREENMAN:GetTopScreen():ShowEvalScreenForScore(score)
 				end
 			end
