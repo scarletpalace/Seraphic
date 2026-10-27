@@ -153,7 +153,8 @@ t[#t + 1] = Def.ActorFrame {
 	}
 }
 
--- Seraphic: song title (with the rate next to it) and artist under the banner, over a soft dark pool
+-- Seraphic: song title (with the rate next to it), artist and the date the score was set under the banner,
+-- over a soft dark pool
 t[#t + 1] = Def.ActorFrame {
 	Name = "SongHead",
 	InitCommand = function(self)
@@ -180,6 +181,11 @@ t[#t + 1] = Def.ActorFrame {
 			end
 		end)
 		rateText:settext(getRateString(notShit.round(rate, 3)))
+		-- when the score was set ("YYYY-MM-DD HH:MM:SS" from the game; seconds dropped)
+		local date = ""
+		pcall(function() date = tostring(score:GetDate() or "") end)
+		date = date:match("^(%d+%-%d+%-%d+ %d+:%d+)") or date
+		self:GetChild("Date"):settext(date)
 		-- title and rate are centred together
 		local tw, rw, gap = title:GetZoomedWidth(), rateText:GetZoomedWidth(), 6
 		local left = -(tw + gap + rw) / 2
@@ -188,14 +194,14 @@ t[#t + 1] = Def.ActorFrame {
 	end,
 	Def.Quad {
 		InitCommand = function(self)
-			self:y(8):halign(1):zoomto(160, 42)
+			self:y(14):halign(1):zoomto(160, 54)
 			self:diffuseleftedge(color("#00000000")):diffuserightedge(color("#000000B0"))
 			self:fadetop(0.3):fadebottom(0.3)
 		end
 	},
 	Def.Quad {
 		InitCommand = function(self)
-			self:y(8):halign(0):zoomto(160, 42)
+			self:y(14):halign(0):zoomto(160, 54)
 			self:diffuseleftedge(color("#000000B0")):diffuserightedge(color("#00000000"))
 			self:fadetop(0.3):fadebottom(0.3)
 		end
@@ -216,6 +222,12 @@ t[#t + 1] = Def.ActorFrame {
 		Name = "Artist",
 		InitCommand = function(self)
 			self:y(17):zoom(0.44):maxwidth(290 / 0.44):diffuse(color("#bdbdbd"))
+		end
+	},
+	LoadFont("Common Normal") .. {
+		Name = "Date",
+		InitCommand = function(self)
+			self:y(31):zoom(0.36):maxwidth(290 / 0.36):diffuse(color("#8a8a8a"))
 		end
 	}
 }
