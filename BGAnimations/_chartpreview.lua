@@ -182,7 +182,8 @@ local t = Def.ActorFrame {
 		Name = "PosBG",
 		InitCommand = function(self)
 			--self:zoomto(wodth, hidth):halign(0):diffuse(color(".1,.1,.1,1")):draworder(900) -- alt bg for calc info
-			self:zoomto(wodth, hidth):halign(0):diffuse(color("1,1,1,1")):draworder(900) -- cdgraph bg
+			-- Seraphic: dark backing like the MSD tab graph, instead of Til Death's white
+			self:zoomto(wodth, hidth):halign(0):diffuse(color("0.05,0.05,0.05,0.85")):draworder(900) -- cdgraph bg
 		end,
 		HighlightCommand = function(self)	-- use the bg for detection but move the seek pointer -mina
 			if isOver(self) and GAMESTATE:GetCurrentSteps() ~= nil then
@@ -219,12 +220,28 @@ local t = Def.ActorFrame {
 	Def.Quad {
 		Name = "Pos",
 		InitCommand = function(self)
-			self:zoomto(0, hidth):diffuse(color("0,1,0,.5")):halign(0):draworder(900)
+			-- Seraphic: crimson progress tint instead of green
+			self:zoomto(0, hidth):diffuse(color("#c4243a55")):halign(0):draworder(900)
 		end
 	}
 }
 
 t[#t + 1] = LoadActor("_chorddensitygraph.lua")
+
+-- Seraphic: thin silver border around the graph, drawn over the bars but under the seek line
+local borderColor = color("#b8b4b6CC")
+local function borderEdge(name, x, y, w, h, ha, va)
+	return Def.Quad {
+		Name = name,
+		InitCommand = function(self)
+			self:xy(x, y):zoomto(w, h):halign(ha):valign(va):diffuse(borderColor):draworder(1050)
+		end
+	}
+end
+t[#t + 1] = borderEdge("BorderTop", -1, -hidth / 2, wodth + 2, 1, 0, 1)
+t[#t + 1] = borderEdge("BorderBottom", -1, hidth / 2, wodth + 2, 1, 0, 0)
+t[#t + 1] = borderEdge("BorderLeft", 0, 0, 1, hidth, 1, 0.5)
+t[#t + 1] = borderEdge("BorderRight", wodth, 0, 1, hidth, 0, 0.5)
 t[#t + 1] = LoadActor("_calcdisplay.lua")
 
 -- more draw order shenanigans
@@ -238,7 +255,7 @@ t[#t + 1] = LoadFont("Common Normal") .. {
 t[#t + 1] = UIElements.QuadButton(1, 1) .. {
 	Name = "Seek",
 	InitCommand = function(self)
-		self:zoomto(2, hidth):diffuse(color("1,.2,.5,1")):halign(0.5):draworder(1100)
+		self:zoomto(2, hidth):diffuse(color("#e0435a")):halign(0.5):draworder(1100)
 	end,
 	MouseDownCommand = function(self, params)
 		if params.event == "DeviceButton_left mouse button" then

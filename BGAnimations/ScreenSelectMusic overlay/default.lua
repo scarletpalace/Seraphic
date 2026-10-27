@@ -104,7 +104,11 @@ t[#t + 1] = UIElements.TextToolTip(1, 1, "Common Large") .. {
 	end,
 	MouseOverCommand = function(self) end,
 	MouseOutCommand = function(self) end,
+	-- Seraphic: the preview graph sits over this hidden label, so clicking the graph shouldn't pick a random song
+	ChartPreviewOnMessageCommand = function(self) self.previewing = true end,
+	ChartPreviewOffMessageCommand = function(self) self.previewing = false end,
 	MouseDownCommand = function(self, params)
+		if self.previewing then return end
 		local w = SCREENMAN:GetTopScreen():GetMusicWheel()
 
 		local function newrandsong()
