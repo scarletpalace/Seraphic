@@ -490,17 +490,65 @@ end
 --[[~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 											    	**Player judgment counter (aka pa counter)**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	Counts judgments.
+	Counts judgments, early/late (fast/slow) hits and the mean offset, in a Seraphic panel.
 --]]
 -- User Parameters
 --==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--
 local spacing = 10 -- Spacing between the judgetypes
-local frameWidth = 60 -- Width of the Frame
-local frameHeight = ((#jdgT + 1) * spacing) -- Height of the Frame
-local judgeFontSize = 0.40 -- Font sizes for different text elements
-local countFontSize = 0.35
-local gradeFontSize = 0.45
+local frameWidth = 104 -- Width of the Frame
+local headerHeight = 13 -- Height of the "::JUDGE" band
+local pad = 4 -- Space around the row blocks
+local barHeight = 2 -- Height of the fast/slow split bar
+local judgeFontSize = 0.38 -- Font sizes for different text elements
+local countFontSize = 0.36
+local headerFontSize = 0.36
+local fastSlowSkipsW1 = true -- like LR2 skipping PGREAT, marvelous hits are not counted as fast or slow
+local fastColor = color("#5ab4ff")
+local slowColor = color("#ff5a6e")
 --==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--
+-- vertical layout, measured from the top edge
+local judgeTop = headerHeight + pad -- first judgment row
+local ruleY = judgeTop + #jdgT * spacing + pad -- crimson rule between the judgments and fast/slow
+local fastY = ruleY + pad + spacing / 2
+local slowY = fastY + spacing
+local splitY = slowY + spacing / 2 + 3
+local meanY = splitY + barHeight + 3 + spacing / 2
+local frameHeight = meanY + spacing / 2 + pad
+local left = -frameWidth / 2
+local top = -frameHeight / 2
+local inner = frameWidth - 12 -- width of the row contents
+
+local judgeNames = {
+	TapNoteScore_W1 = "Marvelous",
+	TapNoteScore_W2 = "Perfect",
+	TapNoteScore_W3 = "Great",
+	TapNoteScore_W4 = "Good",
+	TapNoteScore_W5 = "Bad",
+	TapNoteScore_Miss = "Miss",
+	HoldNoteScore_Held = "Held",
+	HoldNoteScore_LetGo = "Let Go"
+}
+
+local fastCount = 0
+local slowCount = 0
+local offsetSum = 0
+local offsetCount = 0
+local fastSlowJudgments = {
+	TapNoteScore_W1 = not fastSlowSkipsW1,
+	TapNoteScore_W2 = true,
+	TapNoteScore_W3 = true,
+	TapNoteScore_W4 = true,
+	TapNoteScore_W5 = true
+}
+
+local function rowText(y, halign, x, zoom)
+	return LoadFont("Common Normal") ..
+		{
+			InitCommand = function(self)
+				self:xy(x, top + y):halign(halign):zoom(zoom)
+			end
+		}
+end
 
 local j =
 	Def.ActorFrame {
@@ -516,18 +564,135 @@ local j =
 		for i = 1, #jdgT do
 			jdgCounts[jdgT[i]] = self:GetChild(jdgT[i])
 		end
+		self:playcommand("UpdateFastSlow")
 	end,
 	SpottedOffsetCommand = function(self)
 		if jdgCur and jdgCounts[jdgCur] ~= nil then
 			settext(jdgCounts[jdgCur], jdgct)
 		end
 	end,
+	JudgmentMessageCommand = function(self, msg)
+		-- taps only: holds have no offset, misses report 1000
+		if msg.HoldNoteScore or msg.Offset == nil or msg.Offset >= 1000 then
+			return
+		end
+		offsetSum = offsetSum + msg.Offset
+		offsetCount = offsetCount + 1
+		if fastSlowJudgments[msg.Judgment] then
+			if msg.Offset < 0 then
+				fastCount = fastCount + 1
+			elseif msg.Offset > 0 then
+				slowCount = slowCount + 1
+			end
+		end
+		self:playcommand("UpdateFastSlow")
+	end,
+	PracticeModeResetMessageCommand = function(self)
+		fastCount = 0
+		slowCount = 0
+		offsetSum = 0
+		offsetCount = 0
+		self:playcommand("UpdateFastSlow")
+	end,
+	DoneLoadingNextSongMessageCommand = function(self)
+		-- playlists: start every song from zero
+		self:playcommand("PracticeModeResetMessage")
+	end,
+	-- body
 	Def.Quad {
-		-- bg
 		InitCommand = function(self)
-			self:zoomto(frameWidth, frameHeight):diffuse(color("0,0,0,0.4"))
+			self:xy(left, top):halign(0):valign(0):zoomto(frameWidth, frameHeight)
+			self:diffusetopedge(color("#1e1e1eD0")):diffusebottomedge(color("#060606E0"))
 		end
 	},
+	seraphicHeaderBand(left, top, frameWidth, headerHeight),
+	rowText(headerHeight / 2, 0, left + 6, headerFontSize) ..
+		{
+			OnCommand = function(self)
+				self:diffuse(color(seraphicLabelColor)):settext(seraphicHeading("Judge"))
+			end
+		},
+	-- crimson rule between the judgment rows and fast/slow
+	Def.Quad {
+		InitCommand = function(self)
+			-- brightest in the middle, fading out to both ends
+			self:xy(0, top + ruleY):zoomto(inner, 1):diffuse(color("#9c1428E6")):fadeleft(0.4):faderight(0.4)
+		end
+	},
+	-- fast / slow / mean
+	rowText(fastY, 0, left + 8, judgeFontSize) ..
+		{
+			OnCommand = function(self)
+				self:diffuse(fastColor):settext("FAST")
+			end
+		},
+	rowText(fastY, 1, -left - 6, countFontSize) ..
+		{
+			UpdateFastSlowCommand = function(self)
+				self:diffuse(color(seraphicValueColor)):settext(fastCount)
+			end
+		},
+	rowText(slowY, 0, left + 8, judgeFontSize) ..
+		{
+			OnCommand = function(self)
+				self:diffuse(slowColor):settext("SLOW")
+			end
+		},
+	rowText(slowY, 1, -left - 6, countFontSize) ..
+		{
+			UpdateFastSlowCommand = function(self)
+				self:diffuse(color(seraphicValueColor)):settext(slowCount)
+			end
+		},
+	-- split bar: fast share from the left, slow share from the right
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(left + 6, top + splitY):halign(0):valign(0):zoomto(inner, barHeight)
+			self:diffuse(color("#ffffff")):diffusealpha(0.12)
+		end
+	},
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(left + 6, top + splitY):halign(0):valign(0):zoomto(0, barHeight):diffuse(fastColor)
+		end,
+		UpdateFastSlowCommand = function(self)
+			local total = fastCount + slowCount
+			self:zoomx(total > 0 and inner * fastCount / total or 0)
+		end
+	},
+	Def.Quad {
+		InitCommand = function(self)
+			self:xy(-left - 6, top + splitY):halign(1):valign(0):zoomto(0, barHeight):diffuse(slowColor)
+		end,
+		UpdateFastSlowCommand = function(self)
+			local total = fastCount + slowCount
+			self:zoomx(total > 0 and inner * slowCount / total or 0)
+		end
+	},
+	rowText(meanY, 0, left + 8, judgeFontSize) ..
+		{
+			OnCommand = function(self)
+				self:diffuse(color(seraphicLabelColor)):settext("MEAN")
+			end
+		},
+	rowText(meanY, 1, -left - 6, countFontSize) ..
+		{
+			UpdateFastSlowCommand = function(self)
+				if offsetCount == 0 then
+					self:settext("0.00ms"):diffuse(color(seraphicValueColor))
+					return
+				end
+				local mean = offsetSum / offsetCount
+				self:settextf("%+.2fms", mean)
+				if mean < -0.005 then
+					self:diffuse(fastColor)
+				elseif mean > 0.005 then
+					self:diffuse(slowColor)
+				else
+					self:diffuse(color(seraphicValueColor))
+				end
+			end
+		},
 	MovableBorder(frameWidth, frameHeight, 1, 0, 0)
 }
 
@@ -535,10 +700,11 @@ local function makeJudgeText(judge, index) -- Makes text
 	return LoadFont("Common normal") ..
 		{
 			InitCommand = function(self)
-				self:xy(-frameWidth / 2 + 5, -frameHeight / 2 + (index * spacing)):zoom(judgeFontSize):halign(0)
+				self:xy(left + 8, top + judgeTop + (index - 0.5) * spacing):zoom(judgeFontSize):halign(0)
+				self:maxwidth(frameWidth * 0.6 / judgeFontSize)
 			end,
 			OnCommand = function(self)
-				settext(self, getShortJudgeStrings(judge))
+				settext(self, judgeNames[judge])
 				diffuse(self, jcT[judge])
 			end
 		}
@@ -549,7 +715,8 @@ local function makeJudgeCount(judge, index) -- Makes county things for taps....
 		{
 			Name = judge,
 			InitCommand = function(self)
-				self:xy(frameWidth / 2 - 5, -frameHeight / 2 + (index * spacing)):zoom(countFontSize):halign(1):settext(0)
+				self:xy(-left - 6, top + judgeTop + (index - 0.5) * spacing):zoom(countFontSize):halign(1):settext(0)
+				self:diffuse(color(seraphicValueColor))
 			end,
 			PracticeModeResetMessageCommand= function(self)
 				self:settext(0)
@@ -557,8 +724,10 @@ local function makeJudgeCount(judge, index) -- Makes county things for taps....
 		}
 end
 
--- Build judgeboard
+-- Build judgeboard: alternating row bands under each judgment, then the name and the count
 for i = 1, #jdgT do
+	local rowY = top + judgeTop + (i - 1) * spacing
+	j[#j + 1] = seraphicRowBand(left + 4, rowY, frameWidth - 8, spacing, i)
 	j[#j + 1] = makeJudgeText(jdgT[i], i)
 	j[#j + 1] = makeJudgeCount(jdgT[i], i)
 end
