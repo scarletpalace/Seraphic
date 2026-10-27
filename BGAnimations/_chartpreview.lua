@@ -227,6 +227,21 @@ local t = Def.ActorFrame {
 }
 
 t[#t + 1] = LoadActor("_chorddensitygraph.lua")
+
+-- Seraphic: thin silver border around the graph, drawn over the bars but under the seek line
+local borderColor = color("#b8b4b6CC")
+local function borderEdge(name, x, y, w, h, ha, va)
+	return Def.Quad {
+		Name = name,
+		InitCommand = function(self)
+			self:xy(x, y):zoomto(w, h):halign(ha):valign(va):diffuse(borderColor):draworder(1050)
+		end
+	}
+end
+t[#t + 1] = borderEdge("BorderTop", -1, -hidth / 2, wodth + 2, 1, 0, 1)
+t[#t + 1] = borderEdge("BorderBottom", -1, hidth / 2, wodth + 2, 1, 0, 0)
+t[#t + 1] = borderEdge("BorderLeft", 0, 0, 1, hidth, 1, 0.5)
+t[#t + 1] = borderEdge("BorderRight", wodth, 0, 1, hidth, 0, 0.5)
 t[#t + 1] = LoadActor("_calcdisplay.lua")
 
 -- more draw order shenanigans
