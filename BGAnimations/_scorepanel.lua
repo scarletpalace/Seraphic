@@ -7,9 +7,13 @@ local tube0 = 39 -- slot 0 of the gauge (the tube overlaps the wings by 5px, as 
 local tubeW = pw - tube0 * 2
 local slotW = tubeW / 9
 
--- gauge: labels sit on slots 2..8 (like E D C B A AA AAA in LR2); percent -> slot, piecewise linear
-local gaugeLabels = {"D", "C", "B", "A", "AA", "AAA", "AAAA"}
-local gaugePoints = {{0, 0}, {50, 2}, {60, 3}, {70, 4}, {80, 5}, {93, 6}, {99, 7}, {99.7, 8}, {100, 9}}
+-- gauge: one label per grade, placed on slots 2..8 at the percent where Etterna awards it (wife3 thresholds).
+-- percent -> slot is piecewise linear through those marks, so the fill reaches a label exactly at its grade;
+-- the top of the scale is stretched because the grades cluster near 100%. D has no lower bound, so it sits at 50%.
+local gaugeMarks = {{"D", 50}, {"C", 60}, {"B", 70}, {"A", 80}, {"AA", 93}, {"AAA", 99.7}, {"AAAA", 99.955}}
+local gaugePoints = {{0, 0}}
+for i, m in ipairs(gaugeMarks) do gaugePoints[#gaugePoints + 1] = {m[2], i + 1} end
+gaugePoints[#gaugePoints + 1] = {100, 9}
 local function slotOf(pct)
 	if pct <= 0 then return 0 end
 	for i = 2, #gaugePoints do
@@ -163,10 +167,10 @@ local t = Def.ActorFrame {
 	},
 }
 
-for i, lb in ipairs(gaugeLabels) do
+for _, m in ipairs(gaugeMarks) do
 	t[#t + 1] = LoadFont("Common Normal") .. {
 		InitCommand = function(self)
-			self:xy(tube0 + (i + 1) * slotW, 5):halign(0.5):valign(0.5):zoom(0.26):settext(lb):diffuse(color("#e6e6e6"))
+			self:xy(tube0 + slotOf(m[2]) * slotW, 5):halign(0.5):valign(0.5):zoom(0.26):settext(m[1]):diffuse(color("#e6e6e6"))
 		end
 	}
 end
