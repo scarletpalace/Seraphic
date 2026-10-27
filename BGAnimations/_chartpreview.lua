@@ -182,8 +182,7 @@ local t = Def.ActorFrame {
 		Name = "PosBG",
 		InitCommand = function(self)
 			--self:zoomto(wodth, hidth):halign(0):diffuse(color(".1,.1,.1,1")):draworder(900) -- alt bg for calc info
-			-- Seraphic: dark backing like the MSD tab graph, instead of Til Death's white
-			self:zoomto(wodth, hidth):halign(0):diffuse(color("0.05,0.05,0.05,0.85")):draworder(900) -- cdgraph bg
+			self:zoomto(wodth, hidth):halign(0):diffuse(color("1,1,1,1")):draworder(900) -- cdgraph bg
 		end,
 		HighlightCommand = function(self)	-- use the bg for detection but move the seek pointer -mina
 			if isOver(self) and GAMESTATE:GetCurrentSteps() ~= nil then
@@ -220,8 +219,7 @@ local t = Def.ActorFrame {
 	Def.Quad {
 		Name = "Pos",
 		InitCommand = function(self)
-			-- Seraphic: crimson progress tint instead of green
-			self:zoomto(0, hidth):diffuse(color("#c4243a55")):halign(0):draworder(900)
+			self:zoomto(0, hidth):diffuse(color("0,1,0,.5")):halign(0):draworder(900)
 		end
 	}
 }
@@ -255,7 +253,7 @@ t[#t + 1] = LoadFont("Common Normal") .. {
 t[#t + 1] = UIElements.QuadButton(1, 1) .. {
 	Name = "Seek",
 	InitCommand = function(self)
-		self:zoomto(2, hidth):diffuse(color("#e0435a")):halign(0.5):draworder(1100)
+		self:zoomto(2, hidth):diffuse(color("1,.2,.5,1")):halign(0.5):draworder(1100)
 	end,
 	MouseDownCommand = function(self, params)
 		if params.event == "DeviceButton_left mouse button" then

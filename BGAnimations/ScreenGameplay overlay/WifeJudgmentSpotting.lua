@@ -1226,8 +1226,7 @@ local pm = Def.ActorFrame {
 	Def.Quad {
 		Name = "PosBG",
 		InitCommand = function(self)
-			-- Seraphic: same dark backing as the select screen's chart preview graph
-			self:zoomto(wodth, hidth):halign(0):diffuse(color("0.05,0.05,0.05,0.85")):draworder(900)
+			self:zoomto(wodth, hidth):halign(0):diffuse(color("1,1,1,1")):draworder(900)
 		end,
 		HighlightCommand = function(self) -- use the bg for detection but move the seek pointer -mina
 			if isOver(self) then
@@ -1259,7 +1258,7 @@ local pm = Def.ActorFrame {
 	Def.Quad {
 		Name = "Pos",
 		InitCommand = function(self)
-			self:zoomto(0, hidth):diffuse(color("#c4243a55")):halign(0):draworder(900)
+			self:zoomto(0, hidth):diffuse(color("0,1,0,.5")):halign(0):draworder(900)
 		end
 	}
 	--MovableBorder(wodth+3, hidth+3, 1, (wodth)/2, 0)
@@ -1294,7 +1293,7 @@ pm[#pm + 1] = LoadFont("Common Normal") .. {
 pm[#pm + 1] = UIElements.QuadButton(1, 1) .. {
 	Name = "Seek",
 	InitCommand = function(self)
-		self:zoomto(2, hidth):diffuse(color("#e0435a")):halign(0.5):draworder(1100)
+		self:zoomto(2, hidth):diffuse(color("1,.2,.5,1")):halign(0.5):draworder(1100)
 		self:z(2)
 	end,
 	MouseDownCommand = function(self, params)
