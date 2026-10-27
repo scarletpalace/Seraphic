@@ -495,7 +495,7 @@ end
 -- User Parameters
 --==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--
 local spacing = 10 -- Spacing between the judgetypes
-local frameWidth = 92 -- Width of the Frame
+local frameWidth = 104 -- Width of the Frame
 local headerHeight = 13 -- Height of the "::JUDGE" band
 local pad = 4 -- Space around the row blocks
 local barHeight = 2 -- Height of the fast/slow split bar
@@ -517,6 +517,17 @@ local frameHeight = meanY + spacing / 2 + pad
 local left = -frameWidth / 2
 local top = -frameHeight / 2
 local inner = frameWidth - 12 -- width of the row contents
+
+local judgeNames = {
+	TapNoteScore_W1 = "Marvelous",
+	TapNoteScore_W2 = "Perfect",
+	TapNoteScore_W3 = "Great",
+	TapNoteScore_W4 = "Good",
+	TapNoteScore_W5 = "Bad",
+	TapNoteScore_Miss = "Miss",
+	HoldNoteScore_Held = "Held",
+	HoldNoteScore_LetGo = "Let Go"
+}
 
 local fastCount = 0
 local slowCount = 0
@@ -609,7 +620,7 @@ local j =
 		end
 	},
 	-- fast / slow / mean
-	rowText(fastY, 0, left + 12, judgeFontSize) ..
+	rowText(fastY, 0, left + 8, judgeFontSize) ..
 		{
 			OnCommand = function(self)
 				self:diffuse(fastColor):settext("FAST")
@@ -621,7 +632,7 @@ local j =
 				self:diffuse(color(seraphicValueColor)):settext(fastCount)
 			end
 		},
-	rowText(slowY, 0, left + 12, judgeFontSize) ..
+	rowText(slowY, 0, left + 8, judgeFontSize) ..
 		{
 			OnCommand = function(self)
 				self:diffuse(slowColor):settext("SLOW")
@@ -658,7 +669,7 @@ local j =
 			self:zoomx(total > 0 and inner * slowCount / total or 0)
 		end
 	},
-	rowText(meanY, 0, left + 12, judgeFontSize) ..
+	rowText(meanY, 0, left + 8, judgeFontSize) ..
 		{
 			OnCommand = function(self)
 				self:diffuse(color(seraphicLabelColor)):settext("MEAN")
@@ -682,7 +693,6 @@ local j =
 				end
 			end
 		},
-	seraphicPanel(left, top, frameWidth, frameHeight, "clean"),
 	MovableBorder(frameWidth, frameHeight, 1, 0, 0)
 }
 
@@ -690,10 +700,11 @@ local function makeJudgeText(judge, index) -- Makes text
 	return LoadFont("Common normal") ..
 		{
 			InitCommand = function(self)
-				self:xy(left + 12, top + judgeTop + (index - 0.5) * spacing):zoom(judgeFontSize):halign(0)
+				self:xy(left + 8, top + judgeTop + (index - 0.5) * spacing):zoom(judgeFontSize):halign(0)
+				self:maxwidth(frameWidth * 0.6 / judgeFontSize)
 			end,
 			OnCommand = function(self)
-				settext(self, getShortJudgeStrings(judge))
+				settext(self, judgeNames[judge])
 				diffuse(self, jcT[judge])
 			end
 		}
@@ -713,15 +724,10 @@ local function makeJudgeCount(judge, index) -- Makes county things for taps....
 		}
 end
 
--- Build judgeboard: alternating row bands under each judgment, then a bullet, the name and the count
+-- Build judgeboard: alternating row bands under each judgment, then the name and the count
 for i = 1, #jdgT do
 	local rowY = top + judgeTop + (i - 1) * spacing
 	j[#j + 1] = seraphicRowBand(left + 4, rowY, frameWidth - 8, spacing, i)
-	j[#j + 1] = Def.Quad {
-		InitCommand = function(self)
-			self:xy(left + 7, rowY + spacing / 2):rotationz(45):zoomto(3, 3):diffuse(jcT[jdgT[i]]):diffusealpha(0.85)
-		end
-	}
 	j[#j + 1] = makeJudgeText(jdgT[i], i)
 	j[#j + 1] = makeJudgeCount(jdgT[i], i)
 end
