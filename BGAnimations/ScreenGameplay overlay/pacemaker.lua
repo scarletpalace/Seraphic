@@ -6,14 +6,16 @@
 	is that percent times how much of the chart has been judged, so the fill reaches the outline at the end.
 	Etterna percents bunch up near 100%, so heights use a piecewise scale that spreads the grade lines out.
 ]]
-local frameX = 10
-local frameY = 50
+local allowedCustomization = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).CustomizeGameplay
 local graphH = 170
 local barW = 24
 local barGap = 6
 local graphW = barW * 3 + barGap * 4
 local graphTop = 26 -- below the rank / percent header
 local graphBottom = graphTop + graphH
+-- backdrop box, relative to the frame's top-left origin
+local boxX, boxY = -4, -4
+local boxW, boxH = graphW + 8, graphBottom + 34
 
 local curColor = color("#ff4848")
 local targetColor = color("#88dd33")
@@ -153,7 +155,18 @@ end
 local t = Def.ActorFrame {
 	Name = "PaceMaker",
 	InitCommand = function(self)
-		self:xy(frameX, frameY)
+		self:xy(MovableValues.PaceMakerX, MovableValues.PaceMakerY):zoom(MovableValues.PaceMakerZoom)
+		if allowedCustomization then
+			Movable.DeviceButton_period.element = self
+			Movable.DeviceButton_slash.element = self
+			Movable.DeviceButton_slash.Border = self:GetChild("Border")
+			Movable.DeviceButton_period.condition = true
+			Movable.DeviceButton_slash.condition = true
+			Movable.DeviceButton_period.propertyOffsets = {
+				(boxX + boxW / 2) * MovableValues.PaceMakerZoom,
+				(boxY + boxH / 2) * MovableValues.PaceMakerZoom
+			}
+		end
 		loadChart()
 		reset()
 	end,
@@ -196,7 +209,7 @@ local t = Def.ActorFrame {
 	-- backdrop
 	Def.Quad {
 		InitCommand = function(self)
-			self:halign(0):valign(0):xy(-4, -4):zoomto(graphW + 8, graphBottom + 34)
+			self:halign(0):valign(0):xy(boxX, boxY):zoomto(boxW, boxH)
 			self:diffuse(color("#000000")):diffusealpha(0.55)
 		end
 	},
@@ -292,5 +305,8 @@ t[#t + 1] = LoadFont("Common Normal") .. {
 		end
 	end
 }
+
+-- drag handle for Customize Gameplay (nil otherwise)
+t[#t + 1] = MovableBorder(boxW, boxH, 1, boxX + boxW / 2, boxY + boxH / 2)
 
 return t
