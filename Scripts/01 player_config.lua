@@ -78,6 +78,7 @@ local defaultConfig = {
 	TargetTracker = true,
 	TargetGoal = 93,
 	TargetTrackerMode = 0, -- 0: set percent, 1: pb, 2: pb (replay)
+	PaceMaker = true, -- BMS-style current/target/best bar graph
 	JudgeCounter = true,
 	ErrorBar = 1,
 	leaderboardEnabled = false,

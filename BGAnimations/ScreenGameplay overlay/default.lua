@@ -11,6 +11,9 @@ local t = Def.ActorFrame {}
 t[#t + 1] = LoadActor("WifeJudgmentSpotting")
 t[#t + 1] = LoadActor("titlesplash")
 t[#t + 1] = LoadActor("leaderboard")
+if playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).PaceMaker then
+	t[#t + 1] = LoadActor("pacemaker")
+end
 if inReplay then
 	t[#t + 1] = LoadActor("replayscrolling")
 end
