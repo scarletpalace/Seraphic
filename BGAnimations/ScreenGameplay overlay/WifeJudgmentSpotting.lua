@@ -1267,6 +1267,21 @@ local pm = Def.ActorFrame {
 -- Load the CDGraph with a forced width parameter.
 pm[#pm + 1] = LoadActorWithParams("../_chorddensitygraph.lua", {width = wodth})
 
+-- Seraphic: thin silver border around the graph, like the select screen's chart preview
+local borderColor = color("#b8b4b6CC")
+local function borderEdge(name, x, y, w, h, ha, va)
+	return Def.Quad {
+		Name = name,
+		InitCommand = function(self)
+			self:xy(x, y):zoomto(w, h):halign(ha):valign(va):diffuse(borderColor):draworder(1050)
+		end
+	}
+end
+pm[#pm + 1] = borderEdge("BorderTop", -1, -hidth / 2, wodth + 2, 1, 0, 1)
+pm[#pm + 1] = borderEdge("BorderBottom", -1, hidth / 2, wodth + 2, 1, 0, 0)
+pm[#pm + 1] = borderEdge("BorderLeft", 0, 0, 1, hidth, 1, 0.5)
+pm[#pm + 1] = borderEdge("BorderRight", wodth, 0, 1, hidth, 0, 0.5)
+
 -- more draw order shenanigans
 pm[#pm + 1] = LoadFont("Common Normal") .. {
 	Name = "Seektext",
