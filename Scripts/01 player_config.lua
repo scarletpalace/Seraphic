@@ -36,7 +36,9 @@ local defaultGameplayCoordinates = {
 	BPMTextX = SCREEN_CENTER_X,
 	BPMTextY = SCREEN_BOTTOM - 20,
 	MusicRateX = SCREEN_CENTER_X,
-	MusicRateY = SCREEN_BOTTOM - 10
+	MusicRateY = SCREEN_BOTTOM - 10,
+	PaceMakerX = 10,
+	PaceMakerY = 50
 }
 
 local defaultGameplaySizes = {
@@ -65,7 +67,8 @@ local defaultGameplaySizes = {
 	PracticeCDGraphWidth = 0.8,
 	PracticeCDGraphHeight = 1,
 	MusicRateZoom = 1.0,
-	BPMTextZoom = 1.0
+	BPMTextZoom = 1.0,
+	PaceMakerZoom = 1.0
 }
 
 local defaultConfig = {
@@ -78,6 +81,7 @@ local defaultConfig = {
 	TargetTracker = true,
 	TargetGoal = 93,
 	TargetTrackerMode = 0, -- 0: set percent, 1: pb, 2: pb (replay)
+	PaceMaker = true, -- BMS-style current/target/best bar graph
 	JudgeCounter = true,
 	ErrorBar = 1,
 	leaderboardEnabled = false,

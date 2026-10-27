@@ -87,6 +87,8 @@ return Def.ActorFrame {
 				"n: "..transStr("NotefieldSpacing"),
 				"m: "..transStr("MeanPosition"),
 				",: "..transStr("MeanSize"),
+				".: "..transStr("PaceMakerPosition"),
+				"/: "..transStr("PaceMakerSize"),
 			}
 			if playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).LaneCover ~= 0 then
 				local selectStr = THEME:GetString("GameButton", "Select")

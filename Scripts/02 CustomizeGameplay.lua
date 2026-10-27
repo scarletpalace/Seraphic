@@ -70,6 +70,9 @@ local function loadValuesTable()
 	MovableValues.MusicRateX = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).GameplayXYCoordinates[keymode].MusicRateX
 	MovableValues.MusicRateY = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).GameplayXYCoordinates[keymode].MusicRateY
 	MovableValues.MusicRateZoom = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).GameplaySizes[keymode].MusicRateZoom
+	MovableValues.PaceMakerX = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).GameplayXYCoordinates[keymode].PaceMakerX
+	MovableValues.PaceMakerY = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).GameplayXYCoordinates[keymode].PaceMakerY
+	MovableValues.PaceMakerZoom = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).GameplaySizes[keymode].PaceMakerZoom
 end
 
 function unsetMovableKeymode()
@@ -902,8 +905,46 @@ Movable = {
 			property = "Zoom",
 			inc = -0.01
 		}
+	},
+	DeviceButton_period = {
+		name = "PaceMaker",
+		textHeader = "Pacemaker Graph Position:",
+		element = {},
+		properties = {"X", "Y"},
+		propertyOffsets = nil, -- set in pacemaker.lua so mouse drags hold the graph by its middle
+		elementTree = "GameplayXYCoordinates",
+		DeviceButton_up = {
+			property = "Y",
+			inc = -5
+		},
+		DeviceButton_down = {
+			property = "Y",
+			inc = 5
+		},
+		DeviceButton_left = {
+			property = "X",
+			inc = -5
+		},
+		DeviceButton_right = {
+			property = "X",
+			inc = 5
+		}
+	},
+	DeviceButton_slash = {
+		name = "PaceMaker",
+		textHeader = "Pacemaker Graph Size:",
+		element = {},
+		properties = {"Zoom"},
+		elementTree = "GameplaySizes",
+		DeviceButton_up = {
+			property = "Zoom",
+			inc = 0.05
+		},
+		DeviceButton_down = {
+			property = "Zoom",
+			inc = -0.05
+		}
 	}
-	
 }
 
 local function updatetext(button)
