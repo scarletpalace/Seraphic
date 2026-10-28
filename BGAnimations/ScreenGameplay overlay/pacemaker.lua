@@ -74,6 +74,14 @@ local progress = 0 -- share of the chart judged so far
 local targetDiff = 0
 local bestDiff
 local judgedTaps = 0 -- only used when the engine doesn't send MaxWifeScore / TotalPercent
+local autoplay = false
+
+-- the engine sinks the wife score on every autoplay judgment on purpose,
+-- so while autoplay is on (always the case in Customize Gameplay) its numbers are meaningless
+local function isAutoplay()
+	local controller = GAMESTATE:GetPlayerState():GetPlayerController()
+	return controller == "PlayerController_Autoplay" or controller == "PlayerController_Cpu"
+end
 
 local function loadChart()
 	pb = nil
@@ -184,8 +192,14 @@ local t = Def.ActorFrame {
 	end,
 	JudgmentMessageCommand = function(self, msg)
 		if msg.WifePercent == nil then return end
-		wifePercent = msg.WifePercent
-		if msg.WifeDifferential ~= nil then targetDiff = msg.WifeDifferential end
+		autoplay = isAutoplay()
+		if autoplay then
+			wifePercent = 0
+			targetDiff = nil
+		else
+			wifePercent = msg.WifePercent
+			if msg.WifeDifferential ~= nil then targetDiff = msg.WifeDifferential end
+		end
 		local cur, max = msg.CurWifeScore, msg.MaxWifeScore
 		if max and totalPoints > 0 then
 			progress = math.min(1, max / totalPoints)
@@ -196,7 +210,9 @@ local t = Def.ActorFrame {
 			judgedTaps = judgedTaps + 1
 			progress = math.min(1, judgedTaps * 2 / totalPoints)
 		end
-		if pb then
+		if pb and autoplay then
+			bestDiff = nil
+		elseif pb then
 			if cur and max then
 				bestDiff = cur - max * pb
 			elseif msg.WifePBDifferential ~= nil and msg.WifePBGoal == pb then
@@ -219,6 +235,10 @@ local t = Def.ActorFrame {
 			self:halign(0):valign(0):zoom(0.45)
 		end,
 		UpdateCommand = function(self)
+			if autoplay then
+				self:settext("AUTOPLAY"):diffuse(color("#bbbbbb"))
+				return
+			end
 			local name, tier = gradeOf(wifePercent)
 			self:settext("RANK " .. name):diffuse(getGradeColor(tier))
 		end
@@ -229,6 +249,10 @@ local t = Def.ActorFrame {
 			self:halign(1):valign(0):x(graphW):zoom(0.45)
 		end,
 		UpdateCommand = function(self)
+			if autoplay then
+				self:settext("--")
+				return
+			end
 			self:settextf("%.2f%%", wifePercent)
 		end
 	},
