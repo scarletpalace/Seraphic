@@ -199,20 +199,20 @@ local t =
 		if (allowedCustomization) then
 			Movable.pressed = false
 			Movable.current = "None"
-			Movable.DeviceButton_r.element = Notefield
-			Movable.DeviceButton_t.element = noteColumns
-			Movable.DeviceButton_r.condition = true
-			Movable.DeviceButton_t.condition = true
+			Movable.NotefieldPosition.element = Notefield
+			Movable.NotefieldSize.element = noteColumns
+			Movable.NotefieldPosition.condition = true
+			Movable.NotefieldSize.condition = true
 			self:GetDescendant("LifeP1", "Border"):SetFakeParent(lifebar)
-			Movable.DeviceButton_j.element = lifebar
-			Movable.DeviceButton_j.condition = true
-			Movable.DeviceButton_k.element = lifebar
-			Movable.DeviceButton_k.condition = true
-			Movable.DeviceButton_l.element = lifebar
-			Movable.DeviceButton_l.condition = true
-			Movable.DeviceButton_n.condition = true
-			Movable.DeviceButton_n.DeviceButton_up.arbitraryFunction = spaceNotefieldCols
-			Movable.DeviceButton_n.DeviceButton_down.arbitraryFunction = spaceNotefieldCols
+			Movable.LifeP1Position.element = lifebar
+			Movable.LifeP1Position.condition = true
+			Movable.LifeP1Size.element = lifebar
+			Movable.LifeP1Size.condition = true
+			Movable.LifeP1Rotation.element = lifebar
+			Movable.LifeP1Rotation.condition = true
+			Movable.NotefieldSpacing.condition = true
+			Movable.NotefieldSpacing.DeviceButton_up.arbitraryFunction = spaceNotefieldCols
+			Movable.NotefieldSpacing.DeviceButton_down.arbitraryFunction = spaceNotefieldCols
 		end
 
 		if lifebar ~= nil then
@@ -313,11 +313,11 @@ local d =
 	Name = "TargetTracker",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_7.element = self
-			Movable.DeviceButton_8.element = self
-			Movable.DeviceButton_8.Border = self:GetChild("Border")
-			Movable.DeviceButton_7.condition = enabledTargetTracker
-			Movable.DeviceButton_8.condition = enabledTargetTracker
+			Movable.TargetTrackerPosition.element = self
+			Movable.TargetTrackerSize.element = self
+			Movable.TargetTrackerSize.Border = self:GetChild("Border")
+			Movable.TargetTrackerPosition.condition = enabledTargetTracker
+			Movable.TargetTrackerSize.condition = enabledTargetTracker
 		end
 		self:xy(MovableValues.TargetTrackerX, MovableValues.TargetTrackerY):zoom(MovableValues.TargetTrackerZoom)
 	end,
@@ -395,12 +395,12 @@ local cp =
 	Name = "DisplayPercent",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_w.element = self
-			Movable.DeviceButton_e.element = self
-			Movable.DeviceButton_w.condition = enabledDisplayPercent
-			Movable.DeviceButton_e.condition = enabledDisplayPercent
-			Movable.DeviceButton_w.Border = self:GetChild("Border")
-			Movable.DeviceButton_e.Border = self:GetChild("Border")
+			Movable.DisplayPercentPosition.element = self
+			Movable.DisplayPercentSize.element = self
+			Movable.DisplayPercentPosition.condition = enabledDisplayPercent
+			Movable.DisplayPercentSize.condition = enabledDisplayPercent
+			Movable.DisplayPercentPosition.Border = self:GetChild("Border")
+			Movable.DisplayPercentSize.Border = self:GetChild("Border")
 		end
 		self:zoom(MovableValues.DisplayPercentZoom):x(MovableValues.DisplayPercentX):y(MovableValues.DisplayPercentY)
 	end,
@@ -444,12 +444,12 @@ local dpm = Def.ActorFrame {
 	Name = "DisplayMean",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_comma.element = self
-			Movable.DeviceButton_m.element = self
-			Movable.DeviceButton_comma.condition = enabledDisplayMean
-			Movable.DeviceButton_m.condition = enabledDisplayMean
-			Movable.DeviceButton_comma.Border = self:GetChild("Border")
-			Movable.DeviceButton_m.Border = self:GetChild("Border")
+			Movable.DisplayMeanSize.element = self
+			Movable.DisplayMeanPosition.element = self
+			Movable.DisplayMeanSize.condition = enabledDisplayMean
+			Movable.DisplayMeanPosition.condition = enabledDisplayMean
+			Movable.DisplayMeanSize.Border = self:GetChild("Border")
+			Movable.DisplayMeanPosition.Border = self:GetChild("Border")
 		end
 		self:zoom(MovableValues.DisplayMeanZoom):x(MovableValues.DisplayMeanX):y(MovableValues.DisplayMeanY)
 	end,
@@ -555,8 +555,8 @@ local j =
 	Name = "JudgeCounter",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_p.element = self
-			Movable.DeviceButton_p.condition = enabledJudgeCounter
+			Movable.JudgeCounterPosition.element = self
+			Movable.JudgeCounterPosition.condition = enabledJudgeCounter
 		end
 		self:xy(MovableValues.JudgeCounterX, MovableValues.JudgeCounterY)
 	end,
@@ -789,14 +789,14 @@ local e =
 	Name = "ErrorBar",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_5.element = self:GetChildren()
-			Movable.DeviceButton_6.element = self:GetChildren()
-			Movable.DeviceButton_5.condition = enabledErrorBar ~= 0
-			Movable.DeviceButton_6.condition = enabledErrorBar ~= 0
-			Movable.DeviceButton_5.Border = self:GetChild("Border")
-			Movable.DeviceButton_6.Border = self:GetChild("Border")
-			Movable.DeviceButton_6.DeviceButton_left.arbitraryFunction = arbitraryErrorBarValue
-			Movable.DeviceButton_6.DeviceButton_right.arbitraryFunction = arbitraryErrorBarValue
+			Movable.ErrorBarPosition.element = self:GetChildren()
+			Movable.ErrorBarSize.element = self:GetChildren()
+			Movable.ErrorBarPosition.condition = enabledErrorBar ~= 0
+			Movable.ErrorBarSize.condition = enabledErrorBar ~= 0
+			Movable.ErrorBarPosition.Border = self:GetChild("Border")
+			Movable.ErrorBarSize.Border = self:GetChild("Border")
+			Movable.ErrorBarSize.DeviceButton_left.arbitraryFunction = arbitraryErrorBarValue
+			Movable.ErrorBarSize.DeviceButton_right.arbitraryFunction = arbitraryErrorBarValue
 		end
 		if enabledErrorBar == 1 then
 			for i = 1, barcount do -- basically the equivalent of using GetChildren() if it returned unnamed children numerically indexed
@@ -970,10 +970,10 @@ local p =
 		self:xy(MovableValues.FullProgressBarX, MovableValues.FullProgressBarY)
 		self:zoomto(MovableValues.FullProgressBarWidth, MovableValues.FullProgressBarHeight)
 		if (allowedCustomization) then
-			Movable.DeviceButton_9.element = self
-			Movable.DeviceButton_0.element = self
-			Movable.DeviceButton_9.condition = enabledFullBar
-			Movable.DeviceButton_0.condition = enabledFullBar
+			Movable.FullProgressBarPosition.element = self
+			Movable.FullProgressBarSize.element = self
+			Movable.FullProgressBarPosition.condition = enabledFullBar
+			Movable.FullProgressBarSize.condition = enabledFullBar
 		end
 	end,
 	replaySlider,
@@ -1059,9 +1059,9 @@ local mb =
 	InitCommand = function(self)
 		self:xy(MovableValues.MiniProgressBarX, MovableValues.MiniProgressBarY)
 		if (allowedCustomization) then
-			Movable.DeviceButton_q.element = self
-			Movable.DeviceButton_q.condition = enabledMiniBar
-			Movable.DeviceButton_q.Border = self:GetChild("Border")
+			Movable.MiniProgressBarPosition.element = self
+			Movable.MiniProgressBarPosition.condition = enabledMiniBar
+			Movable.MiniProgressBarPosition.Border = self:GetChild("Border")
 		end
 	end,
 	Def.Quad {
@@ -1101,12 +1101,12 @@ t[#t + 1] =
 	Name = "MusicRate",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_v.element = self
-			Movable.DeviceButton_b.element = self
-			Movable.DeviceButton_v.condition = true
-			Movable.DeviceButton_b.condition = true
-			Movable.DeviceButton_v.Border = self:GetChild("Border")
-			Movable.DeviceButton_b.Border = self:GetChild("Border")
+			Movable.MusicRatePosition.element = self
+			Movable.MusicRateSize.element = self
+			Movable.MusicRatePosition.condition = true
+			Movable.MusicRateSize.condition = true
+			Movable.MusicRatePosition.Border = self:GetChild("Border")
+			Movable.MusicRateSize.Border = self:GetChild("Border")
 		end
 		self:xy(MovableValues.MusicRateX, MovableValues.MusicRateY):zoom(MovableValues.MusicRateZoom)
 	end,
@@ -1154,12 +1154,12 @@ t[#t + 1] =
 	Name = "BPMText",
 	InitCommand = function(self)
 		if (allowedCustomization) then
-			Movable.DeviceButton_x.element = self
-			Movable.DeviceButton_c.element = self
-			Movable.DeviceButton_x.condition = true
-			Movable.DeviceButton_c.condition = true
-			Movable.DeviceButton_x.Border = self:GetChild("Border")
-			Movable.DeviceButton_c.Border = self:GetChild("Border")
+			Movable.BPMTextPosition.element = self
+			Movable.BPMTextSize.element = self
+			Movable.BPMTextPosition.condition = true
+			Movable.BPMTextSize.condition = true
+			Movable.BPMTextPosition.Border = self:GetChild("Border")
+			Movable.BPMTextSize.Border = self:GetChild("Border")
 		end
 		self:x(MovableValues.BPMTextX):y(MovableValues.BPMTextY):zoom(MovableValues.BPMTextZoom)
 		BPM = self:GetChild("BPM")
@@ -1371,8 +1371,8 @@ local pm = Def.ActorFrame {
 		self:SetUpdateFunction(UpdatePreviewPos)
 		cd = self:GetChild("ChordDensityGraph"):visible(true):draworder(1000):y(20)
 		if (allowedCustomization) then
-			Movable.DeviceButton_z.element = self
-			Movable.DeviceButton_z.condition = practiceMode
+			Movable.PracticeCDGraphPosition.element = self
+			Movable.PracticeCDGraphPosition.condition = practiceMode
 		end
 	end,
 	BeginCommand = function(self)

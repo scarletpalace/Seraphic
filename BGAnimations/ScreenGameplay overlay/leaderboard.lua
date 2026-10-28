@@ -32,7 +32,7 @@ local function arbitraryLeaderboardSpacing(value)
 		entry.container:addy((i - 1) * value)
 	end
 	if allowedCustomization then
-		Movable.DeviceButton_s.Border:playcommand(
+		Movable.LeaderboardSize.Border:playcommand(
 			"ChangeHeight",
 			{val = entryActors[#entryActors].container:GetY() + ENTRY_HEIGHT}
 		)
@@ -283,15 +283,15 @@ t[#t + 1] = MovableBorder(WIDTH, 200, 1, 0, 0)
 
 t.OnCommand = function(self, params)
 	if allowedCustomization then
-		Movable.DeviceButton_a.element = self
-		Movable.DeviceButton_s.element = self
-		Movable.DeviceButton_a.condition = true
-		Movable.DeviceButton_s.condition = true
-		Movable.DeviceButton_d.condition = NUM_ENTRIES > 1
-		Movable.DeviceButton_d.DeviceButton_up.arbitraryFunction = arbitraryLeaderboardSpacing
-		Movable.DeviceButton_d.DeviceButton_down.arbitraryFunction = arbitraryLeaderboardSpacing
-		Movable.DeviceButton_s.Border = self:GetChild("Border")
-		Movable.DeviceButton_d.Border = self:GetChild("Border")
+		Movable.LeaderboardPosition.element = self
+		Movable.LeaderboardSize.element = self
+		Movable.LeaderboardPosition.condition = true
+		Movable.LeaderboardSize.condition = true
+		Movable.LeaderboardSpacing.condition = NUM_ENTRIES > 1
+		Movable.LeaderboardSpacing.DeviceButton_up.arbitraryFunction = arbitraryLeaderboardSpacing
+		Movable.LeaderboardSpacing.DeviceButton_down.arbitraryFunction = arbitraryLeaderboardSpacing
+		Movable.LeaderboardSize.Border = self:GetChild("Border")
+		Movable.LeaderboardSpacing.Border = self:GetChild("Border")
 		setBorderAlignment(self:GetChild("Border"), 0, 0)
 	end
 	arbitraryLeaderboardSpacing(MovableValues.LeaderboardSpacing)

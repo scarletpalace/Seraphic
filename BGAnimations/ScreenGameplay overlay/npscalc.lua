@@ -213,11 +213,11 @@ local function npsDisplay(pn)
 		InitCommand = function(self)
 			self:xy(MovableValues.NPSDisplayX, MovableValues.NPSDisplayY):zoom(MovableValues.NPSDisplayZoom)
 			if allowedCustomization then
-				Movable.DeviceButton_y.element = self
-				Movable.DeviceButton_u.element = self
-				Movable.DeviceButton_y.condition = enabled.NPSDisplay.PlayerNumber_P1
-				Movable.DeviceButton_u.condition = enabled.NPSDisplay.PlayerNumber_P1
-				Movable.DeviceButton_u.Border = self:GetChild("Border")
+				Movable.NPSDisplayPosition.element = self
+				Movable.NPSDisplaySize.element = self
+				Movable.NPSDisplayPosition.condition = enabled.NPSDisplay.PlayerNumber_P1
+				Movable.NPSDisplaySize.condition = enabled.NPSDisplay.PlayerNumber_P1
+				Movable.NPSDisplaySize.Border = self:GetChild("Border")
 			end
 		end,
 		OnCommand = function(self)
@@ -286,13 +286,13 @@ local function npsGraph(pn)
 		Name = "NPSGraph",
 		InitCommand = function(self)
 			self:xy(MovableValues.NPSGraphX, MovableValues.NPSGraphY):zoomtoheight(MovableValues.NPSGraphHeight):zoomtowidth(MovableValues.NPSGraphWidth)
-			Movable.DeviceButton_i.element = self
-			Movable.DeviceButton_o.element = self
+			Movable.NPSGraphPosition.element = self
+			Movable.NPSGraphSize.element = self
 			if allowedCustomization then
-				Movable.DeviceButton_i.element = self
-				Movable.DeviceButton_o.element = self
-				Movable.DeviceButton_i.condition = enabled.NPSGraph.PlayerNumber_P1
-				Movable.DeviceButton_o.condition = enabled.NPSGraph.PlayerNumber_P1
+				Movable.NPSGraphPosition.element = self
+				Movable.NPSGraphSize.element = self
+				Movable.NPSGraphPosition.condition = enabled.NPSGraph.PlayerNumber_P1
+				Movable.NPSGraphSize.condition = enabled.NPSGraph.PlayerNumber_P1
 				setBorderAlignment(self:GetChild("Border"), 0, 0)
 			end
 		end,

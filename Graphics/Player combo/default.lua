@@ -88,15 +88,15 @@ local t = Def.ActorFrame {
 	InitCommand = function(self)
 		c = self:GetChildren()
 		if (allowedCustomization) then
-			Movable.DeviceButton_3.element = c
-			Movable.DeviceButton_4.element = c
-			Movable.DeviceButton_3.condition = enabledCombo
-			Movable.DeviceButton_4.condition = enabledCombo
-			Movable.DeviceButton_3.Border = self:GetChild("Border")
-			Movable.DeviceButton_3.DeviceButton_left.arbitraryFunction = arbitraryComboX
-			Movable.DeviceButton_3.DeviceButton_right.arbitraryFunction = arbitraryComboX
-			Movable.DeviceButton_4.DeviceButton_up.arbitraryFunction = arbitraryComboZoom
-			Movable.DeviceButton_4.DeviceButton_down.arbitraryFunction = arbitraryComboZoom
+			Movable.ComboPosition.element = c
+			Movable.ComboSize.element = c
+			Movable.ComboPosition.condition = enabledCombo
+			Movable.ComboSize.condition = enabledCombo
+			Movable.ComboPosition.Border = self:GetChild("Border")
+			Movable.ComboPosition.DeviceButton_left.arbitraryFunction = arbitraryComboX
+			Movable.ComboPosition.DeviceButton_right.arbitraryFunction = arbitraryComboX
+			Movable.ComboSize.DeviceButton_up.arbitraryFunction = arbitraryComboZoom
+			Movable.ComboSize.DeviceButton_down.arbitraryFunction = arbitraryComboZoom
 		end
 	end,
 	OnCommand = function(self)
@@ -106,7 +106,7 @@ local t = Def.ActorFrame {
 			c.Label:visible(not CenterCombo)
 			c.Label:settext(translated_combo)
 
-			Movable.DeviceButton_3.propertyOffsets = {self:GetTrueX() -6, self:GetTrueY()}	-- centered to screen/valigned
+			Movable.ComboPosition.propertyOffsets = {self:GetTrueX() -6, self:GetTrueY()}	-- centered to screen/valigned
 			setBorderAlignment(c.Border, 0.5, 1)
 		end
 		arbitraryComboZoom(MovableValues.ComboZoom)
