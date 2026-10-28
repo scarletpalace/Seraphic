@@ -75,7 +75,7 @@ return Def.ActorFrame {
 				"s: "..transStr("LeaderboardSize"),
 				"d: "..transStr("LeaderboardSpacing"),
 				"f: "..transStr("ReplayButtonPosition"),
-				--"g: Replay Buttons Size",
+				"g: "..transStr("PaceMakerSize"),
 				"h: "..transStr("ReplayButtonSpacing"),
 				"j: "..transStr("LifebarPosition"),
 				"k: "..transStr("LifebarSize"),
@@ -88,7 +88,6 @@ return Def.ActorFrame {
 				"m: "..transStr("MeanPosition"),
 				",: "..transStr("MeanSize"),
 				".: "..transStr("PaceMakerPosition"),
-				"/: "..transStr("PaceMakerSize"),
 			}
 			if playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).LaneCover ~= 0 then
 				local selectStr = THEME:GetString("GameButton", "Select")

@@ -930,7 +930,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_slash = {
+	DeviceButton_g = {
 		name = "PaceMaker",
 		textHeader = "Pacemaker Graph Size:",
 		element = {},
