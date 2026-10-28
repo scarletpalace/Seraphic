@@ -3,6 +3,7 @@
 ]]
 local allowedCustomization = playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).CustomizeGameplay
 local practiceMode = GAMESTATE:IsPracticeMode()
+setMovableZBinding(practiceMode)
 local jcKeys = tableKeys(colorConfig:get_data().judgment)
 local jcT = {} -- A "T" following a variable name will designate an object of type table.
 

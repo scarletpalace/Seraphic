@@ -727,7 +727,7 @@ Movable = {
 			inc = 1
 		},
 	},
-	DeviceButton_z = {
+	PracticeCDGraphBinding = {
 		name = "PracticeCDGraph",
 		textHeader = "Chord Density Graph Position:",
 		properties = {"X","Y"},
@@ -930,7 +930,9 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_slash = {
+	-- Z is shared: the chord density graph's position in practice mode, the pacemaker graph's size
+	-- otherwise. Both bindings live here and setMovableZBinding puts the right one on Z.
+	PaceMakerSizeBinding = {
 		name = "PaceMaker",
 		textHeader = "Pacemaker Graph Size:",
 		element = {},
@@ -956,6 +958,11 @@ local function updatetext(button)
 	Movable.message:settext(table.concat(text, "\n"))
 	Movable.message:visible(Movable.pressed)
 end
+
+function setMovableZBinding(practice)
+	Movable.DeviceButton_z = practice and Movable.PracticeCDGraphBinding or Movable.PaceMakerSizeBinding
+end
+setMovableZBinding(false)
 
 function MovableInput(event)
 	if SCREENMAN:GetTopScreen():GetName() == "ScreenGameplaySyncMachine" then return end
@@ -1153,7 +1160,8 @@ end
 local function elementtobutton(name)
 	name = name == "Judgment" and "Judge" or name
 	for k,v in pairs(Movable) do
-		if type(v) == 'table' and v.name == name and v.properties[1] == "X" then
+		-- only real keys; the stored Z bindings (PracticeCDGraphBinding etc.) would shadow DeviceButton_z
+		if type(v) == 'table' and v.name == name and v.properties[1] == "X" and k:find("^DeviceButton_") then
 			return k
 		end
 	end
