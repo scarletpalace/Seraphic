@@ -157,12 +157,12 @@ local t = Def.ActorFrame {
 	InitCommand = function(self)
 		self:xy(MovableValues.PaceMakerX, MovableValues.PaceMakerY):zoom(MovableValues.PaceMakerZoom)
 		if allowedCustomization then
-			Movable.DeviceButton_period.element = self
-			Movable.DeviceButton_slash.element = self
-			Movable.DeviceButton_slash.Border = self:GetChild("Border")
-			Movable.DeviceButton_period.condition = true
-			Movable.DeviceButton_slash.condition = true
-			Movable.DeviceButton_period.propertyOffsets = {
+			Movable.PaceMakerPosition.element = self
+			Movable.PaceMakerSize.element = self
+			Movable.PaceMakerSize.Border = self:GetChild("Border")
+			Movable.PaceMakerPosition.condition = true
+			Movable.PaceMakerSize.condition = true
+			Movable.PaceMakerPosition.propertyOffsets = {
 				(boxX + boxW / 2) * MovableValues.PaceMakerZoom,
 				(boxY + boxH / 2) * MovableValues.PaceMakerZoom
 			}

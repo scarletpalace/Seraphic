@@ -4,8 +4,6 @@ local padding = 20 -- 10px on each side
 local arrowWidth = 64 -- until noteskin metrics are implemented...
 
 --moving notefield shenanigans
-local rPressed = false
-local tPressed = false
 local noteFieldWidth = MovableValues.NotefieldWidth
 local notefieldX = MovableValues.NotefieldX
 local oldWidth = noteFieldWidth
@@ -16,34 +14,6 @@ local cbContainer
 -- this happens when not in gameplay
 if noteFieldWidth == nil then
 	return Def.ActorFrame {}
-end
-
-local function input(event)
-	if getAutoplay() ~= 0 then -- not touching this currently, its fully bound with the notefield ones and doesnt have a message
-		if Movable.current == "DeviceButton_t" and event.type ~= "InputEventType_Release" then
-			if event.DeviceInput.button == "DeviceButton_left" then
-				oldWidth = noteFieldWidth
-				noteFieldWidth = noteFieldWidth - 0.01
-				filter:playcommand("Update")
-				cbContainer:playcommand("Update")
-			end
-			if event.DeviceInput.button == "DeviceButton_right" then
-				oldWidth = noteFieldWidth
-				noteFieldWidth = noteFieldWidth + 0.01
-				filter:playcommand("Update")
-				cbContainer:playcommand("Update")
-			end
-		end
-
-		if Movable.current == "DeviceButton_n" and event.type ~= "InputEventType_Release" then
-			if event.DeviceInput.button == "DeviceButton_up" or event.DeviceInput.button == "DeviceButton_down" then
-				filter:playcommand("Update")
-				cbContainer:playcommand("Update")
-				oldspacing = MovableValues.NotefieldSpacing
-			end
-		end
-	end
-	return false
 end
 
 local style = GAMESTATE:GetCurrentStyle()
@@ -126,15 +96,13 @@ end
 
 local t =
 	Def.ActorFrame {
-	OnCommand = function()
-		if (allowedCustomization) then
-			-- this isnt really necessary but it stops lua errors
-			-- basically this just triggers if we exit playeroptions into gameplay
-			-- and i dont want to investigate what causes it
-			-- but it doesnt break anything when it happens
-			-- so this just stops the lua error and breaks nothing else
-			if SCREENMAN:GetTopScreen() == nil then return end
-			SCREENMAN:GetTopScreen():AddInputCallback(input)
+	-- follow the notefield while it is resized or its columns are spaced in customize gameplay
+	CustomizeGameplayChangedMessageCommand = function(self, params)
+		if params.id == "NotefieldSize" or params.id == "NotefieldSpacing" then
+			filter:playcommand("Update")
+			cbContainer:playcommand("Update")
+			oldWidth = MovableValues.NotefieldWidth
+			oldspacing = MovableValues.NotefieldSpacing
 		end
 	end
 }
