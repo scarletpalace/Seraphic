@@ -97,13 +97,13 @@ local t = Def.ActorFrame {
 		c = self:GetChildren()
 		judgmentZoom(MovableValues.JudgeZoom)
 		if allowedCustomization then
-			Movable.DeviceButton_1.element = c
-			Movable.DeviceButton_2.element = c
-			Movable.DeviceButton_1.condition = enabledJudgment
-			Movable.DeviceButton_2.condition = enabledJudgment
-			Movable.DeviceButton_2.DeviceButton_up.arbitraryFunction = judgmentZoom
-			Movable.DeviceButton_2.DeviceButton_down.arbitraryFunction = judgmentZoom
-			Movable.DeviceButton_1.propertyOffsets = {self:GetTrueX() , self:GetTrueY()}	-- centered to screen/valigned
+			Movable.JudgePosition.element = c
+			Movable.JudgeSize.element = c
+			Movable.JudgePosition.condition = enabledJudgment
+			Movable.JudgeSize.condition = enabledJudgment
+			Movable.JudgeSize.DeviceButton_up.arbitraryFunction = judgmentZoom
+			Movable.JudgeSize.DeviceButton_down.arbitraryFunction = judgmentZoom
+			Movable.JudgePosition.propertyOffsets = {self:GetTrueX() , self:GetTrueY()}	-- centered to screen/valigned
 		end
 	end,
 	JudgmentMessageCommand = function(self, param)

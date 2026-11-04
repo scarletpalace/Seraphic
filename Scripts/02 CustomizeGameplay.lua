@@ -105,7 +105,7 @@ Movable = {
 	message = {},
 	current = "None",
 	pressed = false,
-	DeviceButton_1 = {
+	JudgePosition = {
 		name = "Judge",
 		textHeader = "Judgment Label Position:",
 		element = {},
@@ -130,7 +130,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_2 = {	-- note: there's almost certainly an update function associated with this that is doing things we aren't aware of
+	JudgeSize = {	-- note: there's almost certainly an update function associated with this that is doing things we aren't aware of
 		name = "Judge",
 		textHeader = "Judgment Label Size:",
 		element = {},
@@ -147,7 +147,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_3 = {
+	ComboPosition = {
 		name = "Combo",
 		textHeader = "Combo Position:",
 		element = {},
@@ -172,7 +172,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_4 = {	-- combo and label are 2 text objects, 1 right aligned and 1 left, this makes border resizing desync from the text sometimes
+	ComboSize = {	-- combo and label are 2 text objects, 1 right aligned and 1 left, this makes border resizing desync from the text sometimes
 		name = "Combo",	-- i really dont want to deal with this right now -mina
 		textHeader = "Combo Size:",
 		element = {},
@@ -189,7 +189,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_5 = {
+	ErrorBarPosition = {
 		name = "ErrorBar",
 		textHeader = "Error Bar Position:",
 		element = {}, -- initialized later
@@ -213,7 +213,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_6 = {
+	ErrorBarSize = {
 		name = "ErrorBar",
 		textHeader = "Error Bar Size:",
 		element = {},
@@ -237,7 +237,7 @@ Movable = {
 			inc = 10
 		}
 	},
-	DeviceButton_7 = {
+	TargetTrackerPosition = {
 		name = "TargetTracker",
 		textHeader = "Goal Tracker Position:",
 		element = {},
@@ -261,7 +261,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_8 = {
+	TargetTrackerSize = {
 		name = "TargetTracker",
 		textHeader = "Goal Tracker Size:",
 		element = {},
@@ -276,7 +276,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_9 = {
+	FullProgressBarPosition = {
 		name = "FullProgressBar",
 		textHeader = "Full Progress Bar Position:",
 		element = {},
@@ -299,7 +299,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_0 = {
+	FullProgressBarSize = {
 		name = "FullProgressBar",
 		textHeader = "Full Progress Bar Size:",
 		element = {},
@@ -323,7 +323,7 @@ Movable = {
 			inc = 0.01
 		}
 	},
-	DeviceButton_q = {
+	MiniProgressBarPosition = {
 		name = "MiniProgressBar",
 		textHeader = "Mini Progress Bar Position:",
 		element = {},
@@ -346,7 +346,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_w = {
+	DisplayPercentPosition = {
 		name = "DisplayPercent",
 		textHeader = "Current Percent Position:",
 		element = {},
@@ -369,7 +369,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_e = {
+	DisplayPercentSize = {
 		name = "DisplayPercent",
 		textHeader = "Current Percent Size:",
 		element = {},
@@ -384,7 +384,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_r = {
+	NotefieldPosition = {
 		name = "Notefield",
 		textHeader = "Notefield Position:",
 		element = {},
@@ -410,7 +410,7 @@ Movable = {
 			inc = 3
 		}
 	},
-	DeviceButton_t = {
+	NotefieldSize = {
 		name = "Notefield",
 		textHeader = "Notefield Size:",
 		element = {},
@@ -435,7 +435,7 @@ Movable = {
 			inc = 0.01
 		}
 	},
-	DeviceButton_y = {
+	NPSDisplayPosition = {
 		name = "NPSDisplay",
 		textHeader = "NPS Display Position:",
 		element = {},
@@ -458,7 +458,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_u = {
+	NPSDisplaySize = {
 		name = "NPSDisplay",
 		textHeader = "NPS Display Size:",
 		element = {},
@@ -473,7 +473,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_i = {
+	NPSGraphPosition = {
 		name = "NPSGraph",
 		textHeader = "NPS Graph Position:",
 		element = {},
@@ -496,7 +496,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_o = {
+	NPSGraphSize = {
 		name = "NPSGraph",
 		textHeader = "NPS Graph Size:",
 		element = {},
@@ -520,7 +520,7 @@ Movable = {
 			inc = 0.01
 		}
 	},
-	DeviceButton_p = {
+	JudgeCounterPosition = {
 		name = "JudgeCounter",
 		textHeader = "Judge Counter Position:",
 		element = {},
@@ -543,7 +543,7 @@ Movable = {
 			inc = 3
 		}
 	},
-	DeviceButton_a = {
+	LeaderboardPosition = {
 		name = "Leaderboard",
 		textHeader = "Leaderboard Position:",
 		properties = {"X", "Y"},
@@ -566,7 +566,7 @@ Movable = {
 			inc = 3
 		}
 	},
-	DeviceButton_s = {
+	LeaderboardSize = {
 		name = "Leaderboard",
 		textHeader = "Leaderboard Size:",
 		properties = {"Width", "Height"},
@@ -590,7 +590,7 @@ Movable = {
 			inc = 0.01
 		}
 	},
-	DeviceButton_d = {
+	LeaderboardSpacing = {
 		name = "Leaderboard",
 		textHeader = "Leaderboard Spacing:",
 		properties = {"Spacing"},
@@ -606,7 +606,7 @@ Movable = {
 			inc = 0.3
 		},
 	},
-	DeviceButton_f = {
+	ReplayButtonsPosition = {
 		name = "ReplayButtons",
 		textHeader = "Replay Buttons Position:",
 		element = {},
@@ -630,7 +630,7 @@ Movable = {
 			inc = 3
 		}
 	},--[[
-	DeviceButton_g = {
+	ReplayButtonsSize = {
 		name = "ReplayButtons",
 		textHeader = "Replay Buttons Size:",
 		element = {},
@@ -647,7 +647,7 @@ Movable = {
 			inc = -0.01
 		}
 	},]]
-	DeviceButton_h = {
+	ReplayButtonsSpacing = {
 		name = "ReplayButtons",
 		textHeader = "Replay Buttons Spacing:",
 		properties = {"Spacing"},
@@ -664,7 +664,7 @@ Movable = {
 			inc = 0.5
 		},
 	},
-	DeviceButton_j = {
+	LifeP1Position = {
 		name = "LifeP1",
 		textHeader = "Lifebar Position:",
 		element = {},
@@ -688,7 +688,7 @@ Movable = {
 			inc = 3
 		}
 	},
-	DeviceButton_k = {
+	LifeP1Size = {
 		name = "LifeP1",
 		textHeader = "Lifebar Size:",
 		properties = {"Width", "Height"},
@@ -712,7 +712,7 @@ Movable = {
 			inc = 0.01
 		}
 	},
-	DeviceButton_l = {
+	LifeP1Rotation = {
 		name = "LifeP1",
 		textHeader = "Lifebar Rotation:",
 		properties = {"Rotation"},
@@ -727,7 +727,7 @@ Movable = {
 			inc = 1
 		},
 	},
-	DeviceButton_z = {
+	PracticeCDGraphPosition = {
 		name = "PracticeCDGraph",
 		textHeader = "Chord Density Graph Position:",
 		properties = {"X","Y"},
@@ -751,7 +751,7 @@ Movable = {
 			inc = 3
 		}
 	},
-	--[[DeviceButton_x = {
+	--[[PracticeCDGraphSize = {
 		name = "PracticeCDGraph",
 		textHeader = "Chord Density Graph Size:",
 		properties = {"Width", "Height"},
@@ -775,7 +775,7 @@ Movable = {
 			inc = 0.01
 		}
 	},]]
-	DeviceButton_x = {
+	BPMTextPosition = {
 		name = "BPMText",
 		textHeader = "BPM Text Position:",
 		element = {},
@@ -798,7 +798,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_c = {
+	BPMTextSize = {
 		name = "BPMText",
 		textHeader = "BPM Text Size:",
 		element = {},
@@ -813,7 +813,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_v = {
+	MusicRatePosition = {
 		name = "MusicRate",
 		textHeader = "Music Rate Position:",
 		element = {},
@@ -836,7 +836,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_b = {
+	MusicRateSize = {
 		name = "MusicRate",
 		textHeader = "Music Rate Size:",
 		element = {},
@@ -851,7 +851,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_n = {
+	NotefieldSpacing = {
 		name = "Notefield",
 		textHeader = "Notefield Columns:",
 		properties = {"Spacing"},
@@ -868,7 +868,7 @@ Movable = {
 			inc = -1
 		},
 	},
-	DeviceButton_m = {
+	DisplayMeanPosition = {
 		name = "DisplayMean",
 		textHeader = "Current Mean Position:",
 		element = {},
@@ -891,7 +891,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_comma = {
+	DisplayMeanSize = {
 		name = "DisplayMean",
 		textHeader = "Current Mean Size:",
 		element = {},
@@ -906,7 +906,7 @@ Movable = {
 			inc = -0.01
 		}
 	},
-	DeviceButton_period = {
+	PaceMakerPosition = {
 		name = "PaceMaker",
 		textHeader = "Pacemaker Graph Position:",
 		element = {},
@@ -930,7 +930,7 @@ Movable = {
 			inc = 5
 		}
 	},
-	DeviceButton_slash = {
+	PaceMakerSize = {
 		name = "PaceMaker",
 		textHeader = "Pacemaker Graph Size:",
 		element = {},
@@ -947,190 +947,314 @@ Movable = {
 	}
 }
 
-local function updatetext(button)
-	local text = {Movable[button].textHeader}
-	for _, prop in ipairs(Movable[button].properties) do
-		local fullProp = Movable[button].name .. prop
-		text[#text + 1] = prop .. ": " .. MovableValues[fullProp]
-	end
-	Movable.message:settext(table.concat(text, "\n"))
-	Movable.message:visible(Movable.pressed)
+-- Gameplay elements in the order Tab cycles through them. Each one lists its
+-- adjustment modes (entries of Movable) in the order Space cycles through them.
+-- The first mode of every element is its position, which is what mouse drags move.
+local movableElements = {
+	{label = "Judgment", modes = {"JudgePosition", "JudgeSize"}},
+	{label = "Combo", modes = {"ComboPosition", "ComboSize"}},
+	{label = "Notefield", modes = {"NotefieldPosition", "NotefieldSize", "NotefieldSpacing"}},
+	{label = "Lifebar", modes = {"LifeP1Position", "LifeP1Size", "LifeP1Rotation"}},
+	{label = "Error Bar", modes = {"ErrorBarPosition", "ErrorBarSize"}},
+	{label = "Goal Tracker", modes = {"TargetTrackerPosition", "TargetTrackerSize"}},
+	{label = "Current Percent", modes = {"DisplayPercentPosition", "DisplayPercentSize"}},
+	{label = "Current Mean", modes = {"DisplayMeanPosition", "DisplayMeanSize"}},
+	{label = "Judge Counter", modes = {"JudgeCounterPosition"}},
+	{label = "Pacemaker Graph", modes = {"PaceMakerPosition", "PaceMakerSize"}},
+	{label = "Full Progress Bar", modes = {"FullProgressBarPosition", "FullProgressBarSize"}},
+	{label = "Mini Progress Bar", modes = {"MiniProgressBarPosition"}},
+	{label = "NPS Display", modes = {"NPSDisplayPosition", "NPSDisplaySize"}},
+	{label = "NPS Graph", modes = {"NPSGraphPosition", "NPSGraphSize"}},
+	{label = "Leaderboard", modes = {"LeaderboardPosition", "LeaderboardSize", "LeaderboardSpacing"}},
+	{label = "BPM Text", modes = {"BPMTextPosition", "BPMTextSize"}},
+	{label = "Music Rate", modes = {"MusicRatePosition", "MusicRateSize"}},
+	{label = "Replay Buttons", modes = {"ReplayButtonsPosition", "ReplayButtonsSpacing"}},
+	{label = "Chord Density Graph", modes = {"PracticeCDGraphPosition"}},
+}
+
+local modeNames = {
+	X = "Position",
+	Zoom = "Size",
+	Width = "Size",
+	Spacing = "Spacing",
+	Rotation = "Rotation",
+}
+
+-- values of the selected element when it was selected, for Backspace
+local undoState = {}
+
+local function modeName(id)
+	return modeNames[Movable[id].properties[1]]
 end
 
-function MovableInput(event)
-	if SCREENMAN:GetTopScreen():GetName() == "ScreenGameplaySyncMachine" then return end
-	if getAutoplay() ~= 0 then
-		-- this will eat any other mouse input than a right click (toggle)
-		-- so we don't have to worry about anything weird happening with the ersatz inputs -mina
-		if event.DeviceInput.is_mouse then	
-			if event.DeviceInput.button == "DeviceButton_right mouse button" then
-				Movable.current = "None"
-				Movable.pressed = false
-				Movable.message:visible(Movable.pressed)
-			end
-			return 
-		end
-
-		local button = event.DeviceInput.button	
-		event.hellothisismouse = event.hellothisismouse and true or false -- so that's why bools kept getting set to nil -mina
-		local notReleased = not (event.type == "InputEventType_Release")
-		-- changed to toggle rather than hold down -mina
-		if (Movable[button] and Movable[button].condition and notReleased) or event.hellothisismouse then
-			Movable.pressed = not Movable.pressed or event.hellothisismouse	-- this stuff is getting pretty hacky now -mina
-			if Movable.current ~= event.DeviceInput.button and not event.hellothisismouse then
-				Movable.pressed = true	-- allow toggling using the kb to directly move to a different key rather than forcing an untoggle first -mina
-			end
-			Movable.current = button
-			if not Movable.pressed then 
-				Movable.current = "None"
-			end
-			updatetext(button)	-- this will only update the text when the toggles occur
-		end
-		
-		local current = Movable[Movable.current]
-
-		-- left/right move along the x axis and up/down along the y; set them directly here -mina
-		if event.hellothisismouse then
-			if event.axis == "x" then
-				button = "DeviceButton_left"
-			else
-				button = "DeviceButton_up"
-			end
-			Movable.pressed = true	-- we need to do this or the mouse input facsimile will toggle on when moving x, and off when moving y
-		end
-
-		if button == "DeviceButton_backspace" then
-			event.defaultreset = true
-		else
-			event.defaultreset = false
-		end
-
-		-- reset to default
-		if event.defaultreset then
-			Movable.pressed = true
-			if current ~= nil and current.condition and notReleased and current.external == nil then
-				local sizevals = {
-					Height = true,
-					Width = true,
-					Zoom = true,
-					Spacing = true,
-				}
-				local posvals = {
-					X = true,
-					Y = true,
-				}
-				local keys = {
-					"DeviceButton_left", -- right redundant
-					"DeviceButton_up", -- down redundant
-				}
-				-- run update functions for "all keys"
-				for _, b in ipairs(keys) do
-					local curKey = current[b]
-					if curKey ~= nil then
-						local keyProperty = curKey.property
-						local prop = current.name .. string.gsub(keyProperty, "Add", "")
-						local newVal = 0
-						if posvals[keyProperty] then
-							newVal = getDefaultGameplayCoordinate(prop)
-						elseif sizevals[keyProperty] then
-							newVal = getDefaultGameplaySize(prop)
-						end
-						local diff = newVal - MovableValues[prop]
-						MovableValues[prop] = newVal
-						if curKey.arbitraryFunction then
-							if curKey.arbitraryInc then
-								-- this definitely breaks for something probably maybe
-								-- this is just for visuals anyways
-								-- pressing the default button and restarting gameplay fixes it
-								curKey.arbitraryFunction(diff)
-							else
-								curKey.arbitraryFunction(newVal)
-							end
-						elseif current.children then
-							for _, attribute in ipairs(current.children) do
-								propsFunctions[keyProperty](current.element[attribute], newVal)
-							end
-						elseif current.elementList then
-							for _, elem in ipairs(current.element) do
-								propsFunctions[keyProperty](elem, newVal)
-							end
-						elseif keyProperty == "AddX" or keyProperty == "AddY" then
-							if keyProperty == "AddY" then
-								diff = -diff -- sigh
-							end
-							propsFunctions[keyProperty](current.element, diff)
-						else
-							propsFunctions[keyProperty](current.element, newVal)
-						end
-			
-						if not current.noBorder then
-							local border = Movable[Movable.current]["Border"]
-							if keyProperty == "Height" or keyProperty == "Width" or keyProperty == "Zoom" then
-								border:playcommand("Change" .. keyProperty, {val = newVal} )
-							end
-						end
-						updatetext(Movable.current)
-						playerConfig:get_data(pn_to_profile_slot(PLAYER_1))[current.elementTree][keymode][prop] = MovableValues[prop]
-						playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
-					end
-				end
-				return false
-			end
-		end
-		
-		if Movable.pressed and current[button] and current.condition and notReleased and current.external == nil then
-			local curKey = current[button]
-			local keyProperty = curKey.property
-			local prop = current.name .. string.gsub(keyProperty, "Add", "")
-			local newVal
-
-			-- directly set newval if we're using the mouse -mina
-			if event.hellothisismouse then
-				newVal = event.val
-			else
-				newVal = MovableValues[prop] + (curKey.inc * ((curKey.notefieldY and not usingReverse) and -1 or 1))
-			end
-			
-			MovableValues[prop] = newVal
-			if curKey.arbitraryFunction then
-				if curKey.arbitraryInc then
-					curKey.arbitraryFunction(curKey.inc)
-				else
-					curKey.arbitraryFunction(newVal)
-				end
-			elseif current.children then
-				for _, attribute in ipairs(current.children) do
-					propsFunctions[curKey.property](current.element[attribute], newVal)
-				end
-			elseif current.elementList then
-				for _, elem in ipairs(current.element) do
-					propsFunctions[keyProperty](elem, newVal)
-				end
-			elseif keyProperty == "AddX" or keyProperty == "AddY" then
-				propsFunctions[keyProperty](current.element, curKey.inc)
-			else
-				propsFunctions[keyProperty](current.element, newVal)
-			end
-
-			if not current.noBorder then
-				local border = Movable[Movable.current]["Border"]
-				if keyProperty == "Height" or keyProperty == "Width" or keyProperty == "Zoom" then
-					border:playcommand("Change" .. keyProperty, {val = newVal} )
-				end
-			end
-
-			if not event.hellothisismouse then
-				updatetext(Movable.current)	-- updates text when keyboard movements are made (mouse already updated)
-			end
-			playerConfig:get_data(pn_to_profile_slot(PLAYER_1))[current.elementTree][keymode][prop] = newVal
-			playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
-			-- commented this to save I/O time and reduce lag
-			-- just make sure to call this somewhere else to make sure stuff saves.
-			-- (like when the screen changes....)
-			--playerConfig:save(pn_to_profile_slot(PLAYER_1))
+local function availableModes(element)
+	local o = {}
+	for _, id in ipairs(element.modes) do
+		if Movable[id] ~= nil and Movable[id].condition then
+			o[#o + 1] = id
 		end
 	end
+	return o
+end
+
+local function availableElements()
+	local o = {}
+	for _, element in ipairs(movableElements) do
+		if #availableModes(element) > 0 then
+			o[#o + 1] = element
+		end
+	end
+	return o
+end
+
+local function elementOf(id)
+	for _, element in ipairs(movableElements) do
+		for _, m in ipairs(element.modes) do
+			if m == id then
+				return element
+			end
+		end
+	end
+end
+
+-- every value a mode adjusts is reachable through its left or up key
+local function eachValueKey(id, f)
+	local entry = Movable[id]
+	for _, b in ipairs({"DeviceButton_left", "DeviceButton_up"}) do
+		local curKey = entry[b]
+		if curKey ~= nil then
+			f(curKey, entry.name .. string.gsub(curKey.property, "Add", ""))
+		end
+	end
+end
+
+-- set one value of a mode, move the actors to match and save it for the current keymode
+local function applyValue(id, curKey, newVal)
+	local current = Movable[id]
+	local keyProperty = curKey.property
+	local prop = current.name .. string.gsub(keyProperty, "Add", "")
+	local diff = newVal - MovableValues[prop]
+	MovableValues[prop] = newVal
+
+	if curKey.arbitraryFunction then
+		if curKey.arbitraryInc then
+			curKey.arbitraryFunction(diff)
+		else
+			curKey.arbitraryFunction(newVal)
+		end
+	elseif current.children then
+		for _, attribute in ipairs(current.children) do
+			propsFunctions[keyProperty](current.element[attribute], newVal)
+		end
+	elseif current.elementList then
+		for _, elem in ipairs(current.element) do
+			propsFunctions[keyProperty](elem, newVal)
+		end
+	elseif keyProperty == "AddX" then
+		propsFunctions[keyProperty](current.element, diff)
+	elseif keyProperty == "AddY" then
+		-- the notefield's saved Y counts upwards unless reverse is on
+		propsFunctions[keyProperty](current.element, diff * (usingReverse and 1 or -1))
+	else
+		propsFunctions[keyProperty](current.element, newVal)
+	end
+
+	local border = current.Border
+	if not current.noBorder and border ~= nil then
+		if keyProperty == "Height" or keyProperty == "Width" or keyProperty == "Zoom" then
+			border:playcommand("Change" .. keyProperty, {val = newVal})
+		end
+	end
+
+	playerConfig:get_data(pn_to_profile_slot(PLAYER_1))[current.elementTree][keymode][prop] = newVal
+	playerConfig:set_dirty(pn_to_profile_slot(PLAYER_1))
+	-- saved to disk when the screen changes, see messagebox.lua
+	MESSAGEMAN:Broadcast("CustomizeGameplayChanged", {id = id, property = keyProperty, diff = diff})
+end
+
+local function updatetext()
+	if Movable.message.settext == nil then return end
+	local id = Movable.current
+	local current = Movable[id]
+	local element = elementOf(id)
+	if current == nil or element == nil then
+		Movable.message:visible(false)
+		return
+	end
+	local modes = {}
+	for _, m in ipairs(availableModes(element)) do
+		modes[#modes + 1] = m == id and "[" .. modeName(m) .. "]" or modeName(m)
+	end
+	local text = {element.label, table.concat(modes, "  ")}
+	for _, prop in ipairs(current.properties) do
+		text[#text + 1] = prop .. ": " .. Round(MovableValues[current.name .. prop] or 0, 3)
+	end
+	Movable.message:settext(table.concat(text, "\n"))
+	Movable.message:visible(true)
+end
+
+-- select a mode of an element, or nothing when id is nil
+local function selectMode(id)
+	local before = elementOf(Movable.current)
+	local element = id ~= nil and elementOf(id) or nil
+	Movable.current = id or "None"
+	Movable.pressed = id ~= nil
+	if element ~= nil and element ~= before then
+		undoState = {}
+		for _, m in ipairs(availableModes(element)) do
+			eachValueKey(m, function(_, prop)
+				undoState[prop] = MovableValues[prop]
+			end)
+		end
+	end
+	updatetext()
+	MESSAGEMAN:Broadcast("CustomizeGameplaySelection")
+end
+
+local function cycleElement(dir)
+	local list = availableElements()
+	if #list == 0 then return end
+	local current = elementOf(Movable.current)
+	local index = 0
+	for i, element in ipairs(list) do
+		if element == current then
+			index = i
+		end
+	end
+	if index == 0 then
+		index = dir > 0 and 1 or #list
+	else
+		index = (index - 1 + dir) % #list + 1
+	end
+	selectMode(availableModes(list[index])[1])
+end
+
+local function cycleMode()
+	local modes = availableModes(elementOf(Movable.current))
+	for i, m in ipairs(modes) do
+		if m == Movable.current then
+			selectMode(modes[i % #modes + 1])
+			return
+		end
+	end
+end
+
+-- put every value of the selected element back to how it was when it was selected, or to its default
+local function restoreElement(useDefaults)
+	local element = elementOf(Movable.current)
+	if element == nil then return end
+	for _, id in ipairs(availableModes(element)) do
+		eachValueKey(id, function(curKey, prop)
+			local val = undoState[prop]
+			if useDefaults then
+				if Movable[id].elementTree == "GameplayXYCoordinates" then
+					val = getDefaultGameplayCoordinate(prop)
+				else
+					val = getDefaultGameplaySize(prop)
+				end
+			end
+			if val ~= nil and val ~= MovableValues[prop] then
+				applyValue(id, curKey, val)
+			end
+		end)
+	end
+	updatetext()
+end
+
+local positionProperties = {X = true, Y = true, AddX = true, AddY = true}
+-- modes with a single value take it from any arrow key
+local sameValueKey = {DeviceButton_left = "DeviceButton_down", DeviceButton_right = "DeviceButton_up"}
+
+local function nudge(button, fine)
+	local id = Movable.current
+	local current = Movable[id]
+	local curKey = current[button]
+	if curKey == nil and sameValueKey[button] ~= nil and current.DeviceButton_left == nil then
+		curKey = current[sameValueKey[button]]
+	end
+	if curKey == nil then return end
+
+	local step = curKey.inc
+	if fine then
+		if positionProperties[curKey.property] then
+			step = step > 0 and 1 or -1
+		else
+			step = step / 5
+		end
+	end
+	if curKey.notefieldY and not usingReverse then
+		step = -step
+	end
+	local prop = current.name .. string.gsub(curKey.property, "Add", "")
+	applyValue(id, curKey, Round(MovableValues[prop] + step, 4))
+	updatetext()
+end
+
+local function isHeld(a, b)
+	return INPUTFILTER:IsBeingPressed(a) or INPUTFILTER:IsBeingPressed(b)
+end
+
+-- Rebirth style controls: pick an element with Tab or the mouse, then one shared set of keys adjusts it
+--	Tab / Shift+Tab		next / previous element
+--	Space				next mode of the element (position, size, spacing, rotation)
+--	arrows				adjust, hold Shift for fine steps
+--	Backspace			undo changes since the element was selected
+--	Ctrl+Backspace		reset the element to default
+--	right click			deselect
+function MovableInput(event)
+	if SCREENMAN:GetTopScreen():GetName() == "ScreenGameplaySyncMachine" then return end
+	if getAutoplay() == 0 then return false end
+
+	local button = event.DeviceInput.button
+	if event.DeviceInput.is_mouse then
+		if button == "DeviceButton_left mouse button" then
+			if event.type == "InputEventType_FirstPress" then
+				Movable.clickPending = true
+			elseif event.type == "InputEventType_Release" then
+				Movable.clickPending = false
+				Movable.dragging = nil
+			end
+		elseif button == "DeviceButton_right mouse button" and event.type == "InputEventType_FirstPress" then
+			selectMode(nil)
+		end
+		return false
+	end
+
+	if event.type == "InputEventType_Release" then return false end
+	local firstPress = event.type == "InputEventType_FirstPress"
+	local shift = isHeld("left shift", "right shift")
+
+	if button == "DeviceButton_tab" then
+		cycleElement(shift and -1 or 1)
+	elseif Movable[Movable.current] == nil then
+		return false
+	elseif button == "DeviceButton_space" then
+		if firstPress then
+			cycleMode()
+		end
+	elseif button == "DeviceButton_backspace" then
+		if firstPress then
+			restoreElement(isHeld("left ctrl", "right ctrl"))
+		end
+	elseif button == "DeviceButton_up" or button == "DeviceButton_down" or button == "DeviceButton_left" or button == "DeviceButton_right" then
+		nudge(button, shift)
+	end
 	return false
+end
+
+-- for the element list in messagebox.lua: labels of the elements that can be customized
+-- and the index of the selected one (0 if none)
+function getMovableElementList()
+	local labels = {}
+	local selected = 0
+	local current = elementOf(Movable.current)
+	for i, element in ipairs(availableElements()) do
+		labels[i] = element.label
+		if element == current then
+			selected = i
+		end
+	end
+	return labels, selected
 end
 
 function setBorderAlignment(self, h, v)
@@ -1149,12 +1273,12 @@ function setBorderToText(b, t)
 	b:playcommand("ChangeZoom", {val = t:GetParent():GetZoom()})
 end
 
--- this is supreme lazy -mina
-local function elementtobutton(name)
+local function elementForActor(name)
 	name = name == "Judgment" and "Judge" or name
-	for k,v in pairs(Movable) do
-		if type(v) == 'table' and v.name == name and v.properties[1] == "X" then
-			return k
+	for _, element in ipairs(movableElements) do
+		local entry = Movable[element.modes[1]]
+		if entry ~= nil and entry.name == name and entry.properties[1] == "X" then
+			return element
 		end
 	end
 end
@@ -1163,31 +1287,50 @@ local function bordermousereact(self)
 	self:queuecommand("mousereact")
 end
 
+-- clicking an element selects it, holding the click drags it
 local function movewhendragged(self)
 	-- this is a somewhat dangerous hierarchical assumption but it should help us get organied in the short term -mina
-	local b = elementtobutton(self:GetParent():GetParent():GetName())
-	if isOver(self) or (Movable.pressed and Movable.current == b) then
-		if Movable.pressed and Movable.current == b then
-			self:GetParent():diffusealpha(0.75)	-- this is active
-		else
-			self:GetParent():diffusealpha(0.35)	-- this has been moused over
+	local element = elementForActor(self:GetParent():GetParent():GetName())
+	if element == nil then return end
+	local id = element.modes[1]
+	local entry = Movable[id]
+	if not entry.condition then return end
+
+	if Movable.clickPending and isOver(self) then
+		Movable.clickPending = false
+		Movable.dragging = element
+		if elementOf(Movable.current) ~= element then
+			selectMode(id)
 		end
-		
-		-- second half of the expr stops elements from being activated if you mouse over them while moving something else
-		if INPUTFILTER:IsBeingPressed("Mouse 0", "Mouse") and (Movable.current == b or Movable.current == "None") then
-			local nx = Round(INPUTFILTER:GetMouseX())
-			local ny = Round(INPUTFILTER:GetMouseY())
-			if Movable[b].propertyOffsets ~= nil then
-				nx = nx - Movable[b].propertyOffsets[1]
-				ny = ny - Movable[b].propertyOffsets[2]
-			end
-			MovableInput({DeviceInput = {button = b}, hellothisismouse = true, axis = "x", val = nx})
-			MovableInput({DeviceInput = {button = b}, hellothisismouse = true, axis = "y", val = ny})
+	end
+
+	if Movable.dragging == element and INPUTFILTER:IsBeingPressed("Mouse 0", "Mouse") then
+		local nx = Round(INPUTFILTER:GetMouseX())
+		local ny = Round(INPUTFILTER:GetMouseY())
+		if entry.propertyOffsets ~= nil then
+			nx = nx - entry.propertyOffsets[1]
+			ny = ny - entry.propertyOffsets[2]
 		end
-	elseif Movable.pressed then 
-		self:GetParent():diffusealpha(0.35)		-- something is active, but not this
+		local moved = false
+		if nx ~= MovableValues[entry.name .. "X"] then
+			applyValue(id, entry.DeviceButton_left, nx)
+			moved = true
+		end
+		if ny ~= MovableValues[entry.name .. "Y"] then
+			applyValue(id, entry.DeviceButton_up, ny)
+			moved = true
+		end
+		if moved then
+			updatetext()
+		end
+	end
+
+	if elementOf(Movable.current) == element then
+		self:GetParent():diffusealpha(0.75)	-- this is selected
+	elseif isOver(self) or Movable.pressed then
+		self:GetParent():diffusealpha(0.35)	-- moused over, or something else is selected
 	else
-		self:GetParent():diffusealpha(0.1)		-- nothing is active and this is not moused over
+		self:GetParent():diffusealpha(0.1)	-- nothing is selected and this is not moused over
 	end
 end
 

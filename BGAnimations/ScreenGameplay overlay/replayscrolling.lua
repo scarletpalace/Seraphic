@@ -75,11 +75,11 @@ scroller =
 		self:xy(MovableValues.ReplayButtonsX, MovableValues.ReplayButtonsY)
 		if allowedCustomization then
 			bobo = self:GetChild("Border")
-			Movable.DeviceButton_f.element = self
-			Movable.DeviceButton_f.condition = true
-			--Movable.DeviceButton_g.element = self
-			--Movable.DeviceButton_g.condition = true
-			--Movable.DeviceButton_g.Border = bobo
+			Movable.ReplayButtonsPosition.element = self
+			Movable.ReplayButtonsPosition.condition = true
+			--Movable.ReplayButtonsSize.element = self
+			--Movable.ReplayButtonsSize.condition = true
+			--Movable.ReplayButtonsSize.Border = bobo
 			spaceButtons(MovableValues.ReplayButtonsSpacing)
 			bobo:playcommand("ChangeWidth", {val = buttons[1]:GetChild("Label"):GetWidth()})
 			--bobo:playcommand("ChangeZoom", {val = MovableValues.ReplayButtonsZoom}) 
@@ -148,9 +148,9 @@ scroller[#scroller + 1] =
 	name = "ReplayButtons",
 	onInit = function(self)
 		if allowedCustomization then
-			Movable.DeviceButton_h.condition = true
-			Movable.DeviceButton_h.DeviceButton_up.arbitraryFunction = spaceButtons
-			Movable.DeviceButton_h.DeviceButton_down.arbitraryFunction = spaceButtons
+			Movable.ReplayButtonsSpacing.condition = true
+			Movable.ReplayButtonsSpacing.DeviceButton_up.arbitraryFunction = spaceButtons
+			Movable.ReplayButtonsSpacing.DeviceButton_down.arbitraryFunction = spaceButtons
 		end
 	end,
 	content = {

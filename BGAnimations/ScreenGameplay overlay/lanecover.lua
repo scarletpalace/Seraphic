@@ -35,6 +35,23 @@ if not isCentered then
 	P1X = THEME:GetMetric("ScreenGameplay", string.format("PlayerP1%sX", styleType)) + MovableValues.NotefieldX + (cols % 2 == 0 and -nfspace / 2 or 0)
 end
 
+-- keep the cover on the notefield while it is moved, resized or its columns are spaced in customize gameplay
+local function followNotefield(params)
+	if params.id == "NotefieldPosition" and params.property == "AddX" then
+		P1X = P1X + params.diff
+	elseif params.id == "NotefieldSize" or params.id == "NotefieldSpacing" then
+		width = 64 * cols * MovableValues.NotefieldWidth + MovableValues.NotefieldSpacing * evencols
+		if params.id == "NotefieldSpacing" and cols % 2 == 0 then
+			P1X = P1X - params.diff / 2
+		end
+	else
+		return
+	end
+	if cover ~= nil then
+		cover:playcommand("Update")
+	end
+end
+
 local function getPlayerBPM(pn)
 	local pn = GAMESTATE:GetMasterPlayerNumber()
 	local songPosition = GAMESTATE:GetPlayerState():GetSongPosition()
@@ -105,41 +122,6 @@ end
 local selectPressed = false
 local skibby = nil
 local function input(event)
-	if getAutoplay() ~= 0 and playerConfig:get_data(pn_to_profile_slot(PLAYER_1)).LaneCover ~= 0 then
-		if Movable.current == "DeviceButton_r" and event.type ~= "InputEventType_Release" then
-			if event.DeviceInput.button == "DeviceButton_left" then
-				cover:addx(-3)
-			end
-			if event.DeviceInput.button == "DeviceButton_right" then
-				cover:addx(3)
-			end
-		end
-		if Movable.current == "DeviceButton_t" and event.type ~= "InputEventType_Release" then
-			if event.DeviceInput.button == "DeviceButton_left" then
-				width = 64 * cols * MovableValues.NotefieldWidth - 0.01 + MovableValues.NotefieldSpacing * (cols-1)
-				local dir = event.DeviceInput.button
-				local inc = Movable.DeviceButton_t[dir].inc
-				P1X = P1X + inc
-				cover:playcommand("Update")
-			end
-			if event.DeviceInput.button == "DeviceButton_right" then
-				width = 64 * cols * MovableValues.NotefieldWidth + 0.01 + MovableValues.NotefieldSpacing * (cols-1)
-				local dir = event.DeviceInput.button
-				local inc = Movable.DeviceButton_t[dir].inc
-				P1X = P1X + inc
-				cover:playcommand("Update")
-			end
-		end
-		if Movable.current == "DeviceButton_n" and event.type ~= "InputEventType_Release" then
-			if event.DeviceInput.button == "DeviceButton_up" or event.DeviceInput.button == "DeviceButton_down" then
-				local dir = event.DeviceInput.button
-				local inc = Movable.DeviceButton_n[dir].inc
-				width = width + inc * evencols
-				P1X = P1X - inc / evencols
-				cover:playcommand("Update")
-			end
-		end
-	end
 	if event.type == "InputEventType_Release" then
 		moveDownP1 = false
 		moveUpP1 = false
@@ -177,6 +159,9 @@ local t =
 		if (allowedCustomization) then
 			SCREENMAN:GetTopScreen():AddInputCallback(input)
 		end
+	end,
+	CustomizeGameplayChangedMessageCommand = function(self, params)
+		followNotefield(params)
 	end
 }
 
